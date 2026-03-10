@@ -1,0 +1,69 @@
+import { getStoredToken, setStoredToken, apiRequest } from './client'
+import type { User } from '../types/community'
+
+export interface LoginResponse {
+  token: string
+  user: User
+}
+
+/**
+ * 密码登录。仅支持密码登录，短信登录暂未开放。
+ */
+export async function login(phone: string, password: string): Promise<LoginResponse> {
+  const result = await apiRequest<LoginResponse>('/api/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ phone, password }),
+    token: null,
+  })
+  if (!result.ok) {
+    throw new Error(result.error.message || '登录失败')
+  }
+  return result.data
+}
+
+/**
+ * 获取当前用户信息（需已登录，请求头会带本地 token）。
+ */
+export async function me(): Promise<User | null> {
+  const result = await apiRequest<User>('/api/auth/me')
+  if (!result.ok) {
+    return null
+  }
+  return result.data
+}
+
+/**
+ * 刷新 Token，返回新 token 与用户信息。
+ */
+export async function refresh(): Promise<LoginResponse | null> {
+  const result = await apiRequest<LoginResponse>('/api/auth/refresh', {
+    method: 'POST',
+    token: getStoredToken(),
+  })
+  if (!result.ok) {
+    return null
+  }
+  return result.data
+}
+
+/**
+ * 保存登录态到本地并返回用户信息。
+ */
+export function saveLogin(res: LoginResponse): User {
+  setStoredToken(res.token)
+  return res.user
+}
+
+/**
+ * 退出登录：清除本地 token。
+ */
+export function logout(): void {
+  setStoredToken(null)
+}
+
+/**
+ * 是否已登录（本地是否有 token）。不校验服务端是否有效。
+ */
+export function isLoggedIn(): boolean {
+  return !!getStoredToken()
+}

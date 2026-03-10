@@ -1,0 +1,402 @@
+# EPlugger REST API — OpenAPI 3.0
+# 与 frontend/src/types、backend Controller 对齐，用于契约与对接参考。
+
+openapi: 3.0.3
+info:
+  title: EPlugger API
+  description: 企业正向激励社区后端 REST API（认证、打卡、动态、积分、商城、消息、用户）
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: 本地开发
+
+# 除 /api/health、/api/auth/**、/api/uploads/** 外，所有 /api/** 需请求头 Authorization: Bearer <JWT>
+security:
+  - bearerAuth: []
+
+paths:
+  # ---------- 健康 ----------
+  /api/health:
+    get:
+      summary: 健康检查
+      security: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: ok }
+                  service: { type: string, example: eplugger-backend }
+
+  # ---------- 认证 ----------
+  /api/auth/login:
+    post:
+      summary: 密码登录
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone, password]
+              properties:
+                phone: { type: string }
+                password: { type: string }
+      responses:
+        '200':
+          description: 成功，返回 token 与用户信息
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          description: 手机号或密码错误
+
+  /api/auth/refresh:
+    post:
+      summary: 刷新 Token
+      security: []
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema: { type: string, example: 'Bearer <token>' }
+      responses:
+        '200':
+          description: 成功，返回新 token 与用户信息
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: 无效或过期 Token
+
+  /api/auth/me:
+    get:
+      summary: 当前用户信息
+      security: []
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema: { type: string, example: 'Bearer <token>' }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserMe'
+        '401':
+          description: 未登录或 Token 无效
+
+  # ---------- 运动打卡 ----------
+  /api/checkin/exercise:
+    post:
+      summary: 提交运动打卡
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sportTypeId: { type: integer }
+                duration: { type: integer }
+                durationUnit: { type: string }
+                distance: { type: number }
+                distanceUnit: { type: string }
+                intensity: { type: string }
+                attachmentUrls: { type: array, items: { type: string } }
+      responses:
+        '200':
+          description: 打卡成功
+  /api/checkin/exercise/records:
+    get:
+      summary: 运动打卡记录（分页）
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: 分页记录
+  /api/checkin/exercise/sport-types:
+    get:
+      summary: 运动类型列表
+      responses:
+        '200':
+          description: 列表
+  /api/checkin/exercise/progress/today:
+    get:
+      summary: 当日目标进度
+  /api/checkin/exercise/progress/week:
+    get:
+      summary: 本周目标进度
+
+  # ---------- 正向打卡 ----------
+  /api/checkin/positive:
+    post:
+      summary: 提交正向打卡
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                categoryId: { type: integer }
+                title: { type: string }
+                description: { type: string }
+                tagIds: { type: array, items: { type: integer } }
+                relatedColleagueIds: { type: array, items: { type: integer } }
+                evidenceUrls: { type: array, items: { type: string } }
+      responses:
+        '200':
+          description: 提交成功
+  /api/checkin/positive/records:
+    get:
+      summary: 正向打卡记录（分页）
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: 分页记录
+  /api/checkin/positive/categories:
+    get:
+      summary: 正向分类列表
+  /api/checkin/positive/points-preview:
+    get:
+      summary: 积分预览
+      parameters:
+        - name: descriptionLength
+          in: query
+          schema: { type: integer }
+        - name: evidenceCount
+          in: query
+          schema: { type: integer }
+        - name: colleagueCount
+          in: query
+          schema: { type: integer }
+
+  # ---------- 动态 ----------
+  /api/posts:
+    get:
+      summary: 动态列表（筛选、分页）
+      parameters:
+        - name: filter
+          in: query
+          schema: { type: string, enum: [latest, popular, department, following] }
+        - name: page
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 20 }
+      responses:
+        '200':
+          description: 分页
+    post:
+      summary: 发布动态
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                contentText: { type: string }
+                contentImages: { type: array, items: { type: string } }
+                visibilityType: { type: string }
+                topicIds: { type: array, items: { type: string } }
+                mentionUserIds: { type: array, items: { type: integer } }
+      responses:
+        '200':
+          description: 发布成功
+  /api/posts/my:
+    get:
+      summary: 我的动态（分页）
+  /api/posts/topics:
+    get:
+      summary: 话题列表
+  /api/posts/{id}:
+    get:
+      summary: 动态详情
+    put:
+      summary: 更新动态
+    delete:
+      summary: 删除动态
+  /api/posts/{id}/like:
+    post:
+      summary: 点赞/取消点赞
+  /api/posts/{id}/favorite:
+    post:
+      summary: 收藏/取消收藏
+
+  # ---------- 评论 ----------
+  /api/posts/{postId}/comments:
+    get:
+      summary: 评论列表（分页）
+    post:
+      summary: 发表评论（支持 parentId 二级回复）
+  /api/posts/{postId}/comments/{commentId}/like:
+    post:
+      summary: 评论点赞
+
+  # ---------- 积分与勋章 ----------
+  /api/points/me:
+    get:
+      summary: 我的积分与等级
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserPointsMe'
+  /api/points/records:
+    get:
+      summary: 积分流水（分页）
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 20 }
+  /api/points/medals:
+    get:
+      summary: 我的勋章列表
+
+  # ---------- 排行榜 ----------
+  /api/leaderboard:
+    get:
+      summary: 排行榜（积分/运动/正向，按时间范围）
+      parameters:
+        - name: type
+          in: query
+          schema: { type: string, enum: [points, exercise, positive], default: points }
+        - name: timeRange
+          in: query
+          schema: { type: string, enum: [all, year, month, week, today], default: all }
+        - name: timeZone
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: 榜单条目列表
+
+  # ---------- 积分商城 ----------
+  /api/mall/products:
+    get:
+      summary: 商品列表
+      security: []
+      responses:
+        '200':
+          description: 商品列表
+  /api/mall/orders:
+    get:
+      summary: 我的订单（分页）
+    post:
+      summary: 兑换下单
+      parameters:
+        - name: productId
+          in: query
+          required: true
+          schema: { type: string }
+
+  # ---------- 消息通知 ----------
+  /api/notifications:
+    get:
+      summary: 消息列表（分页）
+      parameters:
+        - name: page
+          in: query
+          schema: { type: integer, default: 0 }
+        - name: size
+          in: query
+          schema: { type: integer, default: 20 }
+  /api/notifications/unread-count:
+    get:
+      summary: 未读数量
+  /api/notifications/{id}/read:
+    patch:
+      summary: 标已读
+
+  # ---------- 用户（个人中心） ----------
+  /api/users/me:
+    get:
+      summary: 个人资料与统计（连续打卡、累计积分、勋章数）
+      parameters:
+        - name: timeZone
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: 登录或刷新后获得的 JWT，请求头 Authorization: Bearer <token>
+
+  schemas:
+    LoginResponse:
+      type: object
+      properties:
+        token: { type: string }
+        user:
+          $ref: '#/components/schemas/UserMe'
+    UserMe:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        avatar: { type: string }
+        department: { type: string }
+        position: { type: string }
+    UserPointsMe:
+      type: object
+      properties:
+        userId: { type: string }
+        availablePoints: { type: integer }
+        totalEarnedPoints: { type: integer }
+        totalUsedPoints: { type: integer }
+        level: { type: integer }
+        currentLevelPoints: { type: integer }
+        nextLevelPoints: { type: integer }
+        medals: { type: array, items: { $ref: '#/components/schemas/MedalDto' } }
+    MedalDto:
+      type: object
+      properties:
+        type: { type: string }
+        name: { type: string }
+        description: { type: string }
+        icon: { type: string }
+        obtainedAt: { type: string, nullable: true }
+    UserProfile:
+      type: object
+      description: 个人中心资料与统计
+      properties:
+        id: { type: string }
+        name: { type: string }
+        avatar: { type: string }
+        department: { type: string }
+        position: { type: string }
+        consecutiveCheckInDays: { type: integer }
+        totalEarnedPoints: { type: integer }
+        medalCount: { type: integer }

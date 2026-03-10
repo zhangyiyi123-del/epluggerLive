@@ -69,7 +69,17 @@ mvn spring-boot:run
 - 认证接口：`POST /api/auth/login`（body: `phone`, `password`）、`GET /api/auth/me`、`POST /api/auth/refresh`。
 - 非 prod 环境下，若库中无用户会自动创建**测试用户**：手机号 `13800138000`，密码 `123456`。前端可用该账号登录。
 
-## 6. 常见问题
+## 6. 安全与鉴权
+
+- 除 **健康检查**（`/api/health`）、**认证**（`/api/auth/**`）、**上传**（`/api/uploads/**`）外，所有 **`/api/**`** 接口均需在请求头携带有效 JWT：`Authorization: Bearer <token>`，否则返回 401。
+- 日志中不输出密码、Token 等敏感信息。
+
+## 7. 更多说明
+
+- 完整环境变量、前端对接与验证步骤见 **`specs/003-refine-requirements/quickstart.md`**。
+- API 契约见 **`specs/003-refine-requirements/contracts/openapi.yaml`**。
+
+## 8. 常见问题
 
 - **Could not find artifact ... spring-boot-buildpack-platform**  
   使用方式 A：`mvn compile exec:java -Dexec.mainClass=com.eplugger.EpluggerApplication`。
@@ -81,4 +91,4 @@ mvn spring-boot:run
   先在 MySQL 中执行 `CREATE DATABASE eplugger;`。
 
 - **前端对接**  
-  前端需配置 `VITE_API_BASE_URL=http://localhost:8080`（或复制 `.env.example` 为 `.env` 后修改）。
+  前端需在 `frontend/` 下配置 `VITE_API_BASE_URL=http://localhost:8080`（见 quickstart.md 环境变量表）。

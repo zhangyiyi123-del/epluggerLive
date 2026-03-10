@@ -167,10 +167,10 @@
 
 **目的**：影响多故事或交付就绪的收尾工作。
 
-- [ ] T050 [P] 在 specs/003-refine-requirements/contracts/openapi.yaml 中补充 OpenAPI 规范（认证、打卡、动态、积分、商城、消息、用户），与前端类型对齐
-- [ ] T051 按 quickstart.md 执行：验证后端在 MySQL 下启动、前端可调用 API；将环境变量等补充到 quickstart.md
-- [ ] T052 安全：确认除认证相关接口外，所有 /api/** 均需有效 JWT；日志中不输出敏感信息
-- [ ] T053 在 backend/ 下新增 README，包含构建、运行及 MySQL 配置说明，与 quickstart.md 一致
+- [x] T050 [P] 在 specs/003-refine-requirements/contracts/openapi.yaml 中补充 OpenAPI 规范（认证、打卡、动态、积分、商城、消息、用户），与前端类型对齐
+- [x] T051 按 quickstart.md 执行：验证后端在 MySQL 下启动、前端可调用 API；将环境变量等补充到 quickstart.md
+- [x] T052 安全：确认除认证相关接口外，所有 /api/** 均需有效 JWT；日志中不输出敏感信息
+- [x] T053 在 backend/ 下新增 README，包含构建、运行及 MySQL 配置说明，与 quickstart.md 一致
 
 ---
 

@@ -1,15 +1,18 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
   MessageCircle, LogOut, ChevronRight, ChevronLeft,
   Bell, HelpCircle, FileText, Moon
 } from 'lucide-react'
-import { MOCK_USER_POINTS, MEDAL_CONFIGS } from '../types/points'
+import { MEDAL_CONFIGS } from '../types/points'
+import type { UserPoints as UserPointsType } from '../types/points'
 import MedalWall from '../components/points/MedalWall'
+import { getProfile } from '../api/auth'
+import { getPointsMe, getUnreadCount } from '../api/points'
 
 const menuItems = [
   { icon: FileText, label: '我的动态', badge: '', color: '#8B5CF6' },
-  { icon: MessageCircle, label: '我的消息', badge: '3', color: '#4F46E5', badgeType: 'danger' },
+  { icon: MessageCircle, label: '我的消息', badgeKey: 'messages', color: '#4F46E5', badgeType: 'danger' as const },
   { icon: Bell, label: '通知设置', badge: '', color: '#10B981' },
   { icon: HelpCircle, label: '帮助与反馈', badge: '', color: '#6B7280' },
 ]
@@ -23,6 +26,29 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
   const [showMedalWall, setShowMedalWall] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
+  const [profile, setProfile] = useState<{ name: string; department: string; position?: string; consecutiveCheckInDays: number; totalEarnedPoints: number; medalCount: number } | null>(null)
+  const [userPoints, setUserPoints] = useState<UserPointsType | null>(null)
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  useEffect(() => {
+    getProfile().then((p) => {
+      if (p) setProfile(p)
+    })
+    getUnreadCount().then(setUnreadCount).catch(() => {})
+    getPointsMe().then((p) => { if (p) setUserPoints(p) })
+  }, [])
+
+  const displayUserPoints: UserPointsType = userPoints ?? {
+    userId: profile?.id ?? '',
+    availablePoints: 0,
+    totalEarnedPoints: profile?.totalEarnedPoints ?? 0,
+    totalUsedPoints: 0,
+    expiringPoints: 0,
+    level: 1,
+    currentLevelPoints: 0,
+    nextLevelPoints: 200,
+    medals: [],
+  }
 
   // 勋章墙全屏（查看全部）
   if (showMedalWall) {
@@ -36,7 +62,7 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
           <div style={{ width: 44 }} />
         </div>
         <div className="publish-content">
-          <MedalWall userPoints={MOCK_USER_POINTS} onClose={() => setShowMedalWall(false)} />
+          <MedalWall userPoints={displayUserPoints} onClose={() => setShowMedalWall(false)} />
         </div>
       </div>
     )
@@ -48,26 +74,26 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
       <div className="profile-header">
         <div className="profile-header-top">
           <div className="profile-header-left">
-            <div className="profile-avatar">我</div>
+            <div className="profile-avatar">{profile?.name?.slice(0, 1) || '我'}</div>
             <div className="profile-info">
-              <div className="profile-name">员工用户</div>
-              <div className="profile-dept">技术部 · 前端开发</div>
+              <div className="profile-name">{profile?.name ?? '加载中...'}</div>
+              <div className="profile-dept">{[profile?.department, profile?.position].filter(Boolean).join(' · ') || '—'}</div>
             </div>
           </div>
         </div>
         <div className="profile-stats-row">
           <div className="profile-stat">
-            <span className="profile-stat-value">28</span>
+            <span className="profile-stat-value">{profile?.consecutiveCheckInDays ?? 0}</span>
             <span className="profile-stat-label">连续打卡</span>
           </div>
           <div className="profile-stat-divider" />
           <div className="profile-stat">
-            <span className="profile-stat-value">2850</span>
+            <span className="profile-stat-value">{profile?.totalEarnedPoints ?? 0}</span>
             <span className="profile-stat-label">累计积分</span>
           </div>
           <div className="profile-stat-divider" />
           <div className="profile-stat">
-            <span className="profile-stat-value">4</span>
+            <span className="profile-stat-value">{profile?.medalCount ?? 0}</span>
             <span className="profile-stat-label">获得勋章</span>
           </div>
         </div>
@@ -86,10 +112,9 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
           {/* 已获得最多3枚 + 补齐未获得占位，共显示3个 */}
           <div className="profile-medal-row">
             {(() => {
-              const obtained = MOCK_USER_POINTS.medals.slice(0, 3)
-              const configs = obtained.map(m => MEDAL_CONFIGS.find(c => c.type === m.type)).filter(Boolean)
-              // 未获得：取第一批还没有的勋章补足到3个
-              const lockedConfigs = MEDAL_CONFIGS.filter(c => !MOCK_USER_POINTS.medals.find(m => m.type === c.type))
+              const medals = displayUserPoints.medals.slice(0, 3)
+              const configs = medals.map(m => MEDAL_CONFIGS.find(c => c.type === m.type)).filter(Boolean)
+              const lockedConfigs = MEDAL_CONFIGS.filter(c => !displayUserPoints.medals.find(m => m.type === c.type))
               const displayCount = 3
               const items: { config: typeof MEDAL_CONFIGS[0]; obtained: boolean }[] = [
                 ...configs.map(c => ({ config: c!, obtained: true })),
@@ -124,7 +149,12 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
                   <item.icon size={18} />
                 </div>
                 <span className="menu-label">{item.label}</span>
-                {item.badge && (
+                {'badgeKey' in item && item.badgeKey === 'messages' && unreadCount > 0 && (
+                  <span className={`badge ${item.badgeType === 'danger' ? 'badge-warning' : 'badge-primary'}`}>
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </span>
+                )}
+                {'badge' in item && item.badge && (
                   <span className={`badge ${item.badgeType === 'danger' ? 'badge-warning' : 'badge-primary'}`}>
                     {item.badge}
                   </span>
@@ -228,6 +258,7 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
                   onClick={() => {
                     setShowLogoutConfirm(false)
                     onLogout?.()
+                    navigate('/', { replace: true })
                   }}
                 >
                   退出登录

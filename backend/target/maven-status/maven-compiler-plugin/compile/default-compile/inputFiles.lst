@@ -10,10 +10,12 @@ C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\dto\ProductDto.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\service\VerificationCodeService.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\repository\CheckInRecordRepository.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\dto\ExerciseCheckInResponse.java
+C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\dto\UserProfileDto.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\domain\entity\UserPoints.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\domain\entity\Notification.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\AuthController.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\FileUploadController.java
+C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\service\UserProfileService.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\GlobalExceptionHandler.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\repository\PositiveCategoryRepository.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\service\CommentService.java
@@ -45,6 +47,7 @@ C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\service\ExerciseCheckIn
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\dto\UserDto.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\NotificationController.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\domain\entity\UserMedal.java
+C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\UserController.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\domain\entity\Product.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\dto\MedalDto.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\ExerciseCheckInController.java

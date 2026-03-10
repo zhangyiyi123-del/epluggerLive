@@ -67,3 +67,24 @@ export function logout(): void {
 export function isLoggedIn(): boolean {
   return !!getStoredToken()
 }
+
+/** 个人中心资料与统计（连续打卡、累计积分、勋章数） */
+export interface UserProfile {
+  id: string
+  name: string
+  avatar?: string
+  department: string
+  position?: string
+  consecutiveCheckInDays: number
+  totalEarnedPoints: number
+  medalCount: number
+}
+
+/**
+ * 获取当前用户个人中心资料与统计（用于个人中心页）。
+ */
+export async function getProfile(): Promise<UserProfile | null> {
+  const result = await apiRequest<UserProfile>('/api/users/me')
+  if (!result.ok) return null
+  return result.data
+}

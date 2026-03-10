@@ -155,9 +155,9 @@
 
 ### 用户故事 6 实现
 
-- [ ] T047 [US6] 在 backend/src/main/java/com/eplugger/service/UserProfileService.java 中实现 UserProfileService（统计：连续打卡天数、累计积分、勋章数）
-- [ ] T048 [US6] 在 backend/src/main/java/com/eplugger/web/UserController.java 或扩展 AuthController 中实现 GET /api/users/me（资料与统计）
-- [ ] T049 [US6] 前端：在 frontend/src/pages/ProfilePage.tsx 中将个人统计与菜单入口对接 API；确保退出登录清除 JWT 并跳转登录页
+- [x] T047 [US6] 在 backend/src/main/java/com/eplugger/service/UserProfileService.java 中实现 UserProfileService（统计：连续打卡天数、累计积分、勋章数）
+- [x] T048 [US6] 在 backend/src/main/java/com/eplugger/web/UserController.java 或扩展 AuthController 中实现 GET /api/users/me（资料与统计）
+- [x] T049 [US6] 前端：在 frontend/src/pages/ProfilePage.tsx 中将个人统计与菜单入口对接 API；确保退出登录清除 JWT 并跳转登录页
 
 **检查点**：用户故事 6 可独立验收 — 个人资料、统计、退出登录可用
 

@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef } from 'react'
-import { Medal, Flame, Heart, ChevronRight, ChevronLeft, X, Star, Lock, Filter, ChevronDown } from 'lucide-react'
+import { Medal, Flame, Heart, ChevronRight, ChevronLeft, Star, Lock, Filter, ChevronDown } from 'lucide-react'
 import { MOCK_USER_POINTS, LEVEL_CONFIGS } from '../types/points'
 import PointsCenter from '../components/points/PointsCenter'
 import LevelProgress from '../components/points/LevelProgress'
 import MedalWall from '../components/points/MedalWall'
 import PointsMallPage from './PointsMallPage'
-import ProductCard from '../components/points/ProductCard'
 
 type LeaderboardType = 'points' | 'exercise' | 'positive'
 

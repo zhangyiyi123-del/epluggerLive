@@ -93,11 +93,11 @@
 
 ### 用户故事 3 实现
 
-- [ ] T024 [P] [US3] 在 backend/src/main/java/com/eplugger/domain/entity/ 下创建 PositiveRecord、PositiveCategory、PositiveEvidence JPA 实体
-- [ ] T025 [US3] 在 backend/src/main/java/com/eplugger/repository/ 下创建 PositiveRecordRepository、PositiveCategoryRepository
-- [ ] T026 [US3] 在 backend/src/main/java/com/eplugger/service/PositiveCheckInService.java 中实现 PositiveCheckInService（创建、按用户列表、积分预览）
-- [ ] T027 [US3] 在 backend/src/main/java/com/eplugger/web/PositiveCheckInController.java 中实现 PositiveCheckInController：POST /api/checkin/positive、GET /api/checkin/positive/records、GET 分类与积分预览
-- [ ] T028 [US3] 前端：在 frontend/src/pages/PositiveCheckInPage.tsx 与 frontend/src/pages/PositiveRecordsPage.tsx 中用 API 替换正向打卡 Mock
+- [x] T024 [P] [US3] 在 backend/src/main/java/com/eplugger/domain/entity/ 下创建 PositiveRecord、PositiveCategory、PositiveEvidence JPA 实体
+- [x] T025 [US3] 在 backend/src/main/java/com/eplugger/repository/ 下创建 PositiveRecordRepository、PositiveCategoryRepository
+- [x] T026 [US3] 在 backend/src/main/java/com/eplugger/service/PositiveCheckInService.java 中实现 PositiveCheckInService（创建、按用户列表、积分预览）
+- [x] T027 [US3] 在 backend/src/main/java/com/eplugger/web/PositiveCheckInController.java 中实现 PositiveCheckInController：POST /api/checkin/positive、GET /api/checkin/positive/records、GET 分类与积分预览
+- [x] T028 [US3] 前端：在 frontend/src/pages/PositiveCheckInPage.tsx 与 frontend/src/pages/PositiveRecordsPage.tsx 中用 API 替换正向打卡 Mock
 
 **检查点**：用户故事 3 可独立验收 — 正向打卡与历史记录可用
 
@@ -111,13 +111,13 @@
 
 ### 用户故事 4 实现
 
-- [ ] T029 [P] [US4] 在 backend/src/main/java/com/eplugger/domain/entity/ 下创建 Post、Comment、Topic JPA 实体及可见范围/@提及映射
-- [ ] T030 [US4] 在 backend/src/main/java/com/eplugger/repository/ 下创建 PostRepository、CommentRepository（支持分页与筛选）
-- [ ] T031 [US4] 在 backend/src/main/java/com/eplugger/service/PostService.java 中实现 PostService（创建、查询、带筛选/分页的列表、更新、删除、点赞、收藏）
-- [ ] T032 [US4] 在 backend/src/main/java/com/eplugger/service/CommentService.java 中实现 CommentService（按动态列表、发表、回复、点赞）
-- [ ] T033 [US4] 在 backend/src/main/java/com/eplugger/web/PostController.java 中实现 PostController：GET /api/posts、POST /api/posts、GET/PUT/DELETE /api/posts/:id、点赞/收藏
-- [ ] T034 [US4] 在 backend/src/main/java/com/eplugger/web/CommentController.java 中实现 CommentController：GET /api/posts/:id/comments、POST /api/posts/:id/comments（支持 parentId 二级回复）
-- [ ] T035 [US4] 前端：在 frontend/src/pages/CommunityPage.tsx、PublishPage.tsx、PostDetailPage.tsx、MyPostsPage.tsx 中用 API 替换圈子与发布 Mock
+- [x] T029 [P] [US4] 在 backend/src/main/java/com/eplugger/domain/entity/ 下创建 Post、Comment、Topic JPA 实体及可见范围/@提及映射
+- [x] T030 [US4] 在 backend/src/main/java/com/eplugger/repository/ 下创建 PostRepository、CommentRepository（支持分页与筛选）
+- [x] T031 [US4] 在 backend/src/main/java/com/eplugger/service/PostService.java 中实现 PostService（创建、查询、带筛选/分页的列表、更新、删除、点赞、收藏）
+- [x] T032 [US4] 在 backend/src/main/java/com/eplugger/service/CommentService.java 中实现 CommentService（按动态列表、发表、回复、点赞）
+- [x] T033 [US4] 在 backend/src/main/java/com/eplugger/web/PostController.java 中实现 PostController：GET /api/posts、POST /api/posts、GET/PUT/DELETE /api/posts/:id、点赞/收藏
+- [x] T034 [US4] 在 backend/src/main/java/com/eplugger/web/CommentController.java 中实现 CommentController：GET /api/posts/:id/comments、POST /api/posts/:id/comments（支持 parentId 二级回复）
+- [x] T035 [US4] 前端：在 frontend/src/pages/CommunityPage.tsx、PublishPage.tsx、PostDetailPage.tsx、MyPostsPage.tsx 中用 API 替换圈子与发布 Mock
 
 **检查点**：用户故事 4 可独立验收 — 动态流、发布、详情、我的动态可用
 

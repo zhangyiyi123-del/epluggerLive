@@ -1,79 +1,73 @@
 import { useState, useEffect } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
-import { 
-  ArrowLeft, Heart, MessageCircle, Send, X, MoreHorizontal
+import {
+  ArrowLeft,
+  Heart,
+  MessageCircle,
+  Send,
+  X,
+  MoreHorizontal
 } from 'lucide-react'
 import type { Post, Comment } from '../types/community'
-import { MOCK_POSTS, MOCK_CURRENT_USER } from '../types/community'
+import { MOCK_CURRENT_USER } from '../types/community'
+import {
+  getPost,
+  getComments,
+  likePost,
+  likeComment,
+  createComment
+} from '../api/community'
 
 interface LocationState {
   post?: Post
 }
 
-// 模拟评论数据
-const MOCK_COMMENTS: Comment[] = [
-  {
-    id: 'c1',
-    postId: 'p1',
-    author: { id: 'u2', name: '李华', avatar: '李', department: '产品部' },
-    content: '太棒了！坚持就是胜利💪',
-    emotions: [],
-    mentions: [],
-    likesCount: 5,
-    isLiked: false,
-    createdAt: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-    replies: [
-      {
-        id: 'c1-r1',
-        postId: 'p1',
-        author: { id: 'u1', name: '张明', avatar: '张', department: '技术部' },
-        content: '谢谢鼓励！一起加油',
-        emotions: [],
-        mentions: [],
-        parentId: 'c1',
-        likesCount: 2,
-        isLiked: false,
-        createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString()
-      }
-    ]
-  },
-  {
-    id: 'c2',
-    postId: 'p1',
-    author: { id: 'u3', name: '王芳', avatar: '王', department: '设计部' },
-    content: '晨跑真的让人精神百倍，我也想开始运动了🏃‍♀️',
-    emotions: [],
-    mentions: [],
-    likesCount: 3,
-    isLiked: true,
-    createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-  }
-]
-
 export default function PostDetailPage() {
   const { postId } = useParams<{ postId: string }>()
   const location = useLocation()
   const navigate = useNavigate()
-  
   const state = (location.state || {}) as LocationState
   const postFromState = state.post
-  
-  const post = postFromState || MOCK_POSTS.find(p => p.id === postId)
-  
-  const [isLiked, setIsLiked] = useState(post?.isLiked || false)
-  const [likesCount, setLikesCount] = useState(post?.likesCount || 0)
-  const [comments, setComments] = useState<Comment[]>(MOCK_COMMENTS)
+
+  const [post, setPost] = useState<Post | null>(postFromState ?? null)
+  const [postLoadDone, setPostLoadDone] = useState(!!postFromState)
+  const [comments, setComments] = useState<Comment[]>([])
+  const [commentsLoaded, setCommentsLoaded] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  
-  // 统一评论弹窗状态
   const [showCommentModal, setShowCommentModal] = useState(false)
   const [replyingTo, setReplyingTo] = useState<{ commentId: string; authorName: string } | null>(null)
   const [commentContent, setCommentContent] = useState('')
-  
-  // 点赞动画状态
   const [likeAnimation, setLikeAnimation] = useState<string | null>(null)
 
-  // 弹窗打开时聚焦输入框
+  useEffect(() => {
+    if (!postId) return
+    if (postFromState && postFromState.id === postId) {
+      setPost(postFromState)
+      setPostLoadDone(true)
+    } else if (!post || post.id !== postId) {
+      setPostLoadDone(false)
+      getPost(postId)
+        .then((p) => {
+          setPost(p ?? null)
+          setPostLoadDone(true)
+        })
+        .catch(() => {
+          setPost(null)
+          setPostLoadDone(true)
+        })
+    }
+  }, [postId, postFromState])
+
+  useEffect(() => {
+    if (!postId) return
+    getComments(postId, 0, 50)
+      .then((res) => {
+        setComments(res.content)
+        setCommentsLoaded(true)
+      })
+      .catch(() => setCommentsLoaded(true))
+  }, [postId])
+
   useEffect(() => {
     if (showCommentModal) {
       setTimeout(() => {
@@ -83,6 +77,20 @@ export default function PostDetailPage() {
     }
   }, [showCommentModal])
 
+  if (!post && !postLoadDone) {
+    return (
+      <div className="page">
+        <div className="detail-header">
+          <button className="detail-back-btn" onClick={() => navigate(-1)}>
+            <ArrowLeft size={20} />
+          </button>
+        </div>
+        <div className="detail-empty">
+          <p>加载中...</p>
+        </div>
+      </div>
+    )
+  }
   if (!post) {
     return (
       <div className="page">
@@ -113,30 +121,29 @@ export default function PostDetailPage() {
     return (date.getMonth() + 1) + '-' + date.getDate()
   }
 
-  // 帖子点赞
-  const handlePostLike = () => {
+  const handlePostLike = async () => {
+    if (!post) return
     setLikeAnimation('post-like')
     setTimeout(() => setLikeAnimation(null), 600)
-    
-    setIsLiked(!isLiked)
-    setLikesCount(prev => isLiked ? prev - 1 : prev + 1)
+    try {
+      const updated = await likePost(post.id)
+      if (updated) setPost(updated)
+    } catch {
+      // ignore
+    }
   }
 
-  // 评论点赞
-  const handleCommentLike = (commentId: string) => {
+  const handleCommentLike = async (commentId: string) => {
+    if (!post) return
     setLikeAnimation('comment-' + commentId)
     setTimeout(() => setLikeAnimation(null), 600)
-    
-    setComments(comments.map(comment => {
-      if (comment.id === commentId) {
-        return {
-          ...comment,
-          isLiked: !comment.isLiked,
-          likesCount: comment.isLiked ? comment.likesCount - 1 : comment.likesCount + 1
-        }
-      }
-      return comment
-    }))
+    try {
+      await likeComment(post.id, commentId)
+      const res = await getComments(post.id, 0, 50)
+      setComments(res.content)
+    } catch {
+      // ignore
+    }
   }
 
   // 打开评论弹窗 - 用于新评论和回复
@@ -157,56 +164,35 @@ export default function PostDetailPage() {
     setCommentContent('')
   }
 
-  // 提交评论/回复
   const handleSubmitComment = async () => {
-    if (!commentContent.trim()) return
-    
+    if (!commentContent.trim() || !post) return
     setIsSubmitting(true)
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    if (replyingTo) {
-      // 回复评论
-      const newReply: Comment = {
-        id: 'r' + Date.now(),
-        postId: post.id,
-        author: MOCK_CURRENT_USER,
-        content: commentContent,
-        emotions: [],
-        mentions: [],
-        parentId: replyingTo.commentId,
-        likesCount: 0,
-        isLiked: false,
-        createdAt: new Date().toISOString()
-      }
-      
-      setComments(comments.map(comment => {
-        if (comment.id === replyingTo.commentId) {
-          return {
-            ...comment,
-            replies: [...(comment.replies || []), newReply]
-          }
+    try {
+      const newComment = await createComment(
+        post.id,
+        commentContent.trim(),
+        replyingTo?.commentId
+      )
+      setComments((prev) => {
+        if (replyingTo) {
+          return prev.map((c) =>
+            c.id === replyingTo.commentId
+              ? { ...c, replies: [...(c.replies || []), newComment] }
+              : c
+          )
         }
-        return comment
-      }))
-    } else {
-      // 新评论
-      const newComment: Comment = {
-        id: 'c' + Date.now(),
-        postId: post.id,
-        author: MOCK_CURRENT_USER,
-        content: commentContent,
-        emotions: [],
-        mentions: [],
-        likesCount: 0,
-        isLiked: false,
-        createdAt: new Date().toISOString()
-      }
-      setComments([newComment, ...comments])
+        return [newComment, ...prev]
+      })
+      setPost((p) =>
+        p ? { ...p, commentsCount: p.commentsCount + 1 } : null
+      )
+      setCommentContent('')
+      handleCloseCommentModal()
+    } catch {
+      // ignore
+    } finally {
+      setIsSubmitting(false)
     }
-    
-    setCommentContent('')
-    setIsSubmitting(false)
-    handleCloseCommentModal()
   }
 
   // 获取点赞动画类名
@@ -290,8 +276,8 @@ export default function PostDetailPage() {
 
         {/* 统计数据 */}
         <div className="detail-stats">
-          <span>{likesCount} 赞</span>
-          <span>{comments.length} 评论</span>
+          <span>{post.likesCount} 赞</span>
+          <span>{post.commentsCount} 评论</span>
         </div>
       </div>
 
@@ -299,7 +285,7 @@ export default function PostDetailPage() {
       <div className="detail-comments-list-container">
         <div className="detail-comments-header">
           <span className="detail-comments-title">评论</span>
-          <span className="detail-comments-count">{comments.length}</span>
+          <span className="detail-comments-count">{post.commentsCount}</span>
         </div>
 
         <div className="detail-comments-list">
@@ -349,7 +335,7 @@ export default function PostDetailPage() {
             </div>
           ))}
 
-          {comments.length === 0 && (
+          {commentsLoaded && comments.length === 0 && (
             <div className="detail-no-comments">
               <MessageCircle size={32} />
               <p>暂无评论，快来抢沙发吧~</p>
@@ -370,11 +356,16 @@ export default function PostDetailPage() {
           <MessageCircle size={18} />
           <span>写评论...</span>
         </button>
-        <button 
-          className={'detail-bottom-action ' + (isLiked ? 'active' : '') + ' ' + getLikeAnimationClass('post', '')}
+        <button
+          className={
+            'detail-bottom-action ' +
+            (post.isLiked ? 'active' : '') +
+            ' ' +
+            getLikeAnimationClass('post', 'like')
+          }
           onClick={handlePostLike}
         >
-          <Heart size={22} fill={isLiked ? '#EF4444' : 'none'} />
+          <Heart size={22} fill={post.isLiked ? '#EF4444' : 'none'} />
         </button>
       </div>
 

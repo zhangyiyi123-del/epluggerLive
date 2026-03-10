@@ -1,4 +1,4 @@
-import { Trophy, ChevronRight, Flame, Users, Footprints, TrendingUp, FileText } from 'lucide-react'
+import { Trophy, ChevronRight, Flame, Users, Footprints, FileText } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 const userStats = {

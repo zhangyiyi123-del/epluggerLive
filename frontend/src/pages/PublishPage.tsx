@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { 
+import {
   ArrowLeft,
   Users,
   Building2,
@@ -11,6 +11,8 @@ import {
   Globe
 } from 'lucide-react'
 import type { Visibility } from '../types/community'
+import { getApiBaseUrl } from '../api/client'
+import { createPost } from '../api/community'
 
 export default function PublishPage() {
   const navigate = useNavigate()
@@ -20,6 +22,7 @@ export default function PublishPage() {
   // 表单状态
   const [text, setText] = useState('')
   const [images, setImages] = useState<string[]>([])
+  const [imageFiles, setImageFiles] = useState<File[]>([])
   const [visibility, setVisibility] = useState<Visibility>({ type: 'company' })
   const [selectedCheckIn, setSelectedCheckIn] = useState<{ id: string; title: string; date: string } | null>(null)
   const [selectedMention, setSelectedMention] = useState<{ id: string; name: string; department: string } | null>(null)
@@ -56,32 +59,57 @@ export default function PublishPage() {
       alert('最多上传9张图片')
       return
     }
-    const newImages = files.map(f => URL.createObjectURL(f))
-    setImages([...images, ...newImages])
+    const newImages = files.map((f) => URL.createObjectURL(f))
+    setImages((prev) => [...prev, ...newImages])
+    setImageFiles((prev) => [...prev, ...files])
   }
 
   const handleRemoveImage = (index: number) => {
-    setImages(images.filter((_, i) => i !== index))
+    setImages((prev) => prev.filter((_, i) => i !== index))
+    setImageFiles((prev) => prev.filter((_, i) => i !== index))
   }
-
 
   const handleSubmit = async () => {
     if (!text.trim() || text.length > 500) {
       alert('请输入1-500字的正文内容')
       return
     }
-    
     setIsSubmitting(true)
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // Show success animation
-    setShowSuccess(true)
-    
-    await new Promise(resolve => setTimeout(resolve, 1500))
-    
-    navigate('/community')
+    try {
+      let contentImages: string[] = []
+      if (imageFiles.length > 0) {
+        const base = getApiBaseUrl()
+        for (let i = 0; i < imageFiles.length; i += 3) {
+          const chunk = imageFiles.slice(i, i + 3)
+          const form = new FormData()
+          chunk.forEach((f) => form.append('files', f))
+          const res = await fetch(`${base}/api/checkin/upload`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${localStorage.getItem('ep_token') || ''}` },
+            body: form,
+          })
+          const data = (await res.json()) as { urls?: string[] }
+          if (res.ok && data.urls) contentImages = contentImages.concat(data.urls)
+        }
+      }
+      await createPost({
+        contentText: text.trim(),
+        contentImages: contentImages.length > 0 ? contentImages : undefined,
+        visibilityType: visibility.type,
+        topicIds: [],
+        mentionUserIds:
+          selectedMention && /^\d+$/.test(String(selectedMention.id))
+            ? [Number(selectedMention.id)]
+            : undefined,
+      })
+      setShowSuccess(true)
+      await new Promise((r) => setTimeout(r, 1500))
+      navigate('/community')
+    } catch (e) {
+      alert(e instanceof Error ? e.message : '发布失败')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const canPublish = text.trim().length > 0 && text.length <= 500

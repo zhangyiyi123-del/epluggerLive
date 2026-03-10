@@ -1,5 +1,6 @@
-import { useState, MouseEvent } from 'react'
-import { Heart, MessageCircle, Share2, Star, ChevronDown, ChevronUp, Edit2, Trash2, Play } from 'lucide-react'
+import { useState } from 'react'
+import type { MouseEvent } from 'react'
+import { Heart, MessageCircle, Share2, Star, ChevronDown, ChevronUp, Trash2, Play } from 'lucide-react'
 import type { Post } from '../../types/community'
 
 interface PostCardProps {
@@ -13,7 +14,7 @@ interface PostCardProps {
   onOpenDetail?: (postId: string) => void
 }
 
-export default function PostCard({ post, onLike, onComment, onShare, onEdit, onDelete, onOpenDetail }: PostCardProps) {
+export default function PostCard({ post, onLike, onComment, onShare, onEdit: _onEdit, onDelete, onOpenDetail }: PostCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
 
   const handleLike = () => {

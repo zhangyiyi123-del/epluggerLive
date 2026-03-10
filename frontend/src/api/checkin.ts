@@ -131,3 +131,116 @@ export async function getWeekProgress(): Promise<CycleProgressDto | null> {
   if (!res.ok) return null
   return res.data
 }
+
+// ---------- 正向行为打卡 API ----------
+export interface PositiveCategoryDto {
+  id: string
+  name: string
+  icon: string
+  description?: string
+  enabled: boolean
+  sortOrder: number
+  evidenceRequirement: 'required' | 'optional' | 'exempt'
+}
+
+export interface PositiveCheckInRequest {
+  categoryId: string
+  title?: string
+  tagIds?: string[]
+  description: string
+  relatedColleagueIds?: number[]
+  evidenceUrls?: string[]
+}
+
+export interface PositiveEvidenceDto {
+  id: number
+  url: string
+  type: string
+  name?: string
+  uploadedAt: string
+}
+
+export interface PositiveCheckInResponse {
+  id: number
+  categoryId: string
+  categoryName: string
+  categoryIcon: string
+  title?: string
+  description: string
+  tagIds: string[]
+  relatedColleagueIds: number[]
+  points: number
+  status: string
+  createdAt: string
+  evidences: PositiveEvidenceDto[]
+}
+
+export interface PositiveRecordItem {
+  id: number
+  categoryId: string
+  categoryName: string
+  categoryIcon: string
+  title?: string
+  description: string
+  tagIds: string[]
+  points: number
+  status: string
+  createdAt: string
+  evidences: PositiveEvidenceDto[]
+}
+
+export interface PointsPreviewDto {
+  basePoints: number
+  qualityBonus: number
+  evidenceBonus: number
+  colleagueBonus: number
+  totalPoints: number
+}
+
+export async function getPositiveCategories(): Promise<PositiveCategoryDto[]> {
+  const res = await apiRequest<PositiveCategoryDto[]>('/api/checkin/positive/categories')
+  if (!res.ok) return []
+  return res.data
+}
+
+/** 上传正向佐证（每批最多 3 张，可多批共最多 9 张） */
+export async function uploadPositiveEvidences(files: File[]): Promise<string[]> {
+  if (files.length === 0) return []
+  if (files.length > 9) throw new Error('最多上传 9 张图片')
+  const urls: string[] = []
+  for (let i = 0; i < files.length; i += 3) {
+    const chunk = files.slice(i, i + 3)
+    const chunkUrls = await uploadAttachments(chunk)
+    urls.push(...chunkUrls)
+  }
+  return urls
+}
+
+export async function submitPositiveCheckIn(body: PositiveCheckInRequest): Promise<PositiveCheckInResponse> {
+  const res = await apiRequest<PositiveCheckInResponse>('/api/checkin/positive', {
+    method: 'POST',
+    body: JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error(res.error?.message || '提交失败')
+  return res.data
+}
+
+export async function getPositiveRecords(page = 0, size = 50): Promise<PagedResult<PositiveRecordItem>> {
+  const res = await apiRequest<PagedResult<PositiveRecordItem>>(
+    `/api/checkin/positive/records?page=${page}&size=${size}`
+  )
+  if (!res.ok) throw new Error(res.error?.message || '加载记录失败')
+  return res.data
+}
+
+export async function getPointsPreview(
+  descriptionLength: number,
+  evidenceCount: number,
+  colleagueCount: number
+): Promise<PointsPreviewDto | null> {
+  const res = await apiRequest<PointsPreviewDto>(
+    `/api/checkin/positive/points-preview?descriptionLength=${descriptionLength}&evidenceCount=${evidenceCount}&colleagueCount=${colleagueCount}`
+  )
+  if (!res.ok) return null
+  return res.data
+}

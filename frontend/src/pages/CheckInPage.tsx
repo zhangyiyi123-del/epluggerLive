@@ -24,23 +24,9 @@ import { DEFAULT_SPORT_TYPES } from '../types/checkIn'
 import { DEFAULT_POSITIVE_CATEGORIES } from '../types/positive'
 import CheckInForm from '../components/checkIn/CheckInForm'
 import * as checkInApi from '../api/checkin'
-import type { ExerciseRecordItem } from '../api/checkin'
+import type { ExerciseRecordItem, PositiveRecordItem } from '../api/checkin'
 
 type CheckInType = 'exercise' | 'positive'
-
-type PositiveRecord = {
-  id: string
-  categoryId: string
-  date: string
-  description: string
-  points: number
-}
-
-const MOCK_POSITIVE_RECORDS: PositiveRecord[] = [
-  { id: 'p1', categoryId: 'teamwork', date: new Date().toISOString(), description: '帮助同事完成汇报', points: 30 },
-  { id: 'p2', categoryId: 'culture', date: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), description: '参与社区捐赠', points: 40 },
-  { id: 'p3', categoryId: 'growth', date: new Date(Date.now() - 1000 * 60 * 60 * 24 * 2).toISOString(), description: '完成技术分享总结', points: 35 },
-]
 
 const formatDate = (iso: string) => {
   try {
@@ -59,6 +45,7 @@ export default function CheckInPage() {
 
   const [sportTypes, setSportTypes] = useState<SportType[]>(DEFAULT_SPORT_TYPES)
   const [exerciseRecords, setExerciseRecords] = useState<ExerciseRecordItem[]>([])
+  const [positiveRecords, setPositiveRecords] = useState<PositiveRecordItem[]>([])
   const [checkInMode, setCheckInMode] = useState<CheckInMode | null>(null)
   const [selectedSportType, setSelectedSportType] = useState<SportType | null>(null)
   const [attachments, setAttachments] = useState<File[]>([])
@@ -76,9 +63,18 @@ export default function CheckInPage() {
     const res = await checkInApi.getExerciseRecords(0, 50)
     setExerciseRecords(res.content || [])
   }
+  const loadPositiveRecords = async () => {
+    try {
+      const res = await checkInApi.getPositiveRecords(0, 50)
+      setPositiveRecords(res?.content ?? [])
+    } catch {
+      setPositiveRecords([])
+    }
+  }
   useEffect(() => {
     loadSportTypes()
     loadExerciseRecords()
+    loadPositiveRecords()
   }, [])
 
   const getSportName = (id: string) => {
@@ -459,8 +455,8 @@ const getPositiveIcon = (categoryId: string) => {
                 </button>
               </div>
               <div className="record-card-list">
-                {MOCK_POSITIVE_RECORDS.length > 0 ? (
-                  MOCK_POSITIVE_RECORDS.slice(0, 3).map(r => (
+                {positiveRecords.length > 0 ? (
+                  positiveRecords.slice(0, 3).map(r => (
                     <div key={r.id} className="record-card-item">
                       <div className={`positive-entry-icon positive-entry-icon--${r.categoryId}`}>
                         {getPositiveIcon(r.categoryId)}
@@ -468,9 +464,9 @@ const getPositiveIcon = (categoryId: string) => {
                       <div className="record-card-content">
                         <div className="record-card-title">{r.description}</div>
                         <div className="record-card-meta">
-                          <span>{formatDate(r.date)}</span>
+                          <span>{formatDate(r.createdAt)}</span>
                           <span className="divider">·</span>
-                          <span>{getPositiveCategoryName(r.categoryId)}</span>
+                          <span>{r.categoryName ?? getPositiveCategoryName(r.categoryId)}</span>
                         </div>
                       </div>
                       <div className="record-card-points positive">

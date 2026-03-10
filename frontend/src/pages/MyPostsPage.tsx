@@ -1,44 +1,61 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, FileText } from 'lucide-react'
-import { MOCK_POSTS, MOCK_CURRENT_USER } from '../types/community'
 import type { Post } from '../types/community'
 import PostCard from '../components/community/PostCard'
+import { getMyPosts, likePost, deletePost } from '../api/community'
 
-// onBack 仍保留，方便在路由外内嵌使用时传入
 interface MyPostsPageProps {
   onBack?: () => void
 }
 
 export default function MyPostsPage({ onBack }: MyPostsPageProps) {
   const navigate = useNavigate()
-  const [posts, setPosts] = useState<Post[]>(
-    MOCK_POSTS.slice(0, 2).map(p => ({ ...p, author: MOCK_CURRENT_USER, canEdit: true, canDelete: true }))
-  )
+  const [posts, setPosts] = useState<Post[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    getMyPosts(0, 50)
+      .then((res) => {
+        setPosts(res.content)
+        setError(null)
+      })
+      .catch((e) => {
+        setError(e instanceof Error ? e.message : '加载失败')
+      })
+      .finally(() => setLoading(false))
+  }, [])
 
   const handleBack = () => {
     if (onBack) onBack()
     else navigate(-1)
   }
 
-  const handleLike = (postId: string) => {
-    setPosts(prev => prev.map(p =>
-      p.id === postId
-        ? { ...p, isLiked: !p.isLiked, likesCount: p.isLiked ? p.likesCount - 1 : p.likesCount + 1 }
-        : p
-    ))
+  const handleLike = async (postId: string) => {
+    try {
+      const updated = await likePost(postId)
+      if (updated) setPosts((prev) => prev.map((p) => (p.id === postId ? updated : p)))
+    } catch {
+      // ignore
+    }
   }
 
   const handleOpenDetail = (postId: string) => {
-    const post = posts.find(p => p.id === postId)
+    const post = posts.find((p) => p.id === postId)
     if (post) {
       navigate('/community/' + postId, { state: { post, backTo: '/profile/posts' } })
     }
   }
 
-  const handleDelete = (postId: string) => {
+  const handleDelete = async (postId: string) => {
     if (!confirm('确定删除这条动态吗？')) return
-    setPosts(prev => prev.filter(p => p.id !== postId))
+    try {
+      const ok = await deletePost(postId)
+      if (ok) setPosts((prev) => prev.filter((p) => p.id !== postId))
+    } catch {
+      // ignore
+    }
   }
 
   return (
@@ -52,7 +69,15 @@ export default function MyPostsPage({ onBack }: MyPostsPageProps) {
       </div>
 
       <div className="publish-content">
-        {posts.length === 0 ? (
+        {loading ? (
+          <div className="my-posts-empty">
+            <p>加载中...</p>
+          </div>
+        ) : error ? (
+          <div className="my-posts-empty">
+            <p>{error}</p>
+          </div>
+        ) : posts.length === 0 ? (
           <div className="my-posts-empty">
             <FileText size={48} className="my-posts-empty-icon" />
             <p>还没有发布过动态</p>

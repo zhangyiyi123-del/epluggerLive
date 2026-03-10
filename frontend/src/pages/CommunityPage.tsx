@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Flame, Users, Clock, Grid3X3, Search, X, RefreshCw, Trash2 } from 'lucide-react'
 import type { Post, FeedFilter } from '../types/community'
-import { MOCK_POSTS, FEED_FILTERS } from '../types/community'
+import { FEED_FILTERS } from '../types/community'
 import PostCard from '../components/community/PostCard'
+import { getPosts, likePost, deletePost } from '../api/community'
 
 export default function CommunityPage() {
   const navigate = useNavigate()
@@ -28,73 +29,52 @@ export default function CommunityPage() {
   // 删除确认弹窗状态
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [postToDelete, setPostToDelete] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const pageSize = 5
 
   // 初始化加载
   useEffect(() => {
     loadPosts(true)
   }, [activeFilter])
 
-  const loadPosts = async (refresh = false) => {
-    const currentPage = refresh ? 1 : page
-    
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 500))
-    
-    let filteredPosts = [...MOCK_POSTS]
-    
-    switch (activeFilter) {
-      case 'popular':
-        filteredPosts.sort((a, b) => b.likesCount - a.likesCount)
-        break
-      case 'department':
-        filteredPosts = filteredPosts.filter(p => 
-          p.visibility.type === 'department'
-        )
-        break
-      case 'following':
-        filteredPosts = filteredPosts.slice(0, 3)
-        break
-      case 'latest':
-      default:
-        filteredPosts.sort((a, b) => 
-          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-        )
+  const loadPosts = async (refresh = false, nextPage?: number) => {
+    const pageToUse = nextPage ?? page
+    const apiPage = refresh ? 0 : pageToUse - 1
+    setIsLoadingMore(true)
+    setLoadError(null)
+    try {
+      const result = await getPosts(activeFilter, apiPage, pageSize)
+      const list = result.content
+      if (refresh) {
+        setPosts(list)
+        setPage(1)
+      } else {
+        setPosts((prev) => [...prev, ...list])
+        setPage(pageToUse)
+      }
+      setHasMore(result.number + 1 < result.totalPages)
+    } catch (e) {
+      setLoadError(e instanceof Error ? e.message : '加载失败')
+      if (refresh) setPosts([])
+    } finally {
+      setIsLoadingMore(false)
     }
-    
-    // 分页 - 每页5条
-    const pageSize = 5
-    const startIndex = (currentPage - 1) * pageSize
-    const pagedPosts = filteredPosts.slice(startIndex, startIndex + pageSize)
-    
-    if (refresh) {
-      setPosts(pagedPosts)
-      setPage(1)
-    } else {
-      setPosts([...posts, ...pagedPosts])
-    }
-    
-    setHasMore(startIndex + pageSize < filteredPosts.length)
-    setIsLoadingMore(false)
   }
 
   const handleLoadMore = () => {
     if (isLoadingMore || !hasMore) return
-    setIsLoadingMore(true)
-    setPage(page + 1)
-    loadPosts(false)
+    loadPosts(false, page + 1)
   }
 
-  const handleLike = (postId: string) => {
-    setPosts(posts.map(post => {
-      if (post.id === postId) {
-        return {
-          ...post,
-          isLiked: !post.isLiked,
-          likesCount: post.isLiked ? post.likesCount - 1 : post.likesCount + 1
-        }
+  const handleLike = async (postId: string) => {
+    try {
+      const updated = await likePost(postId)
+      if (updated) {
+        setPosts((prev) => prev.map((p) => (p.id === postId ? updated : p)))
       }
-      return post
-    }))
+    } catch {
+      // 乐观更新回退可在此处理
+    }
   }
 
   const handleComment = (postId: string) => {
@@ -117,12 +97,19 @@ export default function CommunityPage() {
     setShowDeleteConfirm(true)
   }
   
-  const confirmDelete = () => {
-    if (postToDelete) {
-      setPosts(posts.filter(p => p.id !== postToDelete))
+  const confirmDelete = async () => {
+    if (!postToDelete) {
+      setShowDeleteConfirm(false)
+      setPostToDelete(null)
+      return
     }
-    setShowDeleteConfirm(false)
-    setPostToDelete(null)
+    try {
+      const ok = await deletePost(postToDelete)
+      if (ok) setPosts((prev) => prev.filter((p) => p.id !== postToDelete))
+    } finally {
+      setShowDeleteConfirm(false)
+      setPostToDelete(null)
+    }
   }
   
   const cancelDelete = () => {
@@ -143,30 +130,26 @@ export default function CommunityPage() {
   // 刷新功能
   const handleAutoRefresh = async () => {
     setIsRefreshing(true)
-    await new Promise(resolve => setTimeout(resolve, 800))
     await loadPosts(true)
     setIsRefreshing(false)
   }
-  
-  // 搜索功能
-  const handleSearch = async (query: string) => {
+
+  // 搜索：在当前已加载列表中筛选
+  const handleSearch = (query: string) => {
     setSearchQuery(query)
     if (!query.trim()) {
       setSearchResults([])
       return
     }
-    
     setIsSearching(true)
-    await new Promise(resolve => setTimeout(resolve, 300))
-    
-    // 模拟搜索结果
-    const filtered = posts.filter(post => 
-      post.content.text.toLowerCase().includes(query.toLowerCase()) ||
-      post.author.name.toLowerCase().includes(query.toLowerCase()) ||
-      post.topics.some(t => t.name.toLowerCase().includes(query.toLowerCase()))
+    setSearchResults(
+      posts.filter(
+        (post) =>
+          post.content.text.toLowerCase().includes(query.toLowerCase()) ||
+          post.author.name.toLowerCase().includes(query.toLowerCase()) ||
+          post.topics.some((t) => t.name.toLowerCase().includes(query.toLowerCase()))
+      )
     )
-    
-    setSearchResults(filtered)
     setIsSearching(false)
   }
 
@@ -286,7 +269,15 @@ export default function CommunityPage() {
         )}
         onAnimationEnd={() => setSlideDirection(null)}
       >
-        {posts.map(post => (
+        {loadError && (
+          <div className="empty-feed">
+            <p>{loadError}</p>
+            <button type="button" className="load-more-btn" onClick={() => loadPosts(true)}>
+              重试
+            </button>
+          </div>
+        )}
+        {!loadError && posts.map((post) => (
           <PostCard
             key={post.id}
             post={post}
@@ -312,13 +303,13 @@ export default function CommunityPage() {
           </div>
         )}
 
-        {!hasMore && posts.length > 0 && (
+        {!hasMore && posts.length > 0 && !loadError && (
           <div className="loading-more">
             <span className="load-all">已加载全部</span>
           </div>
         )}
 
-        {posts.length === 0 && (
+        {!loadError && posts.length === 0 && (
           <div className="empty-feed">
             <p>暂无动态</p>
             <p className="empty-hint">快来发布第一条动态吧~</p>

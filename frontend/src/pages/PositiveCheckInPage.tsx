@@ -2,33 +2,46 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Check, ChevronLeft, ChevronRight, Building2, UserPlus, X, Tag } from 'lucide-react'
 import type { PositiveCategory, PositiveTag, RelatedColleague } from '../types/positive'
-import {
-  DEFAULT_POSITIVE_CATEGORIES,
-  DEFAULT_POSITIVE_TAGS,
-  MOCK_COLLEAGUES,
-  MOCK_CUSTOMERS,
-} from '../types/positive'
+import { DEFAULT_POSITIVE_TAGS, MOCK_COLLEAGUES, MOCK_CUSTOMERS } from '../types/positive'
+import * as checkInApi from '../api/checkin'
+import type { PositiveCategoryDto } from '../api/checkin'
 
 export default function PositiveCheckInPage() {
   const navigate = useNavigate()
   const location = useLocation()
   const categoryIdFromState = (location.state as { categoryId?: string } | null)?.categoryId
 
-  const [selectedCategory, setSelectedCategory] = useState<PositiveCategory | null>(() => {
-    if (categoryIdFromState) {
-      return DEFAULT_POSITIVE_CATEGORIES.find(c => c.id === categoryIdFromState) ?? null
-    }
-    return null
-  })
+  const [categories, setCategories] = useState<PositiveCategoryDto[]>([])
+  const [selectedCategory, setSelectedCategory] = useState<PositiveCategory | null>(null)
   const [selectedTags, setSelectedTags] = useState<PositiveTag[]>([])
 
   useEffect(() => {
+    checkInApi.getPositiveCategories().then(setCategories)
+  }, [])
+
+  useEffect(() => {
+    if (categories.length === 0) return
     if (categoryIdFromState) {
-      const category = DEFAULT_POSITIVE_CATEGORIES.find(c => c.id === categoryIdFromState) ?? null
-      setSelectedCategory(category)
+      const cat = categories.find(c => c.id === categoryIdFromState)
+      setSelectedCategory(cat ? toPositiveCategory(cat) : null)
       setSelectedTags([])
+    } else if (!selectedCategory) {
+      setSelectedCategory(toPositiveCategory(categories[0]))
     }
-  }, [categoryIdFromState])
+  }, [categories, categoryIdFromState])
+
+  function toPositiveCategory(d: PositiveCategoryDto): PositiveCategory {
+    return {
+      id: d.id,
+      name: d.name,
+      icon: d.icon,
+      description: d.description,
+      isEnabled: d.enabled,
+      sortOrder: d.sortOrder,
+      isBuiltIn: true,
+      evidenceRequirement: d.evidenceRequirement,
+    }
+  }
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [relatedCustomer, setRelatedCustomer] = useState('')
@@ -43,6 +56,8 @@ export default function PositiveCheckInPage() {
   const [tempTags, setTempTags] = useState<PositiveTag[]>([])
   const [tempColleagues, setTempColleagues] = useState<RelatedColleague[]>([])
   const [colleagueSearchText, setColleagueSearchText] = useState('')
+  const [submitError, setSubmitError] = useState('')
+  const [pointsPreview, setPointsPreview] = useState<checkInApi.PointsPreviewDto | null>(null)
   const evidenceImageInputRef = useRef<HTMLInputElement>(null)
 
   const tags = DEFAULT_POSITIVE_TAGS
@@ -52,27 +67,46 @@ export default function PositiveCheckInPage() {
   const evidenceRequirement = selectedCategory?.evidenceRequirement ?? 'optional'
   const requiresEvidence = evidenceRequirement === 'required'
 
+  useEffect(() => {
+    checkInApi
+      .getPointsPreview(description.length, evidences.length, selectedColleagues.length)
+      .then(setPointsPreview)
+  }, [description.length, evidences.length, selectedColleagues.length])
+
   const canSubmit =
     selectedCategory !== null &&
-    description.trim().length > 0 &&
+    description.trim().length >= 20 &&
+    description.trim().length <= 500 &&
     (!requiresEvidence || evidences.length > 0)
 
   const handleSubmit = async () => {
-    if (!canSubmit || isSubmitting) return
-
+    if (!canSubmit || isSubmitting || !selectedCategory) return
+    setSubmitError('')
     setIsSubmitting(true)
-
-    await new Promise(resolve => setTimeout(resolve, 1500))
-
-    const basePoints = 30
-    const qualityBonus = description.length > 50 && selectedColleagues.length > 0 ? 10 : 0
-    const evidencePoints = evidences.length > 0 ? 10 : 0
-    const colleaguePoints = selectedColleagues.length * 5
-
-    const totalPoints = basePoints + qualityBonus + evidencePoints + colleaguePoints
-    setEarnedPoints(totalPoints)
-    setIsSubmitting(false)
-    setShowSuccess(true)
+    try {
+      const evidenceUrls =
+        evidences.length > 0
+          ? await checkInApi.uploadPositiveEvidences(evidences.slice(0, 9))
+          : []
+      const relatedColleagueIds = selectedColleagues
+        .map(c => Number(c.userId))
+        .filter(n => !Number.isNaN(n))
+      const res = await checkInApi.submitPositiveCheckIn({
+        categoryId: selectedCategory.id,
+        title: title.trim() || undefined,
+        tagIds: selectedTags.map(t => t.id),
+        description: description.trim(),
+        relatedColleagueIds: relatedColleagueIds.length > 0 ? relatedColleagueIds : undefined,
+        evidenceUrls: evidenceUrls.length > 0 ? evidenceUrls : undefined,
+      })
+      setEarnedPoints(res.points)
+      setShowSuccess(true)
+    } catch (e) {
+      console.error(e)
+      setSubmitError(e instanceof Error ? e.message : '提交失败')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   const handleSuccessClose = () => {
@@ -151,7 +185,7 @@ export default function PositiveCheckInPage() {
           <ChevronLeft size={22} />
         </button>
         <div className="publish-header-title">
-          {selectedCategory ? `正向打卡-${selectedCategory.name}` : '正向打卡'}
+          {categories.length === 0 ? '正向打卡（加载中…）' : selectedCategory ? `正向打卡-${selectedCategory.name}` : '正向打卡'}
         </div>
         <div style={{ width: 44 }}></div>
       </div>
@@ -386,6 +420,12 @@ export default function PositiveCheckInPage() {
               {description.length}
             </span>/500
             {description.length >= 50 && <span className="quality-hint"> 已满足优质条件</span>}
+            {description.trim().length > 0 && description.trim().length < 20 && (
+              <span className="text-warning" style={{ marginLeft: 8 }}>还需 {20 - description.trim().length} 字即可提交</span>
+            )}
+          </div>
+          <div className="positive-form-hint" style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 4 }}>
+            描述需 20-500 字才能提交；必填项填完整后提交按钮才会可用。
           </div>
         </div>
 
@@ -435,6 +475,19 @@ export default function PositiveCheckInPage() {
           </button>
         </div>
 
+        {pointsPreview && (
+          <div className="positive-points-preview" style={{ marginBottom: 12, fontSize: 14, color: 'var(--color-text-secondary)' }}>
+            预计积分：<strong style={{ color: 'var(--color-primary)' }}>{pointsPreview.totalPoints}</strong>
+            {pointsPreview.qualityBonus > 0 && <span>（含优质+{pointsPreview.qualityBonus}）</span>}
+            {pointsPreview.evidenceBonus > 0 && <span>（佐证+{pointsPreview.evidenceBonus}）</span>}
+            {pointsPreview.colleagueBonus > 0 && <span>（参与人+{pointsPreview.colleagueBonus}）</span>}
+          </div>
+        )}
+        {submitError && (
+          <div className="form-error" style={{ color: 'var(--color-danger)', marginBottom: 8 }}>
+            {submitError}
+          </div>
+        )}
         <div className="form-actions">
           <button type="button" className="btn btn-secondary" onClick={handleReset}>
             重置
@@ -444,6 +497,7 @@ export default function PositiveCheckInPage() {
             className="btn btn-primary btn-primary-green"
             onClick={handleSubmit}
             disabled={!canSubmit || isSubmitting}
+            title={!canSubmit ? (description.trim().length < 20 ? '描述至少 20 字才能提交' : !selectedCategory ? '请选择分类' : requiresEvidence && evidences.length === 0 ? '该分类需要上传佐证' : '') : undefined}
           >
             {isSubmitting ? '提交中...' : '提交'}
           </button>

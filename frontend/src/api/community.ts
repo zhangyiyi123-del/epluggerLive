@@ -1,8 +1,16 @@
 /**
  * 圈子 API：动态列表/详情/发布/编辑/删除/点赞/收藏，评论列表/发表/回复/点赞，话题列表。
  */
-import { apiRequest } from './client'
+import { apiRequest, getApiBaseUrl } from './client'
 import type { Post, Comment, Topic, User, Visibility, FeedFilter } from '../types/community'
+
+/** 将后端返回的相对路径（如 /api/uploads/xxx）转为可访问的完整 URL */
+export function toImageUrl(url: string): string {
+  if (!url) return url
+  if (url.startsWith('http://') || url.startsWith('https://')) return url
+  const base = getApiBaseUrl().replace(/\/$/, '')
+  return url.startsWith('/') ? base + url : base + '/' + url
+}
 
 export interface PagedResult<T> {
   content: T[]
@@ -76,12 +84,14 @@ function mapUser(d: UserDto): User {
 }
 
 function mapPost(d: PostDto): Post {
+  const rawImages = d.contentImages ?? []
+  const images = rawImages.map((url) => toImageUrl(url))
   return {
     id: String(d.id),
     author: mapUser(d.author),
     content: {
       text: d.contentText ?? '',
-      images: d.contentImages ?? [],
+      images,
       emotions: [],
     },
     visibility: { type: d.visibilityType as Visibility['type'] },

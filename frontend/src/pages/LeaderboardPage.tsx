@@ -1,84 +1,17 @@
 import { useState, useEffect, useRef } from 'react'
 import { Medal, Flame, Heart, ChevronRight, ChevronLeft, Star, Lock, Filter, ChevronDown } from 'lucide-react'
 import { MOCK_USER_POINTS, LEVEL_CONFIGS } from '../types/points'
+import type { UserPoints as UserPointsType } from '../types/points'
 import PointsCenter from '../components/points/PointsCenter'
 import LevelProgress from '../components/points/LevelProgress'
 import MedalWall from '../components/points/MedalWall'
 import PointsMallPage from './PointsMallPage'
+import { getPointsMe, getLeaderboard, type LeaderboardEntry } from '../api/points'
 
 type LeaderboardType = 'points' | 'exercise' | 'positive'
 
 /** 时间范围：全部、本年、本月、本周、今日 */
 type LeaderboardPeriod = 'all' | 'year' | 'month' | 'week' | 'today'
-
-type User = {
-  id: number
-  name: string
-  /** 首字母展示用（无头像图时） */
-  initial: string
-  value: number
-  change?: number
-}
-
-const mockData: Record<LeaderboardType, User[]> = {
-  points: [
-    { id: 1, name: '王小明', initial: 'W', value: 12580, change: 2 },
-    { id: 2, name: '李小红', initial: 'L', value: 11200, change: -1 },
-    { id: 3, name: '张三丰', initial: 'Z', value: 10850, change: 1 },
-    { id: 4, name: '赵敏', initial: 'Z', value: 9850, change: 3 },
-    { id: 5, name: '钱多多', initial: 'Q', value: 9200, change: -2 },
-    { id: 6, name: '孙丽', initial: 'S', value: 8650, change: 1 },
-    { id: 7, name: '周杰', initial: 'Z', value: 8120, change: -1 },
-    { id: 8, name: '吴芳', initial: 'W', value: 7580, change: 0 },
-    { id: 9, name: '郑浩', initial: 'Z', value: 6920, change: 2 },
-    { id: 10, name: '冯婷', initial: 'F', value: 6350, change: -2 },
-    { id: 11, name: '陈明', initial: 'C', value: 5780, change: 1 },
-    { id: 12, name: '楚云', initial: 'C', value: 5120, change: 0 },
-    { id: 13, name: '卫强', initial: 'W', value: 4480, change: -1 },
-    { id: 14, name: '蒋琳', initial: 'J', value: 3620, change: 1 },
-    { id: 15, name: '我', initial: 'M', value: 2850, change: 0 },
-    { id: 16, name: '沈亮', initial: 'S', value: 2100, change: 0 },
-    { id: 17, name: '韩雪', initial: 'H', value: 1580, change: 0 },
-  ],
-  exercise: [
-    { id: 1, name: '郑成功', initial: 'Z', value: 32, change: 0 },
-    { id: 2, name: '王重阳', initial: 'W', value: 28, change: 0 },
-    { id: 3, name: '林黛玉', initial: 'L', value: 25, change: 0 },
-    { id: 4, name: '黄蓉', initial: 'H', value: 23, change: 1 },
-    { id: 5, name: '欧阳锋', initial: 'O', value: 21, change: -1 },
-    { id: 6, name: '杨过', initial: 'Y', value: 20, change: 0 },
-    { id: 7, name: '小龙女', initial: 'L', value: 19, change: 0 },
-    { id: 8, name: '郭靖', initial: 'G', value: 18, change: 1 },
-    { id: 9, name: '周伯通', initial: 'Z', value: 17, change: 0 },
-    { id: 10, name: '段誉', initial: 'D', value: 16, change: -1 },
-    { id: 11, name: '虚竹', initial: 'X', value: 15, change: 0 },
-    { id: 12, name: '乔峰', initial: 'Q', value: 14, change: 0 },
-    { id: 13, name: '阿朱', initial: 'Z', value: 13, change: 0 },
-    { id: 14, name: '慕容复', initial: 'M', value: 13, change: 1 },
-    { id: 15, name: '我', initial: 'M', value: 12, change: 0 },
-    { id: 16, name: '鸠摩智', initial: 'J', value: 11, change: 0 },
-    { id: 17, name: '丁春秋', initial: 'D', value: 10, change: 0 },
-  ],
-  positive: [
-    { id: 1, name: '刘备', initial: 'L', value: 56, change: 0 },
-    { id: 2, name: '关羽', initial: 'G', value: 48, change: 0 },
-    { id: 3, name: '张飞', initial: 'Z', value: 42, change: 0 },
-    { id: 4, name: '诸葛亮', initial: 'Z', value: 38, change: 1 },
-    { id: 5, name: '赵云', initial: 'Z', value: 35, change: -1 },
-    { id: 6, name: '马超', initial: 'M', value: 32, change: 0 },
-    { id: 7, name: '黄忠', initial: 'H', value: 30, change: 0 },
-    { id: 8, name: '魏延', initial: 'W', value: 28, change: 1 },
-    { id: 9, name: '姜维', initial: 'J', value: 26, change: 0 },
-    { id: 10, name: '庞统', initial: 'P', value: 24, change: -1 },
-    { id: 11, name: '徐庶', initial: 'X', value: 22, change: 0 },
-    { id: 12, name: '法正', initial: 'F', value: 21, change: 0 },
-    { id: 13, name: '马谡', initial: 'M', value: 20, change: 0 },
-    { id: 14, name: '关平', initial: 'G', value: 19, change: 0 },
-    { id: 15, name: '我', initial: 'M', value: 18, change: 0 },
-    { id: 16, name: '周仓', initial: 'Z', value: 17, change: 0 },
-    { id: 17, name: '廖化', initial: 'L', value: 16, change: 0 },
-  ],
-}
 
 const typeLabels: Record<LeaderboardType, { title: string; unit: string; icon: any }> = {
   points: { title: '积分榜', unit: '积分', icon: Medal },
@@ -103,10 +36,29 @@ export default function LeaderboardPage() {
   const [showPointsCenter, setShowPointsCenter] = useState(false)
   const [showLevelBenefits, setShowLevelBenefits] = useState(false)
   const filterDropdownRef = useRef<HTMLDivElement>(null)
-  
-  const userPoints = MOCK_USER_POINTS
-  const currentData = mockData[activeType]
+
+  const [userPoints, setUserPoints] = useState<UserPointsType>(MOCK_USER_POINTS)
+  const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([])
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false)
+
+  useEffect(() => {
+    getPointsMe().then((data) => {
+      if (data) setUserPoints(data)
+    })
+  }, [])
+
+  useEffect(() => {
+    setLeaderboardLoading(true)
+    getLeaderboard(activeType, activePeriod)
+      .then((data) => setLeaderboardData(data ?? []))
+      .finally(() => setLeaderboardLoading(false))
+  }, [activeType, activePeriod])
+
+  const currentData = leaderboardData
   const { title, unit, icon: Icon } = typeLabels[activeType]
+  const myRankIndex = currentData.findIndex((u) => u.userId === userPoints.userId)
+  const myRank = myRankIndex >= 0 ? myRankIndex + 1 : null
+  const myValue = myRankIndex >= 0 ? currentData[myRankIndex].value : userPoints.availablePoints
 
   // 点击外部关闭下拉菜单
   useEffect(() => {
@@ -261,9 +213,11 @@ export default function LeaderboardPage() {
             <div>
               <div className="leaderboard-my-rank-label">我的当前排名</div>
               <div className="leaderboard-my-rank-row">
-                <span className="leaderboard-my-rank-text">第15名</span>
+                <span className="leaderboard-my-rank-text">
+                  {leaderboardLoading ? '加载中' : myRank != null ? `第${myRank}名` : '未上榜'}
+                </span>
                 <span className="leaderboard-my-rank-dot"> · </span>
-                <span className="leaderboard-my-rank-text">{userPoints.availablePoints} {unit}</span>
+                <span className="leaderboard-my-rank-text">{myValue} {unit}</span>
               </div>
             </div>
             <button
@@ -317,7 +271,7 @@ export default function LeaderboardPage() {
             </div>
 
             {/* 前三名：柱状领奖台阶梯展示（2nd | 1st | 3rd） */}
-            {currentData.length >= 3 && (
+            {!leaderboardLoading && currentData.length >= 3 && (
               <div className="leaderboard-podium">
                 <div className="podium-column podium-2nd">
                   <div className="podium-user">
@@ -354,10 +308,13 @@ export default function LeaderboardPage() {
 
             {/* 第4名及以后：同一张卡片内的列表 */}
             <div className="leaderboard-list-card">
-              {currentData.slice(3).map((user, index) => {
+              {leaderboardLoading ? (
+                <div className="my-posts-empty"><p>加载中...</p></div>
+              ) : (
+              currentData.slice(3).map((user, index) => {
                 const rank = index + 4
                 return (
-                  <div key={user.id} className="leaderboard-item-inner">
+                  <div key={user.userId} className="leaderboard-item-inner">
                     <div className={`rank ${getRankClass(rank)}`}>
                       {rank}
                     </div>
@@ -376,7 +333,8 @@ export default function LeaderboardPage() {
                   </div>
                   </div>
                 )
-              })}
+              })
+              )}
             </div>
           </div>
         </>

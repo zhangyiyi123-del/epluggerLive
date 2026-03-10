@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { X, Calendar, Filter } from 'lucide-react'
 import type { PointsRecord } from '../../types/points'
-import { MOCK_POINTS_RECORDS } from '../../types/points'
+import { getPointsRecords } from '../../api/points'
 
 interface PointsDetailModalProps {
   onClose: () => void
@@ -9,48 +9,35 @@ interface PointsDetailModalProps {
 
 type FilterType = 'all' | 'today' | 'week' | 'month' | 'income' | 'expense'
 
+const RECORD_ICONS: Record<string, string> = {
+  'exercise-checkin': '🏃', 'exercise_checkin': '🏃',
+  'exercise-cycle-bonus': '🏅', 'positive-checkin': '✨', 'positive_checkin': '✨',
+  'positive-quality-bonus': '🌟', 'positive-participant': '👥', 'activity-join': '🎯',
+  'post-publish': '📝', 'post-quality': '💫', 'like-given': '👍', 'medal-reward': '🏆',
+  'exchange': '🛒', 'expired': '⏰', 'deduct': '❌', 'refund': '✅',
+}
+const RECORD_LABELS: Record<string, string> = {
+  'exercise-checkin': '运动打卡', 'exercise_checkin': '运动打卡',
+  'exercise-cycle-bonus': '周期奖励', 'positive-checkin': '正向打卡', 'positive_checkin': '正向打卡',
+  'positive-quality-bonus': '优质奖励', 'positive-participant': '参与奖励', 'activity-join': '活动参与',
+  'post-publish': '发布动态', 'post-quality': '优质动态', 'like-given': '点赞互动',
+  'medal-reward': '勋章奖励', 'exchange': '商品兑换', 'expired': '积分过期',
+  'deduct': '积分扣除', 'refund': '积分补发',
+}
+
 export default function PointsDetailModal({ onClose }: PointsDetailModalProps) {
   const [filter, setFilter] = useState<FilterType>('all')
+  const [records, setRecords] = useState<PointsRecord[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const getRecordIcon = (type: PointsRecord['type']) => {
-    const icons: Record<PointsRecord['type'], string> = {
-      'exercise-checkin': '🏃',
-      'exercise-cycle-bonus': '🏅',
-      'positive-checkin': '✨',
-      'positive-quality-bonus': '🌟',
-      'positive-participant': '👥',
-      'activity-join': '🎯',
-      'post-publish': '📝',
-      'post-quality': '💫',
-      'like-given': '👍',
-      'medal-reward': '🏆',
-      'exchange': '🛒',
-      'expired': '⏰',
-      'deduct': '❌',
-      'refund': '✅',
-    }
-    return icons[type] || '📌'
-  }
+  useEffect(() => {
+    getPointsRecords(0, 100).then((res) => {
+      setRecords(res.content ?? [])
+    }).finally(() => setLoading(false))
+  }, [])
 
-  const getRecordTypeLabel = (type: PointsRecord['type']) => {
-    const labels: Record<PointsRecord['type'], string> = {
-      'exercise-checkin': '运动打卡',
-      'exercise-cycle-bonus': '周期奖励',
-      'positive-checkin': '正向打卡',
-      'positive-quality-bonus': '优质奖励',
-      'positive-participant': '参与奖励',
-      'activity-join': '活动参与',
-      'post-publish': '发布动态',
-      'post-quality': '优质动态',
-      'like-given': '点赞互动',
-      'medal-reward': '勋章奖励',
-      'exchange': '商品兑换',
-      'expired': '积分过期',
-      'deduct': '积分扣除',
-      'refund': '积分补发',
-    }
-    return labels[type] || '其他'
-  }
+  const getRecordIcon = (type: string) => RECORD_ICONS[type] || '📌'
+  const getRecordTypeLabel = (type: string) => RECORD_LABELS[type] || '其他'
 
   const isIncome = (record: PointsRecord) => record.amount > 0
 
@@ -86,7 +73,7 @@ export default function PointsDetailModal({ onClose }: PointsDetailModalProps) {
     })
   }
 
-  const filteredRecords = filterRecords(MOCK_POINTS_RECORDS)
+  const filteredRecords = filterRecords(records)
 
   // 计算统计
   const totalIncome = filteredRecords
@@ -152,7 +139,10 @@ export default function PointsDetailModal({ onClose }: PointsDetailModalProps) {
 
         {/* 记录列表 */}
         <div className="detail-records">
-          {filteredRecords.map(record => (
+          {loading ? (
+            <div className="no-records"><p>加载中...</p></div>
+          ) : (
+          filteredRecords.map(record => (
             <div 
               key={record.id} 
               className={`detail-record ${isIncome(record) ? 'income' : 'expense'}`}
@@ -173,9 +163,9 @@ export default function PointsDetailModal({ onClose }: PointsDetailModalProps) {
                 {isIncome(record) ? '+' : ''}{record.amount}
               </div>
             </div>
-          ))}
-
-          {filteredRecords.length === 0 && (
+          ))
+          )}
+          {!loading && filteredRecords.length === 0 && (
             <div className="no-records">
               <p>暂无记录</p>
             </div>

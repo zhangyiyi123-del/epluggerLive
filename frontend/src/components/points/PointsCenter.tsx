@@ -1,15 +1,42 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ChevronRight } from 'lucide-react'
 import type { UserPoints, PointsRecord } from '../../types/points'
-import { MOCK_POINTS_RECORDS } from '../../types/points'
+import { getPointsRecords } from '../../api/points'
 
 interface PointsCenterProps {
   userPoints: UserPoints
   onViewHistory?: () => void
 }
 
+const RECORD_ICONS: Record<string, string> = {
+  'exercise-checkin': '🏃',
+  'exercise_checkin': '🏃',
+  'exercise-cycle-bonus': '🏅',
+  'positive-checkin': '✨',
+  'positive_checkin': '✨',
+  'positive-quality-bonus': '🌟',
+  'positive-participant': '👥',
+  'activity-join': '🎯',
+  'post-publish': '📝',
+  'post-quality': '💫',
+  'like-given': '👍',
+  'medal-reward': '🏆',
+  'exchange': '🛒',
+  'expired': '⏰',
+  'deduct': '❌',
+  'refund': '✅',
+}
+
 export default function PointsCenter({ userPoints, onViewHistory }: PointsCenterProps) {
   const [filter, setFilter] = useState<'all' | 'today' | 'week' | 'month'>('all')
+  const [records, setRecords] = useState<PointsRecord[]>([])
+  const [recordsLoading, setRecordsLoading] = useState(true)
+
+  useEffect(() => {
+    getPointsRecords(0, 20).then((res) => {
+      setRecords(res.content ?? [])
+    }).finally(() => setRecordsLoading(false))
+  }, [])
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp)
@@ -26,25 +53,7 @@ export default function PointsCenter({ userPoints, onViewHistory }: PointsCenter
     return date.toLocaleDateString('zh-CN')
   }
 
-  const getRecordIcon = (type: PointsRecord['type']) => {
-    const icons: Record<PointsRecord['type'], string> = {
-      'exercise-checkin': '🏃',
-      'exercise-cycle-bonus': '🏅',
-      'positive-checkin': '✨',
-      'positive-quality-bonus': '🌟',
-      'positive-participant': '👥',
-      'activity-join': '🎯',
-      'post-publish': '📝',
-      'post-quality': '💫',
-      'like-given': '👍',
-      'medal-reward': '🏆',
-      'exchange': '🛒',
-      'expired': '⏰',
-      'deduct': '❌',
-      'refund': '✅',
-    }
-    return icons[type] || '📌'
-  }
+  const getRecordIcon = (type: string) => RECORD_ICONS[type] || '📌'
 
   const filterRecords = (records: PointsRecord[]) => {
     const now = new Date()
@@ -65,7 +74,7 @@ export default function PointsCenter({ userPoints, onViewHistory }: PointsCenter
     }
   }
 
-  const records = filterRecords(MOCK_POINTS_RECORDS)
+  const filteredRecords = filterRecords(records)
 
   return (
     <div className="points-center">
@@ -118,7 +127,11 @@ export default function PointsCenter({ userPoints, onViewHistory }: PointsCenter
 
         {/* 记录列表 */}
         <div className="records-list">
-          {records.slice(0, 5).map(record => (
+          {recordsLoading ? (
+            <div className="empty-records"><p>加载中...</p></div>
+          ) : (
+            <>
+          {filteredRecords.slice(0, 5).map(record => (
             <div key={record.id} className="record-item">
               <div className="record-icon">{getRecordIcon(record.type)}</div>
               <div className="record-content">
@@ -130,11 +143,12 @@ export default function PointsCenter({ userPoints, onViewHistory }: PointsCenter
               </div>
             </div>
           ))}
-          
-          {records.length === 0 && (
+          {filteredRecords.length === 0 && !recordsLoading && (
             <div className="empty-records">
               <p>暂无积分记录</p>
             </div>
+          )}
+            </>
           )}
         </div>
       </div>

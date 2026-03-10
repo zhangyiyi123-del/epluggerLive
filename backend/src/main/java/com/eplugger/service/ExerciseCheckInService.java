@@ -2,10 +2,14 @@ package com.eplugger.service;
 
 import com.eplugger.domain.entity.CheckInAttachment;
 import com.eplugger.domain.entity.CheckInRecord;
+import com.eplugger.domain.entity.PointsRecord;
 import com.eplugger.domain.entity.SportType;
 import com.eplugger.domain.entity.User;
+import com.eplugger.domain.entity.UserPoints;
 import com.eplugger.repository.CheckInRecordRepository;
+import com.eplugger.repository.PointsRecordRepository;
 import com.eplugger.repository.SportTypeRepository;
+import com.eplugger.repository.UserPointsRepository;
 import com.eplugger.repository.UserRepository;
 import com.eplugger.web.dto.CycleProgressDto;
 import com.eplugger.web.dto.ExerciseCheckInRequest;
@@ -39,15 +43,21 @@ public class ExerciseCheckInService {
     private final CheckInRecordRepository checkInRecordRepository;
     private final SportTypeRepository sportTypeRepository;
     private final UserRepository userRepository;
+    private final UserPointsRepository userPointsRepository;
+    private final PointsRecordRepository pointsRecordRepository;
 
     public ExerciseCheckInService(
             CheckInRecordRepository checkInRecordRepository,
             SportTypeRepository sportTypeRepository,
-            UserRepository userRepository
+            UserRepository userRepository,
+            UserPointsRepository userPointsRepository,
+            PointsRecordRepository pointsRecordRepository
     ) {
         this.checkInRecordRepository = checkInRecordRepository;
         this.sportTypeRepository = sportTypeRepository;
         this.userRepository = userRepository;
+        this.userPointsRepository = userPointsRepository;
+        this.pointsRecordRepository = pointsRecordRepository;
     }
 
     @Transactional
@@ -85,6 +95,32 @@ public class ExerciseCheckInService {
         }
 
         record = checkInRecordRepository.save(record);
+
+        // 入账积分：更新 user_points 并写入 points_record
+        UserPoints up = userPointsRepository.findById(userId)
+                .orElseGet(() -> {
+                    UserPoints newUp = new UserPoints();
+                    newUp.setUserId(userId);
+                    newUp.setUser(userRepository.getReferenceById(userId));
+                    return userPointsRepository.save(newUp);
+                });
+        int newTotalEarned = up.getTotalEarned() + points;
+        int newAvailable = up.getAvailable() + points;
+        up.setTotalEarned(newTotalEarned);
+        up.setAvailable(newAvailable);
+        up.setUpdatedAt(Instant.now());
+        userPointsRepository.save(up);
+
+        PointsRecord pr = new PointsRecord();
+        pr.setUser(user);
+        pr.setType("exercise_checkin");
+        pr.setAmount(points);
+        pr.setBalanceAfter(newAvailable);
+        pr.setDescription("运动打卡");
+        pr.setSourceId(String.valueOf(record.getId()));
+        pr.setCreatedAt(Instant.now());
+        pointsRecordRepository.save(pr);
+
         return toResponse(record);
     }
 

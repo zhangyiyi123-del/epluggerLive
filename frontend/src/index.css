@@ -3608,6 +3608,21 @@ body {
   aspect-ratio: 1;
 }
 
+.post-images .post-image-btn {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: 0;
+}
+
+.post-images .post-image-btn img {
+  display: block;
+}
+
 /* 视频 */
 .post-video {
   position: relative;
@@ -7233,6 +7248,21 @@ body {
   object-fit: cover;
 }
 
+.detail-image-btn {
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+  display: block;
+  text-align: left;
+}
+
+.detail-image-btn .detail-image-more {
+  pointer-events: none;
+}
+
 .detail-image-more {
   position: absolute;
   inset: 0;
@@ -7243,6 +7273,89 @@ body {
   color: white;
   font-size: 24px;
   font-weight: 600;
+}
+
+/* 图片放大预览（动态列表 / 详情通用） */
+.image-lightbox-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(0, 0, 0, 0.92);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  touch-action: none;
+}
+
+.image-lightbox-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 2001;
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-lightbox-prev,
+.image-lightbox-next {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2001;
+  width: 48px;
+  height: 48px;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.image-lightbox-prev {
+  left: 12px;
+}
+
+.image-lightbox-next {
+  right: 12px;
+}
+
+.image-lightbox-content {
+  max-width: 100%;
+  max-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 56px 48px;
+}
+
+.image-lightbox-img {
+  max-width: 100%;
+  max-height: calc(100vh - 108px);
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  user-select: none;
+  pointer-events: none;
+}
+
+.image-lightbox-indicator {
+  position: absolute;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: rgba(255, 255, 255, 0.9);
+  font-size: 14px;
 }
 
 /* 关联打卡 */

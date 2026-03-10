@@ -1,12 +1,18 @@
 package com.eplugger.service;
 
+import com.eplugger.domain.entity.PointsRecord;
 import com.eplugger.domain.entity.PositiveCategory;
 import com.eplugger.domain.entity.PositiveEvidence;
 import com.eplugger.domain.entity.PositiveRecord;
 import com.eplugger.domain.entity.User;
+import com.eplugger.domain.entity.UserPoints;
+import com.eplugger.repository.PointsRecordRepository;
 import com.eplugger.repository.PositiveCategoryRepository;
 import com.eplugger.repository.PositiveRecordRepository;
+import com.eplugger.repository.UserPointsRepository;
 import com.eplugger.repository.UserRepository;
+
+import java.time.Instant;
 import com.eplugger.web.dto.PointsPreviewDto;
 import com.eplugger.web.dto.PositiveCategoryDto;
 import com.eplugger.web.dto.PositiveCheckInRequest;
@@ -37,15 +43,21 @@ public class PositiveCheckInService {
     private final PositiveRecordRepository positiveRecordRepository;
     private final PositiveCategoryRepository positiveCategoryRepository;
     private final UserRepository userRepository;
+    private final UserPointsRepository userPointsRepository;
+    private final PointsRecordRepository pointsRecordRepository;
 
     public PositiveCheckInService(
             PositiveRecordRepository positiveRecordRepository,
             PositiveCategoryRepository positiveCategoryRepository,
-            UserRepository userRepository
+            UserRepository userRepository,
+            UserPointsRepository userPointsRepository,
+            PointsRecordRepository pointsRecordRepository
     ) {
         this.positiveRecordRepository = positiveRecordRepository;
         this.positiveCategoryRepository = positiveCategoryRepository;
         this.userRepository = userRepository;
+        this.userPointsRepository = userPointsRepository;
+        this.pointsRecordRepository = pointsRecordRepository;
     }
 
     @Transactional
@@ -85,6 +97,32 @@ public class PositiveCheckInService {
         }
 
         record = positiveRecordRepository.save(record);
+
+        // 入账积分：更新 user_points 并写入 points_record
+        UserPoints up = userPointsRepository.findById(userId)
+                .orElseGet(() -> {
+                    UserPoints newUp = new UserPoints();
+                    newUp.setUserId(userId);
+                    newUp.setUser(userRepository.getReferenceById(userId));
+                    return userPointsRepository.save(newUp);
+                });
+        int newTotalEarned = up.getTotalEarned() + points;
+        int newAvailable = up.getAvailable() + points;
+        up.setTotalEarned(newTotalEarned);
+        up.setAvailable(newAvailable);
+        up.setUpdatedAt(Instant.now());
+        userPointsRepository.save(up);
+
+        PointsRecord pr = new PointsRecord();
+        pr.setUser(user);
+        pr.setType("positive_checkin");
+        pr.setAmount(points);
+        pr.setBalanceAfter(newAvailable);
+        pr.setDescription("正向打卡");
+        pr.setSourceId(String.valueOf(record.getId()));
+        pr.setCreatedAt(Instant.now());
+        pointsRecordRepository.save(pr);
+
         return toResponse(record);
     }
 

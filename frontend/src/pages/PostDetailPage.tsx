@@ -17,6 +17,7 @@ import {
   likeComment,
   createComment
 } from '../api/community'
+import ImageLightbox from '../components/community/ImageLightbox'
 
 interface LocationState {
   post?: Post
@@ -38,6 +39,8 @@ export default function PostDetailPage() {
   const [replyingTo, setReplyingTo] = useState<{ commentId: string; authorName: string } | null>(null)
   const [commentContent, setCommentContent] = useState('')
   const [likeAnimation, setLikeAnimation] = useState<string | null>(null)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState(0)
 
   useEffect(() => {
     if (!postId) return
@@ -249,18 +252,35 @@ export default function PostDetailPage() {
           </div>
         )}
 
-        {/* 图片展示 */}
+        {/* 图片展示：最多显示 4 张，点击放大并可左右滑动查看全部 */}
         {post.content.images && post.content.images.length > 0 && (
-          <div className={'detail-images detail-images-' + (post.content.images.length > 4 ? 4 : post.content.images.length)}>
-            {post.content.images.slice(0, 4).map((img, i) => (
-              <div key={i} className="detail-image-item">
-                <img src={img} alt="" />
-                {i === 3 && post.content.images.length > 4 && (
-                  <div className="detail-image-more">+{post.content.images.length - 4}</div>
-                )}
-              </div>
-            ))}
-          </div>
+          <>
+            <div className={'detail-images detail-images-' + (post.content.images.length > 4 ? 4 : post.content.images.length)}>
+              {post.content.images.slice(0, 4).map((img, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  className="detail-image-item detail-image-btn"
+                  onClick={() => {
+                    setLightboxIndex(i)
+                    setLightboxOpen(true)
+                  }}
+                >
+                  <img src={img} alt="" />
+                  {i === 3 && post.content.images.length > 4 && (
+                    <div className="detail-image-more">+{post.content.images.length - 4}</div>
+                  )}
+                </button>
+              ))}
+            </div>
+            {lightboxOpen && (
+              <ImageLightbox
+                images={post.content.images}
+                initialIndex={lightboxIndex}
+                onClose={() => setLightboxOpen(false)}
+              />
+            )}
+          </>
         )}
 
         {/* 关联打卡 */}

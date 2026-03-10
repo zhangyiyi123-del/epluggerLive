@@ -1,6 +1,7 @@
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { ChevronLeft } from 'lucide-react'
-import { MOCK_POSTS } from '../types/community'
+import { getNotifications, markNotificationRead } from '../api/points'
 
 interface MyMessagesPageProps {
   onBack?: () => void
@@ -20,13 +21,12 @@ interface Notice {
   isRead: boolean
 }
 
-const MOCK_NOTICES: Notice[] = [
-  { id: 'n1', type: 'like', fromName: '张明', fromAvatar: '张', postId: 'p1', postSnippet: '今天完成了晨跑10公里，感觉整个人都清爽了！', createdAt: new Date(Date.now() - 10 * 60 * 1000).toISOString(), isRead: false },
-  { id: 'n2', type: 'comment', fromName: '李华', fromAvatar: '李', postId: 'p1', postSnippet: '今天完成了晨跑10公里，感觉整个人都清爽了！', content: '太厉害了，坚持就是胜利！', createdAt: new Date(Date.now() - 30 * 60 * 1000).toISOString(), isRead: false },
-  { id: 'n3', type: 'mention', fromName: '王芳', fromAvatar: '王', postId: 'p2', postSnippet: '感谢@我帮忙整理了文档，非常认真！', content: '感谢@我帮忙整理了文档！', createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(), isRead: false },
-  { id: 'n4', type: 'like', fromName: '赵强', fromAvatar: '赵', postId: 'p1', postSnippet: '今天完成了晨跑10公里，感觉整个人都清爽了！', createdAt: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(), isRead: true },
-  { id: 'n5', type: 'comment', fromName: '孙丽', fromAvatar: '孙', postId: 'p3', postSnippet: '今天分享了一个设计资源包，收到了很多好评！', content: '我也要去跑步了！', createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), isRead: true },
-]
+function mapType(apiType: string): NoticeType {
+  if (apiType === 'post_like') return 'like'
+  if (apiType === 'comment') return 'comment'
+  if (apiType === 'mention') return 'mention'
+  return 'like'
+}
 
 const TYPE_LABEL: Record<NoticeType, string> = {
   like: '赞了你的动态',
@@ -47,15 +47,37 @@ function formatTime(iso: string) {
 
 export default function MyMessagesPage({ onBack }: MyMessagesPageProps) {
   const navigate = useNavigate()
+  const [notices, setNotices] = useState<Notice[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    getNotifications(0, 50).then((res) => {
+      const list = (res.content ?? []).map((n) => ({
+        id: String(n.id),
+        type: mapType(n.type),
+        fromName: n.contentSummary?.split(' ')[0] ?? '有人',
+        fromAvatar: '',
+        postId: n.relatedPostId != null ? String(n.relatedPostId) : '',
+        postSnippet: n.contentSummary ?? '',
+        content: n.contentSummary ?? undefined,
+        createdAt: n.createdAt,
+        isRead: n.read
+      }))
+      setNotices(list)
+    }).finally(() => setLoading(false))
+  }, [])
 
   const handleBack = () => {
     if (onBack) onBack()
     else window.history.back()
   }
 
-  const handleNoticeClick = (n: Notice) => {
-    const post = MOCK_POSTS.find(p => p.id === n.postId)
-    navigate('/community/' + n.postId, { state: { post } })
+  const handleNoticeClick = async (n: Notice) => {
+    if (!n.isRead) {
+      await markNotificationRead(Number(n.id))
+      setNotices((prev) => prev.map((x) => (x.id === n.id ? { ...x, isRead: true } : x)))
+    }
+    if (n.postId) navigate('/community/' + n.postId)
   }
 
   return (
@@ -69,14 +91,16 @@ export default function MyMessagesPage({ onBack }: MyMessagesPageProps) {
       </div>
 
       <div className="publish-content" style={{ padding: 0 }}>
-        {MOCK_NOTICES.length === 0 ? (
+        {loading ? (
+          <div className="my-posts-empty"><p>加载中...</p></div>
+        ) : notices.length === 0 ? (
           <div className="my-posts-empty">
             <p>暂无消息</p>
             <span>有互动时会在这里通知你</span>
           </div>
         ) : (
           <ul className="notice-list">
-            {MOCK_NOTICES.map(n => (
+            {notices.map(n => (
               <li key={n.id} className="notice-item" onClick={() => handleNoticeClick(n)} style={{ cursor: 'pointer' }}>
                 <div className="notice-avatar">{n.fromAvatar}</div>
                 <div className="notice-body">

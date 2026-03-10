@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { MouseEvent } from 'react'
 import { Heart, MessageCircle, Share2, Star, ChevronDown, ChevronUp, Trash2, Play } from 'lucide-react'
 import type { Post } from '../../types/community'
+import ImageLightbox from './ImageLightbox'
 
 interface PostCardProps {
   post: Post
@@ -16,6 +17,8 @@ interface PostCardProps {
 
 export default function PostCard({ post, onLike, onComment, onShare, onEdit: _onEdit, onDelete, onOpenDetail }: PostCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState(0)
 
   const handleLike = () => {
     // 仅触发数据层面的点赞，不额外添加样式或动画
@@ -94,13 +97,33 @@ export default function PostCard({ post, onLike, onComment, onShare, onEdit: _on
           </button>
         )}
 
-        {/* 图片 */}
+        {/* 图片 - 点击放大 */}
         {post.content.images && post.content.images.length > 0 && (
-          <div className={`post-images ${getImageGridClass(post.content.images.length)}`}>
-            {post.content.images.slice(0, 9).map((img, i) => (
-              <img key={i} src={img} alt="" />
-            ))}
-          </div>
+          <>
+            <div className={`post-images ${getImageGridClass(post.content.images.length)}`}>
+              {post.content.images.slice(0, 9).map((img, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  className="post-image-btn"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    setLightboxIndex(i)
+                    setLightboxOpen(true)
+                  }}
+                >
+                  <img src={img} alt="" />
+                </button>
+              ))}
+            </div>
+            {lightboxOpen && (
+              <ImageLightbox
+                images={post.content.images}
+                initialIndex={lightboxIndex}
+                onClose={() => setLightboxOpen(false)}
+              />
+            )}
+          </>
         )}
 
         {/* 视频 */}

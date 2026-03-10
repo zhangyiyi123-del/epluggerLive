@@ -36,6 +36,7 @@ public class PostService {
     private final PostFavoriteRepository postFavoriteRepository;
     private final TopicRepository topicRepository;
     private final UserRepository userRepository;
+    private final NotificationService notificationService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public PostService(
@@ -43,13 +44,15 @@ public class PostService {
             PostLikeRepository postLikeRepository,
             PostFavoriteRepository postFavoriteRepository,
             TopicRepository topicRepository,
-            UserRepository userRepository
+            UserRepository userRepository,
+            NotificationService notificationService
     ) {
         this.postRepository = postRepository;
         this.postLikeRepository = postLikeRepository;
         this.postFavoriteRepository = postFavoriteRepository;
         this.topicRepository = topicRepository;
         this.userRepository = userRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -140,6 +143,10 @@ public class PostService {
             postLikeRepository.save(like);
             post.setLikesCount(post.getLikesCount() + 1);
             postRepository.save(post);
+            User liker = userRepository.findById(userId).orElse(null);
+            notificationService.createPostLikeNotification(
+                    post.getAuthor().getId(), userId, post.getId(),
+                    liker != null ? liker.getName() : null);
             return true;
         }
     }

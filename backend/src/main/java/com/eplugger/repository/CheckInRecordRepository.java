@@ -20,4 +20,11 @@ public interface CheckInRecordRepository extends JpaRepository<CheckInRecord, Lo
             @Param("start") Instant start,
             @Param("end") Instant end
     );
+
+    @Query("SELECT r.user.id, COALESCE(SUM(r.points), 0) FROM CheckInRecord r WHERE r.checkedInAt >= :start AND r.checkedInAt < :end GROUP BY r.user.id ORDER BY COALESCE(SUM(r.points), 0) DESC")
+    List<Object[]> sumPointsByUserBetween(@Param("start") Instant start, @Param("end") Instant end);
+
+    /** 按用户统计时间范围内的运动打卡次数（用于运动榜） */
+    @Query("SELECT r.user.id, COUNT(r) FROM CheckInRecord r WHERE r.checkedInAt >= :start AND r.checkedInAt < :end GROUP BY r.user.id ORDER BY COUNT(r) DESC")
+    List<Object[]> countByUserBetween(@Param("start") Instant start, @Param("end") Instant end);
 }

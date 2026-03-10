@@ -131,17 +131,17 @@
 
 ### 用户故事 5 实现
 
-- [ ] T036 [P] [US5] 在 backend/src/main/java/com/eplugger/domain/entity/ 下创建 UserPoints、PointsRecord、Medal、Product、Order JPA 实体
-- [ ] T037 [US5] 在 backend/src/main/java/com/eplugger/repository/ 下创建积分、勋章、商品、订单相关 Repository
-- [ ] T038 [US5] 在 backend/src/main/java/com/eplugger/service/PointsService.java 中实现 PointsService（用户积分、等级进度、积分明细、勋章列表）
-- [ ] T039 [US5] 在 backend/src/main/java/com/eplugger/service/LeaderboardService.java 中实现 LeaderboardService（积分/运动/正向榜，按时间范围）
-- [ ] T040 [US5] 在 backend/src/main/java/com/eplugger/service/MallService.java 中实现 MallService（商品列表、下单、扣减积分）
-- [ ] T041 [US5] 在 backend/src/main/java/com/eplugger/service/NotificationService.java 中实现 NotificationService（按用户列表、标已读），并在点赞/评论/@ 时创建通知
-- [ ] T042 [US5] 在 backend/src/main/java/com/eplugger/web/PointsController.java 中实现 PointsController：GET /api/points/me、GET /api/points/records、GET /api/medals
-- [ ] T043 [US5] 在 backend/src/main/java/com/eplugger/web/LeaderboardController.java 中实现 LeaderboardController：GET /api/leaderboard（type、timeRange）
-- [ ] T044 [US5] 在 backend/src/main/java/com/eplugger/web/MallController.java 中实现 MallController：GET /api/mall/products、POST /api/mall/orders
-- [ ] T045 [US5] 在 backend/src/main/java/com/eplugger/web/NotificationController.java 中实现 NotificationController：GET /api/notifications、PATCH /api/notifications/:id/read
-- [ ] T046 [US5] 前端：在 frontend/src 的 LeaderboardPage、PointsMallPage、MyMessagesPage 及 points/ 相关组件中用 API 替换积分、排行榜、商城、消息 Mock
+- [x] T036 [P] [US5] 在 backend/src/main/java/com/eplugger/domain/entity/ 下创建 UserPoints、PointsRecord、Medal、Product、Order JPA 实体
+- [x] T037 [US5] 在 backend/src/main/java/com/eplugger/repository/ 下创建积分、勋章、商品、订单相关 Repository
+- [x] T038 [US5] 在 backend/src/main/java/com/eplugger/service/PointsService.java 中实现 PointsService（用户积分、等级进度、积分明细、勋章列表）
+- [x] T039 [US5] 在 backend/src/main/java/com/eplugger/service/LeaderboardService.java 中实现 LeaderboardService（积分/运动/正向榜，按时间范围）
+- [x] T040 [US5] 在 backend/src/main/java/com/eplugger/service/MallService.java 中实现 MallService（商品列表、下单、扣减积分）
+- [x] T041 [US5] 在 backend/src/main/java/com/eplugger/service/NotificationService.java 中实现 NotificationService（按用户列表、标已读），并在点赞/评论/@ 时创建通知
+- [x] T042 [US5] 在 backend/src/main/java/com/eplugger/web/PointsController.java 中实现 PointsController：GET /api/points/me、GET /api/points/records、GET /api/medals
+- [x] T043 [US5] 在 backend/src/main/java/com/eplugger/web/LeaderboardController.java 中实现 LeaderboardController：GET /api/leaderboard（type、timeRange）
+- [x] T044 [US5] 在 backend/src/main/java/com/eplugger/web/MallController.java 中实现 MallController：GET /api/mall/products、POST /api/mall/orders
+- [x] T045 [US5] 在 backend/src/main/java/com/eplugger/web/NotificationController.java 中实现 NotificationController：GET /api/notifications、PATCH /api/notifications/:id/read
+- [x] T046 [US5] 前端：在 frontend/src 的 LeaderboardPage、PointsMallPage、MyMessagesPage 及 points/ 相关组件中用 API 替换积分、排行榜、商城、消息 Mock
 
 **检查点**：用户故事 5 可独立验收 — 积分、勋章、排行榜、商城、消息可用
 

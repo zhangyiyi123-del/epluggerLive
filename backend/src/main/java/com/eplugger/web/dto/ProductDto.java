@@ -1,0 +1,39 @@
+package com.eplugger.web.dto;
+
+/**
+ * 积分商品，与前端 Product 对齐。
+ */
+public class ProductDto {
+
+    private String id;
+    private String name;
+    private String description;
+    private String type;
+    private int points;
+    private int stock;
+    private int warningStock;
+    private String image;
+    private String status;
+    private int minLevel;
+
+    public String getId() { return id; }
+    public void setId(String id) { this.id = id; }
+    public String getName() { return name; }
+    public void setName(String name) { this.name = name; }
+    public String getDescription() { return description; }
+    public void setDescription(String description) { this.description = description; }
+    public String getType() { return type; }
+    public void setType(String type) { this.type = type; }
+    public int getPoints() { return points; }
+    public void setPoints(int points) { this.points = points; }
+    public int getStock() { return stock; }
+    public void setStock(int stock) { this.stock = stock; }
+    public int getWarningStock() { return warningStock; }
+    public void setWarningStock(int warningStock) { this.warningStock = warningStock; }
+    public String getImage() { return image; }
+    public void setImage(String image) { this.image = image; }
+    public String getStatus() { return status; }
+    public void setStatus(String status) { this.status = status; }
+    public int getMinLevel() { return minLevel; }
+    public void setMinLevel(int minLevel) { this.minLevel = minLevel; }
+}

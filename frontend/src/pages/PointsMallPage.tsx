@@ -1,11 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Coins, Gift, ShoppingBag, History, ChevronLeft } from 'lucide-react'
 import type { Product, Order, UserPoints } from '../types/points'
-import { MOCK_PRODUCTS, MOCK_USER_POINTS, MOCK_ORDERS, LEVEL_CONFIGS } from '../types/points'
+import { MOCK_USER_POINTS, LEVEL_CONFIGS } from '../types/points'
 import ProductCard from '../components/points/ProductCard'
 import ExchangeModal from '../components/points/ExchangeModal'
 import OrderList from '../components/points/OrderList'
 import PointsDetailModal from '../components/points/PointsDetailModal'
+import { getProducts, getMyOrders, placeOrder, getPointsMe } from '../api/points'
 
 type MallTab = 'mall' | 'orders'
 
@@ -19,11 +20,20 @@ interface PointsMallPageProps {
 export default function PointsMallPage({ onBack }: PointsMallPageProps) {
   const [activeTab, setActiveTab] = useState<MallTab>('mall')
   const [productFilter, setProductFilter] = useState<ProductFilter>('all')
-  const [products, setProducts] = useState<Product[]>(MOCK_PRODUCTS)
-  const [orders, setOrders] = useState<Order[]>(MOCK_ORDERS)
+  const [products, setProducts] = useState<Product[]>([])
+  const [orders, setOrders] = useState<Order[]>([])
   const [userPoints, setUserPoints] = useState<UserPoints>(MOCK_USER_POINTS)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [showDetailModal, setShowDetailModal] = useState(false)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    Promise.all([getProducts(), getMyOrders(0, 50), getPointsMe()]).then(([prods, ordsRes, points]) => {
+      setProducts(prods ?? [])
+      setOrders(ordsRes.content ?? [])
+      if (points) setUserPoints(points)
+    }).finally(() => setLoading(false))
+  }, [])
 
   // 根据等级获取可兑换的积分范围
   const getUserExchangeRange = () => {
@@ -55,68 +65,30 @@ export default function PointsMallPage({ onBack }: PointsMallPageProps) {
   // 按积分排序
   const sortedProducts = [...filteredProducts].sort((a, b) => a.points - b.points)
 
-  // 处理兑换
-  const handleExchange = async (product: Product) => {
-    // 模拟API调用
-    await new Promise(resolve => setTimeout(resolve, 1000))
-    
-    // 扣减积分
-    setUserPoints(prev => ({
-      ...prev,
-      availablePoints: prev.availablePoints - product.points,
-      totalUsedPoints: prev.totalUsedPoints + product.points
-    }))
-
-    // 创建订单
-    const newOrder = {
-      id: `o${Date.now()}`,
-      orderNo: `P${new Date().toISOString().replace(/[-:T]/g, '').slice(0, 12)}`,
-      product,
-      pointsSpent: product.points,
-      status: 'pending' as const,
-      redeemedAt: new Date().toISOString(),
-      userName: '我',
-      userId: userPoints.userId,
-      pickupCode: product.type === 'physical' ? `PK${Date.now().toString().slice(-6)}` : undefined
-    }
-
-    setOrders([newOrder, ...orders])
-
-    // 更新商品库存
-    setProducts(prev => prev.map(p => 
-      p.id === product.id 
-        ? { ...p, stock: p.stock - 1 }
-        : p
-    ))
+  const loadData = () => {
+    getProducts().then(setProducts)
+    getMyOrders(0, 50).then((r) => setOrders(r.content))
+    getPointsMe().then((p) => p && setUserPoints(p))
   }
 
-  // 取消订单
-  const handleCancelOrder = (orderId: string) => {
-    const order = orders.find(o => o.id === orderId)
-    if (!order) return
+  const handleExchange = async (product: Product) => {
+    try {
+      const newOrder = await placeOrder(product.id)
+      if (newOrder) {
+        setOrders((prev) => [newOrder, ...prev])
+        loadData()
+        setSelectedProduct(null)
+      } else {
+        alert('兑换失败，请检查积分或库存')
+      }
+    } catch {
+      alert('兑换失败，请重试')
+    }
+  }
 
-    if (!confirm('确定要取消订单吗？取消后积分将原路返回。')) return
-
-    // 恢复积分
-    setUserPoints(prev => ({
-      ...prev,
-      availablePoints: prev.availablePoints + order.pointsSpent,
-      totalUsedPoints: prev.totalUsedPoints - order.pointsSpent
-    }))
-
-    // 恢复库存
-    setProducts(prev => prev.map(p => 
-      p.id === order.product.id 
-        ? { ...p, stock: p.stock + 1 }
-        : p
-    ))
-
-    // 更新订单状态
-    setOrders(prev => prev.map(o => 
-      o.id === orderId 
-        ? { ...o, status: 'cancelled' as const }
-        : o
-    ))
+  const handleCancelOrder = (_orderId: string) => {
+    // 后端暂无取消订单接口，仅前端占位
+    if (confirm('确定要取消订单吗？取消后积分将原路返回。（当前版本暂不支持取消）')) return
   }
 
   const getFilterLabel = (filter: ProductFilter) => {
@@ -207,7 +179,12 @@ export default function PointsMallPage({ onBack }: PointsMallPageProps) {
             ))}
           </div>
 
-          {sortedProducts.length === 0 && (
+          {loading && (
+            <div className="empty-mall">
+              <p>加载中...</p>
+            </div>
+          )}
+          {!loading && sortedProducts.length === 0 && (
             <div className="empty-mall">
               <Gift size={48} />
               <p>暂无符合条件的商品</p>

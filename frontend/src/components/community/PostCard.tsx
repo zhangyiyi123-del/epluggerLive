@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { MouseEvent } from 'react'
-import { Heart, MessageCircle, Share2, Star, ChevronDown, ChevronUp, Trash2, Play } from 'lucide-react'
+import { Heart, MessageCircle, Share2, Star, ChevronDown, ChevronUp, Trash2, Play, ClipboardList } from 'lucide-react'
 import type { Post } from '../../types/community'
 import ImageLightbox from './ImageLightbox'
 
@@ -72,8 +72,8 @@ export default function PostCard({ post, onLike, onComment, onShare, onEdit: _on
         </div>
       )}
 
-      {/* 头部 */}
-      <div className="post-header" onClick={handleOpenDetail}>
+      {/* 头部：头像、昵称、部门时间一行对齐 */}
+      <div className="post-header" onClick={handleOpenDetail} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleOpenDetail() } }} aria-label="查看详情">
         <div className="post-author">
           <div className="avatar">{post.author.avatar || post.author.name[0]}</div>
           <div className="post-author-info">
@@ -81,7 +81,6 @@ export default function PostCard({ post, onLike, onComment, onShare, onEdit: _on
             <span className="author-dept">{post.author.department} · {formatTime(post.createdAt)}</span>
           </div>
         </div>
-        
       </div>
 
       {/* 内容 */}
@@ -91,7 +90,7 @@ export default function PostCard({ post, onLike, onComment, onShare, onEdit: _on
           {post.content.text}
         </p>
         {shouldTruncate && (
-          <button className="expand-btn" onClick={handleToggleExpand}>
+          <button type="button" className="expand-btn" onClick={handleToggleExpand}>
             {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
             {isExpanded ? '收起' : '展开全部'}
           </button>
@@ -140,7 +139,7 @@ export default function PostCard({ post, onLike, onComment, onShare, onEdit: _on
         {/* 关联打卡 */}
         {post.relatedCheckIn && (
           <div className="related-checkin">
-            <span className="checkin-icon">📋</span>
+            <span className="checkin-icon" aria-hidden><ClipboardList size={14} /></span>
             <span className="checkin-title">{post.relatedCheckIn.title}</span>
             <span className="checkin-summary">{post.relatedCheckIn.summary}</span>
           </div>
@@ -156,35 +155,26 @@ export default function PostCard({ post, onLike, onComment, onShare, onEdit: _on
         )}
       </div>
 
-      {/* 底部操作 */}
+      {/* 底部操作：点赞、评论、分享、删除 */}
       <div className="post-actions">
-        <button 
-          className="action-btn"
-          style={{ 
-            borderColor: post.isLiked ? '#EF4444' : undefined,
-            backgroundColor: 'transparent'
-          }}
+        <button
+          type="button"
+          className={`action-btn ${post.isLiked ? 'is-liked' : ''}`}
           onClick={handleLike}
+          aria-pressed={post.isLiked}
         >
-          <Heart 
-            size={18} 
-            fill={post.isLiked ? '#EF4444' : 'none'} 
-            color={post.isLiked ? '#EF4444' : undefined}
-          />
+          <Heart size={18} fill={post.isLiked ? 'currentColor' : 'none'} />
           {post.likesCount > 0 ? post.likesCount : ''}
         </button>
-        
-        <button className="action-btn" onClick={() => onComment(post.id)}>
+        <button type="button" className="action-btn" onClick={() => onComment(post.id)}>
           <MessageCircle size={18} />
           {post.commentsCount > 0 ? post.commentsCount : ''}
         </button>
-        
-        <button className="action-btn" onClick={() => onShare(post.id)}>
+        <button type="button" className="action-btn" onClick={() => onShare(post.id)}>
           <Share2 size={18} />
         </button>
-
         {post.canDelete && (
-          <button className="action-btn" onClick={() => onDelete?.(post.id)}>
+          <button type="button" className="action-btn" onClick={() => onDelete?.(post.id)} aria-label="删除">
             <Trash2 size={18} />
           </button>
         )}

@@ -1,4 +1,4 @@
-import { Trophy, ChevronRight, Flame, Users, Footprints, FileText } from 'lucide-react'
+import { Trophy, ChevronRight, Flame, Users, Footprints, FileText, Hand, Check, Heart, MessageCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 
 const userStats = {
@@ -59,14 +59,17 @@ export default function HomePage() {
       <div className="home-hero">
         {/* 左侧：问候 + 按钮 */}
         <div className="home-hero-left">
-          <div className="home-hero-greeting">早上好 👋</div>
+          <div className="home-hero-greeting">
+            <Hand size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: 4 }} />
+            早上好
+          </div>
           <div className="home-hero-name">员工用户</div>
           <div className="home-hero-streak">
             <Flame size={14} color="#F59E0B" />
             已连续打卡 <strong>{userStats.streak}</strong> 天
           </div>
           <button className="home-hero-btn" onClick={() => navigate('/checkin')}>
-            {todayDone ? '✅ 今日已完成' : '去打卡'}
+            {todayDone ? <><Check size={14} style={{ flexShrink: 0 }} /> 今日已完成</> : '去打卡'}
           </button>
         </div>
 
@@ -97,15 +100,15 @@ export default function HomePage() {
 
       {/* ② 我的数据 */}
       <div className="home-stats-row">
-        <div className="home-stat-item" style={{ background: 'linear-gradient(135deg,#6366F1,#818CF8)' }}>
+        <div className="card-kpi card-kpi--primary">
           <div className="home-stat-value">{userStats.points}</div>
           <div className="home-stat-label">累计积分</div>
         </div>
-        <div className="home-stat-item" style={{ background: 'linear-gradient(135deg,#F59E0B,#FCD34D)' }}>
+        <div className="card-kpi card-kpi--accent">
           <div className="home-stat-value">{userStats.checkInDays}</div>
           <div className="home-stat-label">打卡天数</div>
         </div>
-        <div className="home-stat-item" style={{ background: 'linear-gradient(135deg,#10B981,#34D399)', cursor: 'pointer' }} onClick={() => navigate('/leaderboard')}>
+        <div className="card-kpi card-kpi--success" onClick={() => navigate('/leaderboard')}>
           <div className="home-stat-value">
             #{userStats.rank}
             <span className="home-stat-rank-up">↑{userStats.rankChange}</span>
@@ -116,12 +119,12 @@ export default function HomePage() {
 
       {/* ③ 最近打卡记录 */}
       <div className="section" style={{ marginBottom: 14 }}>
-        <div className="header" style={{ marginBottom: 8 }}>
+        <div className="section-header">
           <h3 className="section-title" style={{ margin: 0, fontSize: 15 }}>
-            <Trophy size={15} style={{ marginRight: 5, color: '#F59E0B' }} />
+            <Trophy size={15} style={{ marginRight: 5, color: 'var(--accent-color)' }} />
             最近记录
           </h3>
-          <button className="view-all-btn" onClick={() => navigate('/checkin')}>
+          <button type="button" className="view-all-btn" onClick={() => navigate('/checkin')}>
             全部 <ChevronRight size={13} />
           </button>
         </div>
@@ -143,12 +146,12 @@ export default function HomePage() {
 
       {/* ④ 热门动态 */}
       <div className="section" style={{ marginBottom: 14 }}>
-        <div className="header" style={{ marginBottom: 8 }}>
+        <div className="section-header">
           <h3 className="section-title" style={{ margin: 0, fontSize: 15 }}>
-            <Users size={15} style={{ marginRight: 5, color: '#4F46E5' }} />
+            <Users size={15} style={{ marginRight: 5, color: 'var(--primary-color)' }} />
             热门动态
           </h3>
-          <button className="view-all-btn" onClick={() => navigate('/community')}>
+          <button type="button" className="view-all-btn" onClick={() => navigate('/community')}>
             去圈子 <ChevronRight size={13} />
           </button>
         </div>
@@ -163,8 +166,14 @@ export default function HomePage() {
                 </div>
                 <p className="home-post-text">{p.text}</p>
                 <div className="home-post-stats">
-                  <span>❤️ {p.likes}</span>
-                  <span>💬 {p.comments}</span>
+                  <span className="home-post-stat-item">
+                    <Heart size={12} />
+                    {p.likes}
+                  </span>
+                  <span className="home-post-stat-item">
+                    <MessageCircle size={12} />
+                    {p.comments}
+                  </span>
                 </div>
               </div>
             </div>

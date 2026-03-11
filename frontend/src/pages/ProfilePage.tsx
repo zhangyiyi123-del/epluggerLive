@@ -7,7 +7,7 @@ import {
 import { MEDAL_CONFIGS } from '../types/points'
 import type { UserPoints as UserPointsType } from '../types/points'
 import MedalWall from '../components/points/MedalWall'
-import { getProfile } from '../api/auth'
+import { getProfile, type UserProfile } from '../api/auth'
 import { getPointsMe, getUnreadCount } from '../api/points'
 
 const menuItems = [
@@ -26,7 +26,7 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
   const [showMedalWall, setShowMedalWall] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
-  const [profile, setProfile] = useState<{ name: string; department: string; position?: string; consecutiveCheckInDays: number; totalEarnedPoints: number; medalCount: number } | null>(null)
+  const [profile, setProfile] = useState<UserProfile | null>(null)
   const [userPoints, setUserPoints] = useState<UserPointsType | null>(null)
   const [unreadCount, setUnreadCount] = useState(0)
 

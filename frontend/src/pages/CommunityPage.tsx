@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Flame, Users, Clock, Grid3X3, Search, X, RefreshCw, Trash2 } from 'lucide-react'
+import { Flame, Users, Clock, Grid3X3, Search, X, RefreshCw, Trash2, Plus } from 'lucide-react'
 import type { Post, FeedFilter } from '../types/community'
 import { FEED_FILTERS } from '../types/community'
 import PostCard from '../components/community/PostCard'
@@ -196,13 +196,14 @@ export default function CommunityPage() {
 
   return (
     <div
-      className="page"
+      className="page community-page"
       style={{ padding: 0 }}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* 顶部搜索栏 */}
-      <div className="top-search-bar">
+      {/* 顶栏：搜索 + 筛选 */}
+      <header className="community-header">
+        <div className="top-search-bar">
         <div className="top-search-input-container">
           <Search size={18} className="top-search-icon" />
           <input
@@ -214,6 +215,7 @@ export default function CommunityPage() {
           />
           {searchQuery && (
             <button
+              type="button"
               className="top-search-clear"
               onClick={() => {
                 setSearchQuery('')
@@ -225,14 +227,30 @@ export default function CommunityPage() {
           )}
         </div>
         <button
+          type="button"
           className="top-search-refresh"
           onClick={handleAutoRefresh}
           disabled={isRefreshing}
         >
           <RefreshCw size={16} className={isRefreshing ? 'spinning' : ''} />
         </button>
-      </div>
-      
+        </div>
+        {/* 筛选标签 */}
+        <div className="feed-filters">
+          {FEED_FILTERS.map(filter => (
+            <button
+              key={filter.value}
+              type="button"
+              className={'filter-tag ' + (activeFilter === filter.value ? 'active' : '')}
+              onClick={() => changeFilter(filter.value)}
+            >
+              {getFilterIcon(filter.value)}
+              {filter.label}
+            </button>
+          ))}
+        </div>
+      </header>
+
       {/* 搜索结果提示 */}
       {searchQuery && (
         <div className="search-results-bar">
@@ -245,22 +263,6 @@ export default function CommunityPage() {
           )}
         </div>
       )}
-      
-      {/* 筛选标签 */}
-      <div className="feed-filters">
-        {FEED_FILTERS.map(filter => (
-          <button
-            key={filter.value}
-            className={'filter-tag ' + (activeFilter === filter.value ? 'active' : '')}
-            onClick={() => {
-              changeFilter(filter.value)
-            }}
-          >
-            {getFilterIcon(filter.value)}
-            {filter.label}
-          </button>
-        ))}
-      </div>
 
       {/* 动态列表 */}
       <div
@@ -317,16 +319,15 @@ export default function CommunityPage() {
         )}
       </div>
 
-      {/* 右下角悬浮发布按钮 */}
+      {/* 右下角悬浮发布按钮（与设计系统 .fab-button 统一） */}
       <button
+        type="button"
         className="fab-button"
         onClick={() => navigate('/publish')}
         title="发布动态"
+        aria-label="发布动态"
       >
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
+        <Plus size={24} strokeWidth={2.5} />
       </button>
 
       {/* 删除确认弹窗 */}

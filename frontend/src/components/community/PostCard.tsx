@@ -89,6 +89,14 @@ export default function PostCard({ post, onLike, onComment, onShare, onEdit: _on
         <p className={`post-text ${isExpanded ? 'expanded' : shouldTruncate ? 'clamped' : ''}`}>
           {post.content.text}
         </p>
+        {post.mentions && post.mentions.length > 0 && (
+          <p className="post-mentions">
+            提到了{' '}
+            {post.mentions.map((m) => (
+              <span key={m.id} className="mention-tag">@{m.name}</span>
+            ))}
+          </p>
+        )}
         {shouldTruncate && (
           <button type="button" className="expand-btn" onClick={handleToggleExpand}>
             {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}

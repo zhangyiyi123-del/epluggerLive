@@ -14,6 +14,13 @@ public interface PositiveRecordRepository extends JpaRepository<PositiveRecord, 
 
     Page<PositiveRecord> findByUser_IdOrderByCreatedAtDesc(Long userId, Pageable pageable);
 
+    @Query("SELECT r FROM PositiveRecord r WHERE r.user.id = :userId AND r.createdAt >= :start AND r.createdAt < :end")
+    List<PositiveRecord> findByUser_IdAndCreatedAtBetween(
+            @Param("userId") Long userId,
+            @Param("start") Instant start,
+            @Param("end") Instant end
+    );
+
     @Query("SELECT r.user.id, COALESCE(SUM(r.points), 0) FROM PositiveRecord r WHERE r.createdAt >= :start AND r.createdAt < :end GROUP BY r.user.id ORDER BY COALESCE(SUM(r.points), 0) DESC")
     List<Object[]> sumPointsByUserBetween(@Param("start") Instant start, @Param("end") Instant end);
 

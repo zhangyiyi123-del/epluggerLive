@@ -36,6 +36,7 @@ export interface NotificationItem {
   relatedPostId: number | null
   relatedCommentId: number | null
   relatedUserId: number | null
+  relatedRecordId: number | null
   contentSummary: string | null
   read: boolean
   createdAt: string

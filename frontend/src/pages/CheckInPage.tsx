@@ -24,7 +24,11 @@ import { DEFAULT_SPORT_TYPES } from '../types/checkIn'
 import { DEFAULT_POSITIVE_CATEGORIES } from '../types/positive'
 import CheckInForm from '../components/checkIn/CheckInForm'
 import * as checkInApi from '../api/checkin'
-import type { ExerciseRecordItem, PositiveRecordItem } from '../api/checkin'
+import type {
+  ExerciseRecordItem,
+  ExerciseMonthlySummaryDto,
+  PositiveRecordItem,
+} from '../api/checkin'
 
 type CheckInType = 'exercise' | 'positive'
 
@@ -40,7 +44,7 @@ export default function CheckInPage() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<CheckInType>('exercise')
   const [currentMonth, setCurrentMonth] = useState(new Date())
-  const [checkedDays, setCheckedDays] = useState<Set<number>>(new Set([1, 2, 3, 5, 8, 9, 12, 15, 16, 18, 20, 22]))
+  const [checkedDays, setCheckedDays] = useState<Set<number>>(new Set())
   const touchStartX = useRef<number | null>(null)
 
   const [sportTypes, setSportTypes] = useState<SportType[]>(DEFAULT_SPORT_TYPES)
@@ -54,6 +58,10 @@ export default function CheckInPage() {
   const [earnedPoints, setEarnedPoints] = useState(0)
   const [successData, setSuccessData] = useState<{type: string; title: string} | null>(null)
   const [submitError, setSubmitError] = useState('')
+  const [monthlySummary, setMonthlySummary] = useState<ExerciseMonthlySummaryDto | null>(null)
+  const [monthlySummaryLoading, setMonthlySummaryLoading] = useState(false)
+  const [monthlySummaryError, setMonthlySummaryError] = useState('')
+  const summaryMonth = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`
 
   const loadSportTypes = async () => {
     const list = await checkInApi.getSportTypes()
@@ -76,6 +84,31 @@ export default function CheckInPage() {
     loadExerciseRecords()
     loadPositiveRecords()
   }, [])
+
+  const loadMonthlySummary = async () => {
+    setMonthlySummaryError('')
+    setMonthlySummaryLoading(true)
+    try {
+      const data = await checkInApi.getExerciseMonthlySummary(summaryMonth)
+      setMonthlySummary(data ?? null)
+    } catch {
+      setMonthlySummaryError('加载失败，请稍后重试')
+      setMonthlySummary(null)
+    } finally {
+      setMonthlySummaryLoading(false)
+    }
+  }
+  useEffect(() => {
+    loadMonthlySummary()
+  }, [summaryMonth])
+
+  const loadCheckedDays = async () => {
+    const days = await checkInApi.getExerciseCheckedDays(summaryMonth)
+    setCheckedDays(new Set(days))
+  }
+  useEffect(() => {
+    loadCheckedDays()
+  }, [summaryMonth])
 
   const getSportName = (id: string) => {
     const s = sportTypes.find(st => st.id === id)
@@ -165,9 +198,8 @@ const getExerciseIcon = (sportTypeId: string) => {
       setEarnedPoints(res.points)
       setShowSuccess(true)
       setSuccessData({ type: 'exercise', title: '运动打卡成功' })
-      const today = new Date().getDate()
-      setCheckedDays(prev => new Set(prev).add(today))
       await loadExerciseRecords()
+      await loadCheckedDays()
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : '提交失败')
     } finally {
@@ -539,23 +571,38 @@ const getPositiveIcon = (categoryId: string) => {
         </div>
       </div>
 
-      {/* 本月统计 */}
+      {/* 运动月度统计（跟随上方日历月份） */}
       <div className="section">
-        <h4 className="section-title">本月统计</h4>
-        <div className="stats-grid">
-          <div className="stat-card">
-            <div className="stat-value">12</div>
-            <div className="stat-label">运动次数</div>
+        <h4 className="section-title">
+          运动月度统计 · {currentMonth.getFullYear()}年{monthNames[currentMonth.getMonth()]}
+        </h4>
+        {monthlySummaryError ? (
+          <div className="stats-empty" style={{ padding: 16, textAlign: 'center', color: 'var(--text-secondary)' }}>
+            {monthlySummaryError}
+            <button type="button" className="btn btn-secondary" style={{ marginTop: 8 }} onClick={loadMonthlySummary}>重试</button>
           </div>
-          <div className="stat-card">
-            <div className="stat-value" style={{ color: '#10B981' }}>8</div>
-            <div className="stat-label">正向次数</div>
+        ) : monthlySummaryLoading ? (
+          <div className="stats-empty" style={{ padding: 16, textAlign: 'center', color: 'var(--text-secondary)' }}>加载中...</div>
+        ) : (
+          <div className="stats-grid">
+            <div className="stat-card">
+              <div className="stat-value">{monthlySummary?.count ?? 0}</div>
+              <div className="stat-label">运动次数</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-value" style={{ color: '#10B981' }}>{monthlySummary?.totalDurationMinutes ?? 0}</div>
+              <div className="stat-label">总时长(分钟)</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-value" style={{ color: '#4F46E5' }}>{(monthlySummary?.totalDistanceKm ?? 0).toFixed(1)}</div>
+              <div className="stat-label">总距离(km)</div>
+            </div>
+            <div className="stat-card">
+              <div className="stat-value" style={{ color: '#F59E0B' }}>{monthlySummary?.totalCalories ?? 0}</div>
+              <div className="stat-label">卡路里(估)</div>
+            </div>
           </div>
-          <div className="stat-card">
-            <div className="stat-value" style={{ color: '#4F46E5' }}>680</div>
-            <div className="stat-label">获得积分</div>
-          </div>
-        </div>
+        )}
       </div>
     </div>
   )

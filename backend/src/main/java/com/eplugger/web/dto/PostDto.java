@@ -15,6 +15,7 @@ public class PostDto {
     private String visibilityType;
     private List<TopicDto> topics;
     private List<Long> mentionUserIds;
+    private List<UserDto> mentionUsers;
     private int likesCount;
     private int commentsCount;
     private boolean liked;
@@ -38,6 +39,8 @@ public class PostDto {
     public void setTopics(List<TopicDto> topics) { this.topics = topics; }
     public List<Long> getMentionUserIds() { return mentionUserIds; }
     public void setMentionUserIds(List<Long> mentionUserIds) { this.mentionUserIds = mentionUserIds; }
+    public List<UserDto> getMentionUsers() { return mentionUsers; }
+    public void setMentionUsers(List<UserDto> mentionUsers) { this.mentionUsers = mentionUsers; }
     public int getLikesCount() { return likesCount; }
     public void setLikesCount(int likesCount) { this.likesCount = likesCount; }
     public int getCommentsCount() { return commentsCount; }

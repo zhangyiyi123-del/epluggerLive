@@ -39,6 +39,9 @@ public class Notification {
     @Column(name = "related_user_id")
     private Long relatedUserId;
 
+    @Column(name = "related_record_id")
+    private Long relatedRecordId;
+
     @Column(name = "content_summary", length = 500)
     private String contentSummary;
 
@@ -60,6 +63,8 @@ public class Notification {
     public void setRelatedCommentId(Long relatedCommentId) { this.relatedCommentId = relatedCommentId; }
     public Long getRelatedUserId() { return relatedUserId; }
     public void setRelatedUserId(Long relatedUserId) { this.relatedUserId = relatedUserId; }
+    public Long getRelatedRecordId() { return relatedRecordId; }
+    public void setRelatedRecordId(Long relatedRecordId) { this.relatedRecordId = relatedRecordId; }
     public String getContentSummary() { return contentSummary; }
     public void setContentSummary(String contentSummary) { this.contentSummary = contentSummary; }
     public boolean isRead() { return read; }

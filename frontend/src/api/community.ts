@@ -43,6 +43,14 @@ interface TopicDto {
   postCount: number
 }
 
+interface UserDtoRef {
+  id: string
+  name: string
+  avatar?: string
+  department?: string
+  position?: string
+}
+
 interface PostDto {
   id: number
   author: UserDto
@@ -51,6 +59,7 @@ interface PostDto {
   visibilityType: string
   topics: TopicDto[]
   mentionUserIds: number[] | null
+  mentionUsers?: UserDtoRef[] | null
   likesCount: number
   commentsCount: number
   liked: boolean
@@ -100,7 +109,13 @@ function mapPost(d: PostDto): Post {
       name: t.name,
       postCount: t.postCount ?? 0,
     })),
-    mentions: [],
+    mentions: (d.mentionUsers ?? []).map((u) => ({
+      type: 'user' as const,
+      id: String(u.id),
+      name: u.name ?? '',
+      startIndex: 0,
+      endIndex: 0,
+    })),
     likesCount: d.likesCount ?? 0,
     commentsCount: d.commentsCount ?? 0,
     isLiked: d.liked ?? false,
@@ -133,11 +148,17 @@ function mapComment(d: CommentDto): Comment {
 export async function getPosts(
   filter: FeedFilter,
   page = 0,
-  size = 20
+  size = 20,
+  keyword?: string | null
 ): Promise<PagedResult<Post>> {
-  const res = await apiRequest<PagedResult<PostDto>>(
-    `/api/posts?filter=${encodeURIComponent(filter)}&page=${page}&size=${size}`
-  )
+  const params = new URLSearchParams()
+  params.set('filter', filter)
+  params.set('page', String(page))
+  params.set('size', String(size))
+  if (keyword != null && keyword.trim() !== '') {
+    params.set('keyword', keyword.trim())
+  }
+  const res = await apiRequest<PagedResult<PostDto>>(`/api/posts?${params.toString()}`)
   if (!res.ok) throw new Error(res.error?.message ?? '加载动态失败')
   return {
     ...res.data,

@@ -14,7 +14,9 @@ com\eplugger\web\dto\TopicDto.class
 com\eplugger\web\GlobalExceptionHandler$ErrorBody.class
 com\eplugger\web\AuthController.class
 com\eplugger\service\PointsService$MedalMeta.class
+com\eplugger\web\dto\HomeResponse$HotPostItem.class
 com\eplugger\config\FlywayConfig.class
+com\eplugger\web\dto\ExerciseMonthlySummaryDto.class
 com\eplugger\config\SecurityConfig.class
 com\eplugger\repository\PointsRecordRepository.class
 com\eplugger\web\dto\OrderDto.class
@@ -45,6 +47,7 @@ com\eplugger\web\PositiveCheckInController.class
 com\eplugger\web\dto\UserPointsDto.class
 com\eplugger\config\SecurityBeansConfig.class
 com\eplugger\repository\PostFavoriteRepository.class
+com\eplugger\web\HomeController.class
 com\eplugger\domain\entity\PostLike.class
 com\eplugger\web\dto\PostCreateRequest.class
 com\eplugger\web\CommentController.class
@@ -52,8 +55,11 @@ com\eplugger\web\FileUploadController$UploadResponse.class
 com\eplugger\domain\entity\PointsRecord.class
 com\eplugger\domain\entity\Comment.class
 com\eplugger\repository\UserPointsRepository.class
+com\eplugger\web\dto\HomeResponse$RecentCheckInItem.class
 com\eplugger\web\dto\ExerciseRecordItem.class
+com\eplugger\web\dto\HomeResponse.class
 com\eplugger\domain\entity\Product.class
+com\eplugger\web\dto\HomeResponse$ProgressSummary.class
 com\eplugger\config\WebConfig.class
 com\eplugger\domain\entity\SportType.class
 com\eplugger\service\PostService.class
@@ -66,6 +72,7 @@ com\eplugger\web\dto\CommentDto.class
 com\eplugger\web\ExerciseCheckInController.class
 com\eplugger\domain\entity\Post.class
 com\eplugger\repository\CommentRepository.class
+com\eplugger\service\HomeAggregateService.class
 com\eplugger\web\dto\UserProfileDto.class
 com\eplugger\domain\entity\UserMedal.class
 com\eplugger\web\dto\UserMeResponse.class
@@ -90,6 +97,7 @@ com\eplugger\repository\NotificationRepository.class
 com\eplugger\service\NotificationService.class
 com\eplugger\domain\entity\User.class
 com\eplugger\repository\CheckInRecordRepository.class
+com\eplugger\service\HomeAggregateService$RecordWithTime.class
 com\eplugger\web\dto\PointsRecordDto.class
 com\eplugger\EpluggerApplication.class
 com\eplugger\domain\entity\CommentLike.class
@@ -98,4 +106,5 @@ com\eplugger\repository\TopicRepository.class
 com\eplugger\service\CommentService.class
 com\eplugger\repository\MallOrderRepository.class
 com\eplugger\security\JwtUtil.class
+com\eplugger\web\dto\HomeResponse$UserStats.class
 com\eplugger\web\dto\ProductDto.class

@@ -15,10 +15,9 @@ export default function CommunityPage() {
   const [hasMore, setHasMore] = useState(true)
   const [page, setPage] = useState(1)
   
-  // 搜索功能状态
+  // 搜索：输入框内容与提交给后端的 keyword（Enter/失焦时提交）
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<Post[]>([])
-  const [isSearching, setIsSearching] = useState(false)
+  const [searchKeyword, setSearchKeyword] = useState<string>('')
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [touchStartX, setTouchStartX] = useState<number | null>(null)
   const [currentFilterIndex, setCurrentFilterIndex] = useState(
@@ -32,10 +31,10 @@ export default function CommunityPage() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const pageSize = 5
 
-  // 初始化加载
+  // 筛选或检索关键词变化时重新加载
   useEffect(() => {
     loadPosts(true)
-  }, [activeFilter])
+  }, [activeFilter, searchKeyword])
 
   const loadPosts = async (refresh = false, nextPage?: number) => {
     const pageToUse = nextPage ?? page
@@ -43,7 +42,7 @@ export default function CommunityPage() {
     setIsLoadingMore(true)
     setLoadError(null)
     try {
-      const result = await getPosts(activeFilter, apiPage, pageSize)
+      const result = await getPosts(activeFilter, apiPage, pageSize, searchKeyword || undefined)
       const list = result.content
       if (refresh) {
         setPosts(list)
@@ -54,7 +53,7 @@ export default function CommunityPage() {
       }
       setHasMore(result.number + 1 < result.totalPages)
     } catch (e) {
-      setLoadError(e instanceof Error ? e.message : '加载失败')
+      setLoadError(e instanceof Error ? e.message : '加载失败，请重试')
       if (refresh) setPosts([])
     } finally {
       setIsLoadingMore(false)
@@ -134,23 +133,15 @@ export default function CommunityPage() {
     setIsRefreshing(false)
   }
 
-  // 搜索：在当前已加载列表中筛选
-  const handleSearch = (query: string) => {
-    setSearchQuery(query)
-    if (!query.trim()) {
-      setSearchResults([])
-      return
-    }
-    setIsSearching(true)
-    setSearchResults(
-      posts.filter(
-        (post) =>
-          post.content.text.toLowerCase().includes(query.toLowerCase()) ||
-          post.author.name.toLowerCase().includes(query.toLowerCase()) ||
-          post.topics.some((t) => t.name.toLowerCase().includes(query.toLowerCase()))
-      )
-    )
-    setIsSearching(false)
+  // 提交检索关键词（Enter 或失焦）：与当前 filter 组合请求后端
+  const submitSearchKeyword = () => {
+    const k = searchQuery.trim()
+    setSearchKeyword(k)
+  }
+
+  const clearSearch = () => {
+    setSearchQuery('')
+    setSearchKeyword('')
   }
 
   // 切换标签并触发滑动方向
@@ -211,16 +202,14 @@ export default function CommunityPage() {
             className="top-search-input"
             placeholder="搜索动态、作者..."
             value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && submitSearchKeyword()}
           />
           {searchQuery && (
             <button
               type="button"
               className="top-search-clear"
-              onClick={() => {
-                setSearchQuery('')
-                setSearchResults([])
-              }}
+              onClick={clearSearch}
             >
               <X size={14} />
             </button>
@@ -251,16 +240,14 @@ export default function CommunityPage() {
         </div>
       </header>
 
-      {/* 搜索结果提示 */}
-      {searchQuery && (
-        <div className="search-results-bar">
-          {isSearching ? (
-            <span>搜索中...</span>
-          ) : searchResults.length > 0 ? (
-            <span>找到 <strong>{searchResults.length}</strong> 条结果</span>
-          ) : (
-            <span>未找到相关动态</span>
-          )}
+      {/* 检索无结果提示：已提交关键词且列表为空且非加载错误 */}
+      {searchKeyword && !loadError && posts.length === 0 && (
+        <div className="empty-feed">
+          <p>未找到相关动态</p>
+          <p className="empty-hint">试试其他关键词或筛选条件</p>
+          <button type="button" className="load-more-btn" onClick={clearSearch}>
+            清空搜索
+          </button>
         </div>
       )}
 
@@ -311,7 +298,7 @@ export default function CommunityPage() {
           </div>
         )}
 
-        {!loadError && posts.length === 0 && (
+        {!loadError && posts.length === 0 && !searchKeyword && (
           <div className="empty-feed">
             <p>暂无动态</p>
             <p className="empty-hint">快来发布第一条动态吧~</p>

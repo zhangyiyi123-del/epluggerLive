@@ -3727,6 +3727,17 @@ body {
   white-space: pre-wrap;
 }
 
+.post-mentions {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 4px 0 8px;
+}
+
+.post-mentions .mention-tag {
+  color: var(--primary-color);
+  font-weight: 500;
+}
+
 .expand-btn {
   display: inline-flex;
   align-items: center;
@@ -8916,6 +8927,13 @@ MT
 .publish-picker-list {
   max-height: 250px;
   overflow-y: auto;
+}
+
+.publish-picker-empty {
+  padding: 16px;
+  text-align: center;
+  color: var(--text-secondary);
+  font-size: 14px;
 }
 
 .publish-picker-item {

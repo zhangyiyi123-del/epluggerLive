@@ -88,3 +88,21 @@ export async function getProfile(): Promise<UserProfile | null> {
   if (!result.ok) return null
   return result.data
 }
+
+/** 同事项：用于 @ 提及、参与同事选择 */
+export interface ColleagueItem {
+  id: string
+  name: string
+  department?: string
+  avatar?: string
+  position?: string
+}
+
+/**
+ * 获取同事列表（排除当前用户），用于发布动态 @、正向打卡参与同事选择。
+ */
+export async function getColleagues(): Promise<ColleagueItem[]> {
+  const result = await apiRequest<ColleagueItem[]>('/api/users/colleagues')
+  if (!result.ok) return []
+  return result.data ?? []
+}

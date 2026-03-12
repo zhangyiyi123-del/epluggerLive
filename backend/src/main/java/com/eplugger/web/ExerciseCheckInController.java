@@ -4,6 +4,7 @@ import com.eplugger.service.ExerciseCheckInService;
 import com.eplugger.web.dto.CycleProgressDto;
 import com.eplugger.web.dto.ExerciseCheckInRequest;
 import com.eplugger.web.dto.ExerciseCheckInResponse;
+import com.eplugger.web.dto.ExerciseMonthlySummaryDto;
 import com.eplugger.web.dto.ExerciseRecordItem;
 import com.eplugger.web.dto.SportTypeDto;
 import jakarta.validation.Valid;
@@ -92,5 +93,33 @@ public class ExerciseCheckInController {
         }
         CycleProgressDto dto = exerciseCheckInService.getWeekProgress(userId, ZoneId.systemDefault());
         return ResponseEntity.ok(dto);
+    }
+
+    /** 运动打卡月度汇总：month=yyyy-MM，无数据时返回 0 */
+    @GetMapping("/monthly-summary")
+    public ResponseEntity<ExerciseMonthlySummaryDto> monthlySummary(
+            Authentication authentication,
+            @RequestParam String month
+    ) {
+        Long userId = currentUserId(authentication);
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+        ExerciseMonthlySummaryDto dto = exerciseCheckInService.getMonthlySummary(userId, month, ZoneId.systemDefault());
+        return ResponseEntity.ok(dto);
+    }
+
+    /** 指定月份内有运动打卡的日期（日号 1–31），用于日历绿点 */
+    @GetMapping("/checked-days")
+    public ResponseEntity<List<Integer>> checkedDays(
+            Authentication authentication,
+            @RequestParam String month
+    ) {
+        Long userId = currentUserId(authentication);
+        if (userId == null) {
+            return ResponseEntity.status(401).build();
+        }
+        List<Integer> days = exerciseCheckInService.getCheckedDaysInMonth(userId, month, ZoneId.systemDefault());
+        return ResponseEntity.ok(days);
     }
 }

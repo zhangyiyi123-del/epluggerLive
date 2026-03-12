@@ -45,19 +45,22 @@ public class PositiveCheckInService {
     private final UserRepository userRepository;
     private final UserPointsRepository userPointsRepository;
     private final PointsRecordRepository pointsRecordRepository;
+    private final NotificationService notificationService;
 
     public PositiveCheckInService(
             PositiveRecordRepository positiveRecordRepository,
             PositiveCategoryRepository positiveCategoryRepository,
             UserRepository userRepository,
             UserPointsRepository userPointsRepository,
-            PointsRecordRepository pointsRecordRepository
+            PointsRecordRepository pointsRecordRepository,
+            NotificationService notificationService
     ) {
         this.positiveRecordRepository = positiveRecordRepository;
         this.positiveCategoryRepository = positiveCategoryRepository;
         this.userRepository = userRepository;
         this.userPointsRepository = userPointsRepository;
         this.pointsRecordRepository = pointsRecordRepository;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -97,6 +100,17 @@ public class PositiveCheckInService {
         }
 
         record = positiveRecordRepository.save(record);
+
+        if (request.getRelatedColleagueIds() != null && !request.getRelatedColleagueIds().isEmpty()) {
+            String authorName = user.getName() != null ? user.getName() : null;
+            for (Long colleagueId : request.getRelatedColleagueIds()) {
+                if (colleagueId == null || colleagueId.equals(userId)) continue;
+                if (!userRepository.existsById(colleagueId))
+                    throw new IllegalArgumentException("被 @ 用户不存在或已失效");
+                notificationService.createMentionNotification(
+                        colleagueId, userId, null, record.getId(), authorName);
+            }
+        }
 
         // 入账积分：更新 user_points 并写入 points_record
         UserPoints up = userPointsRepository.findById(userId)

@@ -2,8 +2,9 @@ import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Check, ChevronLeft, ChevronRight, Building2, UserPlus, X, Tag } from 'lucide-react'
 import type { PositiveCategory, PositiveTag, RelatedColleague } from '../types/positive'
-import { DEFAULT_POSITIVE_TAGS, MOCK_COLLEAGUES, MOCK_CUSTOMERS } from '../types/positive'
+import { DEFAULT_POSITIVE_TAGS, MOCK_CUSTOMERS } from '../types/positive'
 import * as checkInApi from '../api/checkin'
+import { getColleagues } from '../api/auth'
 import type { PositiveCategoryDto } from '../api/checkin'
 
 export default function PositiveCheckInPage() {
@@ -61,8 +62,14 @@ export default function PositiveCheckInPage() {
   const evidenceImageInputRef = useRef<HTMLInputElement>(null)
 
   const tags = DEFAULT_POSITIVE_TAGS
-  const colleagueList = MOCK_COLLEAGUES
   const customerList = MOCK_CUSTOMERS
+  const [colleagueList, setColleagueList] = useState<{ userId: string; name: string; avatar?: string }[]>([])
+
+  useEffect(() => {
+    getColleagues().then(list =>
+      setColleagueList(list.map(c => ({ userId: c.id, name: c.name, avatar: c.avatar })))
+    )
+  }, [])
 
   const evidenceRequirement = selectedCategory?.evidenceRequirement ?? 'optional'
   const requiresEvidence = evidenceRequirement === 'required'

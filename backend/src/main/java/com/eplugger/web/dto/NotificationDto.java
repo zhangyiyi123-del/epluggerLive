@@ -10,6 +10,7 @@ public class NotificationDto {
     private Long relatedPostId;
     private Long relatedCommentId;
     private Long relatedUserId;
+    private Long relatedRecordId;
     private String contentSummary;
     private boolean read;
     private String createdAt;
@@ -24,6 +25,8 @@ public class NotificationDto {
     public void setRelatedCommentId(Long relatedCommentId) { this.relatedCommentId = relatedCommentId; }
     public Long getRelatedUserId() { return relatedUserId; }
     public void setRelatedUserId(Long relatedUserId) { this.relatedUserId = relatedUserId; }
+    public Long getRelatedRecordId() { return relatedRecordId; }
+    public void setRelatedRecordId(Long relatedRecordId) { this.relatedRecordId = relatedRecordId; }
     public String getContentSummary() { return contentSummary; }
     public void setContentSummary(String contentSummary) { this.contentSummary = contentSummary; }
     public boolean isRead() { return read; }

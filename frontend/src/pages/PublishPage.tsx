@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -13,6 +13,7 @@ import {
 import type { Visibility } from '../types/community'
 import { getApiBaseUrl } from '../api/client'
 import { createPost } from '../api/community'
+import { getColleagues, type ColleagueItem } from '../api/auth'
 
 export default function PublishPage() {
   const navigate = useNavigate()
@@ -31,6 +32,17 @@ export default function PublishPage() {
   const [showVisibilityPicker, setShowVisibilityPicker] = useState(false)
   const [showCheckInPicker, setShowCheckInPicker] = useState(false)
   const [showMentionPicker, setShowMentionPicker] = useState(false)
+  const [submitError, setSubmitError] = useState('')
+  const [colleagueList, setColleagueList] = useState<ColleagueItem[]>([])
+  const [mentionSearch, setMentionSearch] = useState('')
+
+  useEffect(() => {
+    getColleagues().then(setColleagueList)
+  }, [])
+
+  const filteredColleagues = colleagueList.filter(
+    c => !mentionSearch.trim() || c.name.toLowerCase().includes(mentionSearch.toLowerCase()) || (c.department || '').toLowerCase().includes(mentionSearch.toLowerCase())
+  )
   
   const textAreaRef = useRef<HTMLTextAreaElement>(null)
   const imageInputRef = useRef<HTMLInputElement>(null)
@@ -74,6 +86,7 @@ export default function PublishPage() {
       alert('请输入1-500字的正文内容')
       return
     }
+    setSubmitError('')
     setIsSubmitting(true)
     try {
       let contentImages: string[] = []
@@ -106,7 +119,7 @@ export default function PublishPage() {
       await new Promise((r) => setTimeout(r, 1500))
       navigate('/community')
     } catch (e) {
-      alert(e instanceof Error ? e.message : '发布失败')
+      setSubmitError(e instanceof Error ? e.message : '发布失败')
     } finally {
       setIsSubmitting(false)
     }
@@ -119,14 +132,6 @@ export default function PublishPage() {
     { id: 'c1', title: '晨跑打卡', date: '今天 7:30' },
     { id: 'c2', title: '每日阅读', date: '今天 9:00' },
     { id: 'c3', title: '团队会议', date: '今天 14:00' },
-  ]
-
-  // 模拟@人员数据
-  const mockMentions = [
-    { id: 'u1', name: '张三', department: '技术部' },
-    { id: 'u2', name: '李四', department: '产品部' },
-    { id: 'u3', name: '王五', department: '设计部' },
-    { id: 'u4', name: '赵六', department: '市场部' },
   ]
 
   return (
@@ -151,7 +156,7 @@ export default function PublishPage() {
           <ArrowLeft size={22} />
         </button>
         <div className="publish-header-title">发布动态</div>
-        <button 
+        <button
           className={'publish-submit-btn ' + (canPublish ? 'active' : 'disabled')}
           onClick={handleSubmit}
           disabled={!canPublish || isSubmitting}
@@ -162,6 +167,11 @@ export default function PublishPage() {
 
       {/* 内容区域 */}
       <div className="publish-content">
+        {submitError && (
+          <div className="form-error" style={{ color: 'var(--color-danger)', marginBottom: 8 }}>
+            {submitError}
+          </div>
+        )}
         {/* 图片上传 - 始终显示 */}
         <div className="publish-images-scroll">
           {images.map((img, index) => (
@@ -303,20 +313,26 @@ export default function PublishPage() {
                 type="text"
                 className="publish-picker-input"
                 placeholder="搜索同事..."
+                value={mentionSearch}
+                onChange={e => setMentionSearch(e.target.value)}
               />
               <div className="publish-picker-list">
-                {mockMentions.map(person => (
-                  <button key={person.id} className="publish-picker-item" onClick={() => {
-                    setSelectedMention(person)
-                    setShowMentionPicker(false)
-                  }}>
-                    <span className="publish-picker-avatar">{person.name[0]}</span>
-                    <div className="publish-picker-item-info">
-                      <span>{person.name}</span>
-                      <span className="publish-picker-item-desc">{person.department}</span>
-                    </div>
-                  </button>
-                ))}
+                {filteredColleagues.length === 0 ? (
+                  <div className="publish-picker-empty">{colleagueList.length === 0 ? '加载中...' : '无匹配同事'}</div>
+                ) : (
+                  filteredColleagues.map(person => (
+                    <button key={person.id} className="publish-picker-item" onClick={() => {
+                      setSelectedMention({ id: person.id, name: person.name, department: person.department ?? '' })
+                      setShowMentionPicker(false)
+                    }}>
+                      <span className="publish-picker-avatar">{person.avatar || person.name[0]}</span>
+                      <div className="publish-picker-item-info">
+                        <span>{person.name}</span>
+                        <span className="publish-picker-item-desc">{person.department ?? ''}</span>
+                      </div>
+                    </button>
+                  ))
+                )}
               </div>
             </div>
           </div>

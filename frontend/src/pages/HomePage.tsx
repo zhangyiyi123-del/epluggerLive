@@ -1,31 +1,7 @@
-import { Trophy, ChevronRight, Flame, Users, Footprints, FileText, Hand, Check, Heart, MessageCircle } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { Trophy, ChevronRight, Flame, Users, Footprints, Hand, Check, Heart, MessageCircle } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-
-const userStats = {
-  points: 2850,
-  checkInDays: 28,
-  streak: 7,
-  rank: 15,
-  rankChange: 3,
-}
-
-const checkInKpi = {
-  todayDone: 2,
-  todayTarget: 3,
-  weekDone: 5,
-  weekTarget: 15,
-}
-
-const recentActivities = [
-  { id: 1, title: '晨跑5公里', time: '今天 07:30', points: '+50', Icon: Footprints, color: '#F87171' },
-  { id: 2, title: '帮助新人解答问题', time: '昨天 15:20', points: '+30', Icon: Users, color: '#10B981' },
-  { id: 3, title: '完成周报', time: '昨天 09:00', points: '+20', Icon: FileText, color: '#3B82F6' },
-]
-
-const hotPosts = [
-  { id: 'p4', avatar: '赵', avatarColor: '#6366F1', name: '赵强', dept: '运营部', text: '这段时间在准备公司年度分享会，整理了很多过往项目的复盘心得…', likes: 42, comments: 9 },
-  { id: 'p5', avatar: '孙', avatarColor: '#10B981', name: '孙丽', dept: '市场部', text: '周末和同事一起完成了一次线下路跑活动，沿途风景太美了！', likes: 31, comments: 6 },
-]
+import { getHome, type HomeResponse, type RecentCheckInItem } from '../api/home'
 
 // 环形进度 SVG 组件
 function RingProgress({ pct, size = 120, stroke = 10, color = '#4F46E5' }: { pct: number; size?: number; stroke?: number; color?: string }) {
@@ -46,18 +22,74 @@ function RingProgress({ pct, size = 120, stroke = 10, color = '#4F46E5' }: { pct
   )
 }
 
+function ActivityIcon({ type }: { type: string }) {
+  const color = type === 'exercise' ? '#F87171' : '#10B981'
+  return (
+    <div className="home-activity-icon" style={{ background: color }}>
+      {type === 'exercise' ? <Footprints size={18} color="#fff" strokeWidth={2.1} /> : <Users size={18} color="#fff" strokeWidth={2.1} />}
+    </div>
+  )
+}
+
 export default function HomePage() {
   const navigate = useNavigate()
-  const todayPct = Math.min(Math.round((checkInKpi.todayDone / checkInKpi.todayTarget) * 100), 100)
-  const weekPct  = Math.min(Math.round((checkInKpi.weekDone  / checkInKpi.weekTarget)  * 100), 100)
-  const todayDone = checkInKpi.todayDone >= checkInKpi.todayTarget
+  const [data, setData] = useState<HomeResponse | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  const loadHome = () => {
+    setLoading(true)
+    setError(null)
+    getHome()
+      .then((res) => {
+        setData(res ?? null)
+        if (res == null) setError('加载失败，请稍后重试')
+      })
+      .catch(() => {
+        setError('加载失败，请稍后重试')
+      })
+      .finally(() => setLoading(false))
+  }
+  useEffect(() => {
+    const t = setTimeout(() => loadHome(), 0)
+    return () => clearTimeout(t)
+  }, [])
+
+  if (loading && !data) {
+    return (
+      <div className="page">
+        <div className="section" style={{ padding: 24, textAlign: 'center', color: 'var(--text-secondary)' }}>
+          加载中…
+        </div>
+      </div>
+    )
+  }
+
+  const todayProgress = data?.todayProgress ?? { doneCount: 0, targetCount: 3, currentDurationMinutes: 0, targetDurationMinutes: 30, completed: false }
+  const weekProgress = data?.weekProgress ?? { doneCount: 0, targetCount: 15, currentDurationMinutes: 0, targetDurationMinutes: 150, completed: false }
+  const userStats = data?.userStats ?? { points: 0, checkInDays: 0, streak: 0, rank: 0, rankChange: 0 }
+  const recentCheckIns: RecentCheckInItem[] = data?.recentCheckIns ?? []
+  const hotPosts = data?.hotPosts ?? []
+
+  const todayPct = todayProgress.targetCount > 0
+    ? Math.min(Math.round((todayProgress.doneCount / todayProgress.targetCount) * 100), 100)
+    : 0
+  const weekPct = weekProgress.targetCount > 0
+    ? Math.min(Math.round((weekProgress.doneCount / weekProgress.targetCount) * 100), 100)
+    : 0
+  const todayDone = todayProgress.completed || todayProgress.doneCount >= todayProgress.targetCount
 
   return (
     <div className="page">
+      {error && (
+        <div className="section" style={{ padding: 12, background: 'var(--surface-warn)', color: 'var(--text-primary)', marginBottom: 8 }}>
+          <p style={{ margin: 0 }}>{error}</p>
+          <button type="button" className="btn btn-secondary btn-sm" style={{ marginTop: 8 }} onClick={loadHome}>重试</button>
+        </div>
+      )}
 
       {/* ① 今日打卡进度 */}
       <div className="home-hero">
-        {/* 左侧：问候 + 按钮 */}
         <div className="home-hero-left">
           <div className="home-hero-greeting">
             <Hand size={14} style={{ display: 'inline-block', verticalAlign: 'middle', marginRight: 4 }} />
@@ -72,8 +104,6 @@ export default function HomePage() {
             {todayDone ? <><Check size={14} style={{ flexShrink: 0 }} /> 今日已完成</> : '去打卡'}
           </button>
         </div>
-
-        {/* 右侧：双环 */}
         <div className="home-hero-rings">
           <div className="home-hero-ring-item">
             <div className="home-hero-ring-wrap">
@@ -83,7 +113,7 @@ export default function HomePage() {
               </div>
             </div>
             <div className="home-hero-ring-label">今日</div>
-            <div className="home-hero-ring-sub">{checkInKpi.todayDone}/{checkInKpi.todayTarget}</div>
+            <div className="home-hero-ring-sub">{todayProgress.doneCount}/{todayProgress.targetCount}</div>
           </div>
           <div className="home-hero-ring-item">
             <div className="home-hero-ring-wrap">
@@ -93,7 +123,7 @@ export default function HomePage() {
               </div>
             </div>
             <div className="home-hero-ring-label">本周</div>
-            <div className="home-hero-ring-sub">{checkInKpi.weekDone}/{checkInKpi.weekTarget}</div>
+            <div className="home-hero-ring-sub">{weekProgress.doneCount}/{weekProgress.targetCount}</div>
           </div>
         </div>
       </div>
@@ -110,8 +140,8 @@ export default function HomePage() {
         </div>
         <div className="card-kpi card-kpi--success" onClick={() => navigate('/leaderboard')}>
           <div className="home-stat-value">
-            #{userStats.rank}
-            <span className="home-stat-rank-up">↑{userStats.rankChange}</span>
+            #{userStats.rank || '–'}
+            {userStats.rankChange > 0 && <span className="home-stat-rank-up">↑{userStats.rankChange}</span>}
           </div>
           <div className="home-stat-label">本周排名</div>
         </div>
@@ -128,20 +158,22 @@ export default function HomePage() {
             全部 <ChevronRight size={13} />
           </button>
         </div>
-        <div className="activity-list">
-          {recentActivities.map(a => (
-            <div key={a.id} className="activity-item">
-              <div className="home-activity-icon" style={{ background: a.color }}>
-                <a.Icon size={18} color="#fff" strokeWidth={2.1} />
+        {recentCheckIns.length === 0 ? (
+          <div className="text-light text-sm" style={{ padding: 16 }}>暂无打卡记录</div>
+        ) : (
+          <div className="activity-list">
+            {recentCheckIns.map((a) => (
+              <div key={a.id} className="activity-item">
+                <ActivityIcon type={a.type} />
+                <div className="activity-content">
+                  <div className="font-medium text-sm">{a.title}</div>
+                  <div className="text-light text-sm">{a.time}</div>
+                </div>
+                <span className="badge badge-success">{a.points}</span>
               </div>
-              <div className="activity-content">
-                <div className="font-medium text-sm">{a.title}</div>
-                <div className="text-light text-sm">{a.time}</div>
-              </div>
-              <span className="badge badge-success">{a.points}</span>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* ④ 热门动态 */}
@@ -155,32 +187,35 @@ export default function HomePage() {
             去圈子 <ChevronRight size={13} />
           </button>
         </div>
-        <div className="home-posts">
-          {hotPosts.map(p => (
-            <div key={p.id} className="home-post-item" onClick={() => navigate('/community')}>
-              <div className="home-post-avatar" style={{ background: p.avatarColor }}>{p.avatar}</div>
-              <div className="home-post-body">
-                <div className="home-post-meta">
-                  <span className="home-post-name">{p.name}</span>
-                  <span className="home-post-dept">{p.dept}</span>
-                </div>
-                <p className="home-post-text">{p.text}</p>
-                <div className="home-post-stats">
-                  <span className="home-post-stat-item">
-                    <Heart size={12} />
-                    {p.likes}
-                  </span>
-                  <span className="home-post-stat-item">
-                    <MessageCircle size={12} />
-                    {p.comments}
-                  </span>
+        {hotPosts.length === 0 ? (
+          <div className="text-light text-sm" style={{ padding: 16 }}>暂无热门动态</div>
+        ) : (
+          <div className="home-posts">
+            {hotPosts.map((p) => (
+              <div key={p.id} className="home-post-item" onClick={() => navigate(`/community/${p.id}`)}>
+                <div className="home-post-avatar" style={{ background: p.avatarColor }}>{p.avatar}</div>
+                <div className="home-post-body">
+                  <div className="home-post-meta">
+                    <span className="home-post-name">{p.name}</span>
+                    <span className="home-post-dept">{p.dept}</span>
+                  </div>
+                  <p className="home-post-text">{p.text}</p>
+                  <div className="home-post-stats">
+                    <span className="home-post-stat-item">
+                      <Heart size={12} />
+                      {p.likes}
+                    </span>
+                    <span className="home-post-stat-item">
+                      <MessageCircle size={12} />
+                      {p.comments}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
-
     </div>
   )
 }

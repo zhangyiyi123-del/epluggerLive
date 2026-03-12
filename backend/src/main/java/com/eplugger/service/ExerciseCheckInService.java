@@ -14,6 +14,7 @@ import com.eplugger.repository.UserRepository;
 import com.eplugger.web.dto.CycleProgressDto;
 import com.eplugger.web.dto.ExerciseCheckInRequest;
 import com.eplugger.web.dto.ExerciseCheckInResponse;
+import com.eplugger.web.dto.ExerciseMonthlySummaryDto;
 import com.eplugger.web.dto.ExerciseRecordItem;
 import com.eplugger.web.dto.SportTypeDto;
 import org.springframework.data.domain.Page;
@@ -25,6 +26,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.time.ZoneId;
 import java.time.temporal.WeekFields;
 import java.util.List;
@@ -158,6 +160,64 @@ public class ExerciseCheckInService {
         dto.setCompleted(totalMinutes >= DEFAULT_DAILY_TARGET_MINUTES);
         dto.setDaysRemaining(0);
         return dto;
+    }
+
+    /** 月度汇总：指定 yyyy-MM 的运动打卡次数、总时长、总距离、总卡路里（估算），与历史记录口径一致 */
+    public ExerciseMonthlySummaryDto getMonthlySummary(Long userId, String yearMonth, ZoneId zoneId) {
+        ExerciseMonthlySummaryDto dto = new ExerciseMonthlySummaryDto();
+        dto.setMonth(yearMonth);
+        dto.setCount(0);
+        dto.setTotalDurationMinutes(0);
+        dto.setTotalDistanceKm(0);
+        dto.setTotalCalories(0);
+
+        YearMonth ym;
+        try {
+            ym = YearMonth.parse(yearMonth);
+        } catch (Exception e) {
+            return dto;
+        }
+        LocalDate first = ym.atDay(1);
+        LocalDate last = ym.atEndOfMonth();
+        Instant start = first.atStartOfDay(zoneId).toInstant();
+        Instant end = last.plusDays(1).atStartOfDay(zoneId).toInstant();
+
+        List<CheckInRecord> list = checkInRecordRepository.findByUserIdAndCheckedInAtBetween(userId, start, end);
+        int count = list.size();
+        int totalMinutes = list.stream().mapToInt(CheckInRecord::getDuration).sum();
+        double totalKm = list.stream()
+                .map(CheckInRecord::getDistance)
+                .filter(d -> d != null)
+                .mapToDouble(BigDecimal::doubleValue)
+                .sum();
+        // 卡路里估算：约 5 kcal/min 轻度有氧（与常见运动 App 口径接近）
+        int totalCalories = (int) Math.round(totalMinutes * 5.0);
+
+        dto.setCount(count);
+        dto.setTotalDurationMinutes(totalMinutes);
+        dto.setTotalDistanceKm(totalKm);
+        dto.setTotalCalories(totalCalories);
+        return dto;
+    }
+
+    /** 指定月份内有运动打卡的日期（日号 1–31），用于日历绿点展示 */
+    public List<Integer> getCheckedDaysInMonth(Long userId, String yearMonth, ZoneId zoneId) {
+        YearMonth ym;
+        try {
+            ym = YearMonth.parse(yearMonth);
+        } catch (Exception e) {
+            return List.of();
+        }
+        LocalDate first = ym.atDay(1);
+        LocalDate last = ym.atEndOfMonth();
+        Instant start = first.atStartOfDay(zoneId).toInstant();
+        Instant end = last.plusDays(1).atStartOfDay(zoneId).toInstant();
+        List<CheckInRecord> list = checkInRecordRepository.findByUserIdAndCheckedInAtBetween(userId, start, end);
+        return list.stream()
+                .map(r -> r.getCheckedInAt().atZone(zoneId).getDayOfMonth())
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
     }
 
     /** 本周进度（周一 0 点到当前） */

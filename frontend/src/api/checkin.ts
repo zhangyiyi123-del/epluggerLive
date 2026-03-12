@@ -132,6 +132,32 @@ export async function getWeekProgress(): Promise<CycleProgressDto | null> {
   return res.data
 }
 
+/** 运动打卡月度汇总 */
+export interface ExerciseMonthlySummaryDto {
+  month: string
+  count: number
+  totalDurationMinutes: number
+  totalDistanceKm: number
+  totalCalories: number
+}
+
+export async function getExerciseMonthlySummary(month: string): Promise<ExerciseMonthlySummaryDto | null> {
+  const res = await apiRequest<ExerciseMonthlySummaryDto>(
+    `/api/checkin/exercise/monthly-summary?month=${encodeURIComponent(month)}`
+  )
+  if (!res.ok) return null
+  return res.data
+}
+
+/** 指定月份内有运动打卡的日期（日号 1–31），用于日历绿点 */
+export async function getExerciseCheckedDays(month: string): Promise<number[]> {
+  const res = await apiRequest<number[]>(
+    `/api/checkin/exercise/checked-days?month=${encodeURIComponent(month)}`
+  )
+  if (!res.ok) return []
+  return res.data ?? []
+}
+
 // ---------- 正向行为打卡 API ----------
 export interface PositiveCategoryDto {
   id: string

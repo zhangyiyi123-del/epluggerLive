@@ -243,6 +243,16 @@ export default function PostDetailPage() {
           {post.content.text}
         </div>
 
+        {/* @提及 */}
+        {post.mentions && post.mentions.length > 0 && (
+          <p className="post-mentions">
+            提到了{' '}
+            {post.mentions.map((m) => (
+              <span key={m.id} className="mention-tag">@{m.name}</span>
+            ))}
+          </p>
+        )}
+
         {/* 话题标签 */}
         {post.topics.length > 0 && (
           <div className="detail-topics">

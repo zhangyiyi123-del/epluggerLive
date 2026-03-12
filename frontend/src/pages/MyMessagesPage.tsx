@@ -15,6 +15,7 @@ interface Notice {
   fromName: string
   fromAvatar: string
   postId: string
+  relatedRecordId: string
   postSnippet: string
   content?: string
   createdAt: string
@@ -49,22 +50,36 @@ export default function MyMessagesPage({ onBack }: MyMessagesPageProps) {
   const navigate = useNavigate()
   const [notices, setNotices] = useState<Notice[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
+  const loadNotices = () => {
+    setLoadError(null)
+    setLoading(true)
+    getNotifications(0, 50)
+      .then((res) => {
+        const list = (res.content ?? []).map((n) => ({
+          id: String(n.id),
+          type: mapType(n.type),
+          fromName: n.contentSummary?.split(' ')[0] ?? '有人',
+          fromAvatar: '',
+          postId: n.relatedPostId != null ? String(n.relatedPostId) : '',
+          relatedRecordId: n.relatedRecordId != null ? String(n.relatedRecordId) : '',
+          postSnippet: n.contentSummary ?? '',
+          content: n.contentSummary ?? undefined,
+          createdAt: n.createdAt,
+          isRead: n.read
+        }))
+        setNotices(list)
+      })
+      .catch(() => {
+        setLoadError('加载失败，请稍后重试')
+        setNotices([])
+      })
+      .finally(() => setLoading(false))
+  }
   useEffect(() => {
-    getNotifications(0, 50).then((res) => {
-      const list = (res.content ?? []).map((n) => ({
-        id: String(n.id),
-        type: mapType(n.type),
-        fromName: n.contentSummary?.split(' ')[0] ?? '有人',
-        fromAvatar: '',
-        postId: n.relatedPostId != null ? String(n.relatedPostId) : '',
-        postSnippet: n.contentSummary ?? '',
-        content: n.contentSummary ?? undefined,
-        createdAt: n.createdAt,
-        isRead: n.read
-      }))
-      setNotices(list)
-    }).finally(() => setLoading(false))
+    const t = setTimeout(() => loadNotices(), 0)
+    return () => clearTimeout(t)
   }, [])
 
   const handleBack = () => {
@@ -77,7 +92,11 @@ export default function MyMessagesPage({ onBack }: MyMessagesPageProps) {
       await markNotificationRead(Number(n.id))
       setNotices((prev) => prev.map((x) => (x.id === n.id ? { ...x, isRead: true } : x)))
     }
-    if (n.postId) navigate('/community/' + n.postId)
+    if (n.type === 'mention' && n.relatedRecordId) {
+      navigate('/checkin/positive-records')
+    } else if (n.postId) {
+      navigate('/community/' + n.postId)
+    }
   }
 
   return (
@@ -93,6 +112,11 @@ export default function MyMessagesPage({ onBack }: MyMessagesPageProps) {
       <div className="publish-content" style={{ padding: 0 }}>
         {loading ? (
           <div className="my-posts-empty"><p>加载中...</p></div>
+        ) : loadError ? (
+          <div className="my-posts-empty">
+            <p>{loadError}</p>
+            <button type="button" className="btn btn-secondary btn-sm" onClick={loadNotices}>重试</button>
+          </div>
         ) : notices.length === 0 ? (
           <div className="my-posts-empty">
             <p>暂无消息</p>

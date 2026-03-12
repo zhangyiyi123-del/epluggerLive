@@ -72,6 +72,26 @@ public class NotificationService {
         notificationRepository.save(n);
     }
 
+    /**
+     * @ 提及通知：来自动态时 postId 非空，来自正向打卡时 positiveRecordId 非空。
+     */
+    @Transactional
+    public void createMentionNotification(Long mentionedUserId, Long fromUserId, Long postId, Long positiveRecordId, String fromUserName) {
+        if (mentionedUserId == null || mentionedUserId.equals(fromUserId)) return;
+        Notification n = new Notification();
+        n.setUser(userRepository.getReferenceById(mentionedUserId));
+        n.setType("mention");
+        n.setRelatedPostId(postId);
+        n.setRelatedRecordId(positiveRecordId);
+        n.setRelatedUserId(fromUserId);
+        if (postId != null) {
+            n.setContentSummary(fromUserName != null ? fromUserName + " 在动态中提到了你" : "有人在动态中提到了你");
+        } else {
+            n.setContentSummary(fromUserName != null ? fromUserName + " 在正向打卡中提到了你" : "有人在正向打卡中提到了你");
+        }
+        notificationRepository.save(n);
+    }
+
     private NotificationDto toDto(Notification n) {
         NotificationDto dto = new NotificationDto();
         dto.setId(n.getId());
@@ -79,6 +99,7 @@ public class NotificationService {
         dto.setRelatedPostId(n.getRelatedPostId());
         dto.setRelatedCommentId(n.getRelatedCommentId());
         dto.setRelatedUserId(n.getRelatedUserId());
+        dto.setRelatedRecordId(n.getRelatedRecordId());
         dto.setContentSummary(n.getContentSummary());
         dto.setRead(n.isRead());
         dto.setCreatedAt(n.getCreatedAt() != null ? n.getCreatedAt().toString() : null);

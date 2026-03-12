@@ -67,6 +67,16 @@ public class PostService {
         post.setTopicIds(joinIds(request.getTopicIds()));
         post.setMentionUserIds(joinLongIds(request.getMentionUserIds()));
         post = postRepository.save(post);
+        if (request.getMentionUserIds() != null && !request.getMentionUserIds().isEmpty()) {
+            for (Long mentionId : request.getMentionUserIds()) {
+                if (mentionId == null || mentionId.equals(userId)) continue;
+                if (!userRepository.existsById(mentionId))
+                    throw new IllegalArgumentException("被 @ 用户不存在或已失效");
+                notificationService.createMentionNotification(
+                        mentionId, userId, post.getId(), null,
+                        author.getName() != null ? author.getName() : null);
+            }
+        }
         return toPostDto(post, userId);
     }
 
@@ -76,25 +86,43 @@ public class PostService {
     }
 
     /**
-     * 动态流：filter = latest | popular | department | following
+     * 动态流：filter = latest | popular | department | following；keyword 可选，与 filter 组合。
      */
-    public Page<PostDto> findFeed(String filter, String currentUserDepartment, Long currentUserId, Pageable pageable) {
+    public Page<PostDto> findFeed(String filter, String currentUserDepartment, Long currentUserId, String keyword, Pageable pageable) {
+        boolean hasKeyword = keyword != null && !keyword.isBlank();
         Page<Post> page;
-        switch (filter != null ? filter : "latest") {
-            case "popular":
-                page = postRepository.findAllByOrderByLikesCountDescCreatedAtDesc(pageable);
-                break;
-            case "department":
-                page = currentUserDepartment != null && !currentUserDepartment.isBlank()
-                        ? postRepository.findByAuthor_DepartmentOrderByCreatedAtDesc(currentUserDepartment, pageable)
-                        : postRepository.findAllByOrderByCreatedAtDesc(pageable);
-                break;
-            case "following":
-                // MVP: 无关注表时按最新
-                page = postRepository.findAllByOrderByCreatedAtDesc(pageable);
-                break;
-            default:
-                page = postRepository.findAllByOrderByCreatedAtDesc(pageable);
+        String f = filter != null ? filter : "latest";
+        if (hasKeyword) {
+            switch (f) {
+                case "popular":
+                    page = postRepository.findByKeywordOrderByLikesCountDescCreatedAtDesc(keyword.trim(), pageable);
+                    break;
+                case "department":
+                    page = currentUserDepartment != null && !currentUserDepartment.isBlank()
+                            ? postRepository.findByKeywordAndAuthor_DepartmentOrderByCreatedAtDesc(keyword.trim(), currentUserDepartment, pageable)
+                            : postRepository.findByKeywordOrderByCreatedAtDesc(keyword.trim(), pageable);
+                    break;
+                case "following":
+                default:
+                    page = postRepository.findByKeywordOrderByCreatedAtDesc(keyword.trim(), pageable);
+                    break;
+            }
+        } else {
+            switch (f) {
+                case "popular":
+                    page = postRepository.findAllByOrderByLikesCountDescCreatedAtDesc(pageable);
+                    break;
+                case "department":
+                    page = currentUserDepartment != null && !currentUserDepartment.isBlank()
+                            ? postRepository.findByAuthor_DepartmentOrderByCreatedAtDesc(currentUserDepartment, pageable)
+                            : postRepository.findAllByOrderByCreatedAtDesc(pageable);
+                    break;
+                case "following":
+                    page = postRepository.findAllByOrderByCreatedAtDesc(pageable);
+                    break;
+                default:
+                    page = postRepository.findAllByOrderByCreatedAtDesc(pageable);
+            }
         }
         return page.map(p -> toPostDto(p, currentUserId));
     }
@@ -181,6 +209,7 @@ public class PostService {
         dto.setVisibilityType(p.getVisibilityType());
         dto.setTopics(resolveTopics(p.getTopicIds()));
         dto.setMentionUserIds(splitLongIds(p.getMentionUserIds()));
+        dto.setMentionUsers(resolveMentionUsers(p.getMentionUserIds()));
         dto.setLikesCount(p.getLikesCount());
         dto.setCommentsCount(p.getCommentsCount());
         dto.setLiked(currentUserId != null && postLikeRepository.existsByPost_IdAndUser_Id(p.getId(), currentUserId));
@@ -217,6 +246,16 @@ public class PostService {
             String tid = id.trim();
             if (tid.isEmpty()) continue;
             topicRepository.findById(tid).ifPresent(t -> out.add(toTopicDto(t)));
+        }
+        return out;
+    }
+
+    private List<UserDto> resolveMentionUsers(String mentionUserIds) {
+        List<Long> ids = splitLongIds(mentionUserIds);
+        if (ids.isEmpty()) return List.of();
+        List<UserDto> out = new ArrayList<>();
+        for (Long id : ids) {
+            userRepository.findById(id).map(this::toUserDto).ifPresent(out::add);
         }
         return out;
     }

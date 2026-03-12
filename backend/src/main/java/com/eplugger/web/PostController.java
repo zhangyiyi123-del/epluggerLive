@@ -51,6 +51,7 @@ public class PostController {
     public ResponseEntity<Page<PostDto>> list(
             Authentication authentication,
             @RequestParam(defaultValue = "latest") String filter,
+            @RequestParam(required = false) String keyword,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "20") int size
     ) {
@@ -59,7 +60,7 @@ public class PostController {
         if (userId != null && "department".equals(filter))
             department = userRepository.findById(userId).map(u -> u.getDepartment()).orElse(null);
         Pageable pageable = PageRequest.of(page, Math.min(size, 50));
-        Page<PostDto> result = postService.findFeed(filter, department, userId, pageable);
+        Page<PostDto> result = postService.findFeed(filter, department, userId, keyword, pageable);
         return ResponseEntity.ok(result);
     }
 

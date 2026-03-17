@@ -1,4 +1,4 @@
-import { Check } from 'lucide-react'
+﻿import { Check } from 'lucide-react'
 import type { PositiveCategory, PositiveTag } from '../../types/positive'
 
 interface CategoryTagSelectorProps {
@@ -35,7 +35,7 @@ export default function CategoryTagSelector({
       case 'optional':
         return { text: '可选佐证', color: '#F59E0B' }
       case 'exempt':
-        return { text: '免佐证', color: '#10B981' }
+        return { text: '免佐证', color: '#3B82F6' }
       default:
         return { text: '', color: '#6B7280' }
     }

@@ -1,4 +1,4 @@
-// 运动类型
+﻿// 运动类型
 export interface SportType {
   id: string
   name: string
@@ -20,7 +20,7 @@ export interface IntensityOption {
 }
 
 export const INTENSITY_OPTIONS: IntensityOption[] = [
-  { value: 'low', label: '低', color: '#10B981' },
+  { value: 'low', label: '低', color: '#3B82F6' },
   { value: 'medium', label: '中', color: '#F59E0B' },
   { value: 'high', label: '高', color: '#EF4444' },
 ]

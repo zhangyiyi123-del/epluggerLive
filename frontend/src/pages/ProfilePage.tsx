@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+﻿import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
   MessageCircle, LogOut, ChevronRight, ChevronLeft,
@@ -12,8 +12,8 @@ import { getPointsMe, getUnreadCount } from '../api/points'
 
 const menuItems = [
   { icon: FileText, label: '我的动态', badge: '', color: '#8B5CF6' },
-  { icon: MessageCircle, label: '我的消息', badgeKey: 'messages', color: '#4F46E5', badgeType: 'danger' as const },
-  { icon: Bell, label: '通知设置', badge: '', color: '#10B981' },
+  { icon: MessageCircle, label: '我的消息', badgeKey: 'messages', color: '#3B82F6', badgeType: 'danger' as const },
+  { icon: Bell, label: '通知设置', badge: '', color: '#3B82F6' },
   { icon: HelpCircle, label: '帮助与反馈', badge: '', color: '#6B7280' },
 ]
 
@@ -179,7 +179,7 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
                   width: 44,
                   height: 24,
                   borderRadius: 12,
-                  background: darkMode ? '#4F46E5' : '#E5E7EB',
+                  background: darkMode ? '#3B82F6' : '#E5E7EB',
                   border: 'none',
                   cursor: 'pointer',
                   position: 'relative',

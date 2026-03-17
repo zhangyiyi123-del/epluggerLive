@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+﻿import { useState, useRef } from 'react'
 import { Image, FileText, Link2, Upload, X, Plus } from 'lucide-react'
 
 interface PositiveEvidenceUploadProps {
@@ -24,7 +24,7 @@ export default function PositiveEvidenceUpload({
       case 'optional':
         return { text: '可选佐证', desc: '上传佐证可提升审核通过率', color: '#F59E0B' }
       case 'exempt':
-        return { text: '免佐证', desc: '该分类无需上传佐证材料', color: '#10B981' }
+        return { text: '免佐证', desc: '该分类无需上传佐证材料', color: '#3B82F6' }
     }
   }
 

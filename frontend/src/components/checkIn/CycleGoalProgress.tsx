@@ -1,4 +1,4 @@
-import { Calendar, Clock, MapPin, CheckCircle, AlertCircle } from 'lucide-react'
+﻿import { Calendar, Clock, MapPin, CheckCircle, AlertCircle } from 'lucide-react'
 import type { CycleProgress, CycleType } from '../../types/checkIn'
 
 interface CycleGoalProgressProps {
@@ -68,8 +68,8 @@ export default function CycleGoalProgress({ progress, onSwitchCycle }: CycleGoal
               style={{ 
                 width: `${durationPercent}%`,
                 background: progress.isCompleted 
-                  ? 'linear-gradient(90deg, #10B981, #34D399)' 
-                  : 'linear-gradient(90deg, #4F46E5, #818CF8)'
+                  ? 'linear-gradient(90deg, #3B82F6, #60A5FA)' 
+                  : 'linear-gradient(90deg, #3B82F6, #60A5FA)'
               }}
             />
           </div>
@@ -96,8 +96,8 @@ export default function CycleGoalProgress({ progress, onSwitchCycle }: CycleGoal
                 style={{ 
                   width: `${distancePercent}%`,
                   background: progress.isCompleted 
-                    ? 'linear-gradient(90deg, #10B981, #34D399)' 
-                    : 'linear-gradient(90deg, #10B981, #34D399)'
+                    ? 'linear-gradient(90deg, #3B82F6, #60A5FA)' 
+                    : 'linear-gradient(90deg, #3B82F6, #60A5FA)'
                 }}
               />
             </div>

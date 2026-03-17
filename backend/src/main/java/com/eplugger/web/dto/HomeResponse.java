@@ -10,6 +10,10 @@ public class HomeResponse {
     private ProgressSummary todayProgress;
     private ProgressSummary weekProgress;
     private UserStats userStats;
+    /** 本周运动打卡次数 */
+    private int weekExerciseCount;
+    /** 本周正向打卡次数 */
+    private int weekPositiveCount;
     private List<RecentCheckInItem> recentCheckIns;
     private List<HotPostItem> hotPosts;
 
@@ -107,6 +111,10 @@ public class HomeResponse {
     public void setWeekProgress(ProgressSummary weekProgress) { this.weekProgress = weekProgress; }
     public UserStats getUserStats() { return userStats; }
     public void setUserStats(UserStats userStats) { this.userStats = userStats; }
+    public int getWeekExerciseCount() { return weekExerciseCount; }
+    public void setWeekExerciseCount(int weekExerciseCount) { this.weekExerciseCount = weekExerciseCount; }
+    public int getWeekPositiveCount() { return weekPositiveCount; }
+    public void setWeekPositiveCount(int weekPositiveCount) { this.weekPositiveCount = weekPositiveCount; }
     public List<RecentCheckInItem> getRecentCheckIns() { return recentCheckIns; }
     public void setRecentCheckIns(List<RecentCheckInItem> recentCheckIns) { this.recentCheckIns = recentCheckIns; }
     public List<HotPostItem> getHotPosts() { return hotPosts; }

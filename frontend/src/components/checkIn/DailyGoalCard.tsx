@@ -1,4 +1,4 @@
-import { Target, CheckCircle, Clock, MapPin, ChevronRight } from 'lucide-react'
+﻿import { Target, CheckCircle, Clock, MapPin, ChevronRight } from 'lucide-react'
 import type { DailyGoal, SportType } from '../../types/checkIn'
 
 interface DailyGoalCardProps {
@@ -110,7 +110,7 @@ export default function DailyGoalCard({
                     className="progress-fill"
                     style={{ 
                       width: `${data.durationPercent}%`,
-                      background: data.isDurationCompleted ? '#10B981' : 'linear-gradient(90deg, #4F46E5, #818CF8)'
+                      background: data.isDurationCompleted ? '#3B82F6' : 'linear-gradient(90deg, #3B82F6, #60A5FA)'
                     }}
                   />
                 </div>
@@ -133,7 +133,7 @@ export default function DailyGoalCard({
                       className="progress-fill"
                       style={{ 
                         width: `${data.distancePercent}%`,
-                        background: data.isDistanceCompleted ? '#10B981' : 'linear-gradient(90deg, #10B981, #34D399)'
+                        background: data.isDistanceCompleted ? '#3B82F6' : 'linear-gradient(90deg, #3B82F6, #60A5FA)'
                       }}
                     />
                   </div>

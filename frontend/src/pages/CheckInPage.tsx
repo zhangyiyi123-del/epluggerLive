@@ -26,7 +26,6 @@ import CheckInForm from '../components/checkIn/CheckInForm'
 import * as checkInApi from '../api/checkin'
 import type {
   ExerciseRecordItem,
-  ExerciseMonthlySummaryDto,
   PositiveRecordItem,
 } from '../api/checkin'
 
@@ -43,8 +42,6 @@ const formatDate = (iso: string) => {
 export default function CheckInPage() {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<CheckInType>('exercise')
-  const [currentMonth, setCurrentMonth] = useState(new Date())
-  const [checkedDays, setCheckedDays] = useState<Set<number>>(new Set())
   const touchStartX = useRef<number | null>(null)
 
   const [sportTypes, setSportTypes] = useState<SportType[]>(DEFAULT_SPORT_TYPES)
@@ -58,10 +55,6 @@ export default function CheckInPage() {
   const [earnedPoints, setEarnedPoints] = useState(0)
   const [successData, setSuccessData] = useState<{type: string; title: string} | null>(null)
   const [submitError, setSubmitError] = useState('')
-  const [monthlySummary, setMonthlySummary] = useState<ExerciseMonthlySummaryDto | null>(null)
-  const [monthlySummaryLoading, setMonthlySummaryLoading] = useState(false)
-  const [monthlySummaryError, setMonthlySummaryError] = useState('')
-  const summaryMonth = `${currentMonth.getFullYear()}-${String(currentMonth.getMonth() + 1).padStart(2, '0')}`
 
   const loadSportTypes = async () => {
     const list = await checkInApi.getSportTypes()
@@ -85,54 +78,12 @@ export default function CheckInPage() {
     loadPositiveRecords()
   }, [])
 
-  const loadMonthlySummary = async () => {
-    setMonthlySummaryError('')
-    setMonthlySummaryLoading(true)
-    try {
-      const data = await checkInApi.getExerciseMonthlySummary(summaryMonth)
-      setMonthlySummary(data ?? null)
-    } catch {
-      setMonthlySummaryError('加载失败，请稍后重试')
-      setMonthlySummary(null)
-    } finally {
-      setMonthlySummaryLoading(false)
-    }
-  }
-  useEffect(() => {
-    loadMonthlySummary()
-  }, [summaryMonth])
-
-  const loadCheckedDays = async () => {
-    const days = await checkInApi.getExerciseCheckedDays(summaryMonth)
-    setCheckedDays(new Set(days))
-  }
-  useEffect(() => {
-    loadCheckedDays()
-  }, [summaryMonth])
 
   const getSportName = (id: string) => {
     const s = sportTypes.find(st => st.id === id)
     return s ? s.name : id
   }
   
-  const getDaysInMonth = (date: Date) => {
-    const year = date.getFullYear()
-    const month = date.getMonth()
-    const firstDay = new Date(year, month, 1).getDay()
-    const daysInMonth = new Date(year, month + 1, 0).getDate()
-    return { firstDay, daysInMonth }
-  }
-
-  const { firstDay, daysInMonth } = getDaysInMonth(currentMonth)
-
-  const prevMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() - 1))
-  }
-
-  const nextMonth = () => {
-    setCurrentMonth(new Date(currentMonth.getFullYear(), currentMonth.getMonth() + 1))
-  }
-
   const defaultSportType = sportTypes.find(s => s.isEnabled) ?? sportTypes[0]
 
   const handleStartExerciseCheckIn = () => {
@@ -199,7 +150,6 @@ const getExerciseIcon = (sportTypeId: string) => {
       setShowSuccess(true)
       setSuccessData({ type: 'exercise', title: '运动打卡成功' })
       await loadExerciseRecords()
-      await loadCheckedDays()
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : '提交失败')
     } finally {
@@ -221,8 +171,6 @@ const getExerciseIcon = (sportTypeId: string) => {
     setSuccessData(null)
   }
 
-  const monthNames = ['一月', '二月', '三月', '四月', '五月', '六月', '七月', '八月', '九月', '十月', '十一月', '十二月']
-  const weekNames = ['日', '一', '二', '三', '四', '五', '六']
 
 const getPositiveIcon = (categoryId: string) => {
   switch (categoryId) {
@@ -524,86 +472,6 @@ const getPositiveIcon = (categoryId: string) => {
         </>
       )}
 
-      {/* 日历 */}
-      <div className="section">
-        <div className="calendar">
-          <div className="calendar-header">
-            <button className="btn btn-secondary" style={{ padding: '8px' }} onClick={prevMonth}>
-              <ChevronLeft size={18} />
-            </button>
-            <span className="font-semibold">
-              {currentMonth.getFullYear()}年 {monthNames[currentMonth.getMonth()]}
-            </span>
-            <button className="btn btn-secondary" style={{ padding: '8px' }} onClick={nextMonth}>
-              <ChevronRight size={18} />
-            </button>
-          </div>
-          
-          <div className="calendar-grid">
-            {weekNames.map(day => (
-              <div key={day} className="calendar-day" style={{ fontWeight: 600, color: '#6B7280' }}>
-                {day}
-              </div>
-            ))}
-            
-            {Array.from({ length: firstDay }).map((_, i) => (
-              <div key={`empty-${i}`} className="calendar-day other-month"></div>
-            ))}
-            
-            {Array.from({ length: daysInMonth }).map((_, i) => {
-              const day = i + 1
-              const today = new Date()
-              const isToday = day === today.getDate() && 
-                currentMonth.getMonth() === today.getMonth() && 
-                currentMonth.getFullYear() === today.getFullYear()
-              const isChecked = checkedDays.has(day)
-              
-              return (
-                <div 
-                  key={day} 
-                  className={`calendar-day ${isToday ? 'today' : ''} ${isChecked ? 'checked' : ''}`}
-                >
-                  {day}
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* 运动月度统计（跟随上方日历月份） */}
-      <div className="section">
-        <h4 className="section-title">
-          运动月度统计 · {currentMonth.getFullYear()}年{monthNames[currentMonth.getMonth()]}
-        </h4>
-        {monthlySummaryError ? (
-          <div className="stats-empty" style={{ padding: 16, textAlign: 'center', color: 'var(--text-secondary)' }}>
-            {monthlySummaryError}
-            <button type="button" className="btn btn-secondary" style={{ marginTop: 8 }} onClick={loadMonthlySummary}>重试</button>
-          </div>
-        ) : monthlySummaryLoading ? (
-          <div className="stats-empty" style={{ padding: 16, textAlign: 'center', color: 'var(--text-secondary)' }}>加载中...</div>
-        ) : (
-          <div className="stats-grid">
-            <div className="stat-card">
-              <div className="stat-value">{monthlySummary?.count ?? 0}</div>
-              <div className="stat-label">运动次数</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-value" style={{ color: '#10B981' }}>{monthlySummary?.totalDurationMinutes ?? 0}</div>
-              <div className="stat-label">总时长(分钟)</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-value" style={{ color: '#4F46E5' }}>{(monthlySummary?.totalDistanceKm ?? 0).toFixed(1)}</div>
-              <div className="stat-label">总距离(km)</div>
-            </div>
-            <div className="stat-card">
-              <div className="stat-value" style={{ color: '#F59E0B' }}>{monthlySummary?.totalCalories ?? 0}</div>
-              <div className="stat-label">卡路里(估)</div>
-            </div>
-          </div>
-        )}
-      </div>
     </div>
   )
 }

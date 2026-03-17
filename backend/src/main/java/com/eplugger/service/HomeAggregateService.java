@@ -33,7 +33,7 @@ import java.util.stream.Stream;
 public class HomeAggregateService {
 
     private static final int TODAY_TARGET_COUNT = 3;
-    private static final int WEEK_TARGET_COUNT = 15;
+    private static final int WEEK_TARGET_COUNT = 10;
     private static final int HOT_POSTS_SIZE = 3;
     private static final int RECENT_CHECK_INS_SIZE = 3;
     private static final DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
@@ -78,8 +78,9 @@ public class HomeAggregateService {
         // 今日/本周进度（按次数）
         int todayDone = checkInRecordRepository.findByUserIdAndCheckedInAtBetween(userId, todayStart, todayEnd).size()
                 + positiveRecordRepository.findByUser_IdAndCreatedAtBetween(userId, todayStart, todayEnd).size();
-        int weekDone = checkInRecordRepository.findByUserIdAndCheckedInAtBetween(userId, weekStart, weekEnd).size()
-                + positiveRecordRepository.findByUser_IdAndCreatedAtBetween(userId, weekStart, weekEnd).size();
+        int weekExercise = checkInRecordRepository.findByUserIdAndCheckedInAtBetween(userId, weekStart, weekEnd).size();
+        int weekPositive = positiveRecordRepository.findByUser_IdAndCreatedAtBetween(userId, weekStart, weekEnd).size();
+        int weekDone = weekExercise + weekPositive;
 
         var todayProgress = exerciseCheckInService.getTodayProgress(userId, zoneId);
         var weekProgress = exerciseCheckInService.getWeekProgress(userId, zoneId);
@@ -117,6 +118,8 @@ public class HomeAggregateService {
         userStats.setRank(rank);
         userStats.setRankChange(0);
         res.setUserStats(userStats);
+        res.setWeekExerciseCount(weekExercise);
+        res.setWeekPositiveCount(weekPositive);
 
         // 最近 3 条打卡（运动 + 正向按时间合并取前 3）
         res.setRecentCheckIns(buildRecentCheckIns(userId, zoneId));

@@ -43,6 +43,10 @@ export interface HomeResponse {
   todayProgress: ProgressSummary
   weekProgress: ProgressSummary
   userStats: UserStats
+  /** 本周运动打卡次数 */
+  weekExerciseCount?: number
+  /** 本周正向打卡次数 */
+  weekPositiveCount?: number
   recentCheckIns: RecentCheckInItem[]
   hotPosts: HotPostItem[]
 }

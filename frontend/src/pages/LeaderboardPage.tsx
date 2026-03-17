@@ -182,8 +182,8 @@ export default function LeaderboardPage() {
   }
 
   return (
-    <div className="page">
-      {/* 筛选：积分榜、运动榜、正向榜 */}
+    <div className="page page-leaderboard">
+      {/* tab 切换 */}
       <div className="tab-switcher" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
         <button 
           className={`tab-btn ${activeType === 'points' ? 'active' : ''}`}
@@ -207,7 +207,7 @@ export default function LeaderboardPage() {
 
       {/* 排行榜 */}
       <>
-        {/* Current User Rank - 原色布局，排名与积分字号一致、中间·隔开 */}
+        {/* Current User Rank */}
         <div className="card leaderboard-my-rank-card">
           <div className="flex justify-between items-center">
             <div>
@@ -275,7 +275,10 @@ export default function LeaderboardPage() {
               <div className="leaderboard-podium">
                 <div className="podium-column podium-2nd">
                   <div className="podium-user">
-                    <div className="podium-avatar">{currentData[1].initial}</div>
+                    <div className="podium-avatar-wrap">
+                      <div className="podium-avatar">{currentData[1].initial}</div>
+                      <img src="/rank-frame-2.png" className="podium-frame" alt="" />
+                    </div>
                     <div className="podium-name">{currentData[1].name}</div>
                     <div className="podium-value">{currentData[1].value}<span className="podium-unit">{unit}</span></div>
                   </div>
@@ -285,7 +288,10 @@ export default function LeaderboardPage() {
                 </div>
                 <div className="podium-column podium-1st">
                   <div className="podium-user">
-                    <div className="podium-avatar">{currentData[0].initial}</div>
+                    <div className="podium-avatar-wrap">
+                      <div className="podium-avatar">{currentData[0].initial}</div>
+                      <img src="/rank-frame-1.png" className="podium-frame" alt="" />
+                    </div>
                     <div className="podium-name">{currentData[0].name}</div>
                     <div className="podium-value">{currentData[0].value}<span className="podium-unit">{unit}</span></div>
                   </div>
@@ -295,7 +301,10 @@ export default function LeaderboardPage() {
                 </div>
                 <div className="podium-column podium-3rd">
                   <div className="podium-user">
-                    <div className="podium-avatar">{currentData[2].initial}</div>
+                    <div className="podium-avatar-wrap">
+                      <div className="podium-avatar">{currentData[2].initial}</div>
+                      <img src="/rank-frame-3.png" className="podium-frame" alt="" />
+                    </div>
                     <div className="podium-name">{currentData[2].name}</div>
                     <div className="podium-value">{currentData[2].value}<span className="podium-unit">{unit}</span></div>
                   </div>

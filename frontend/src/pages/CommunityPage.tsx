@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Flame, Users, Clock, Grid3X3, Search, X, Trash2, Plus } from 'lucide-react'
+import { Search, X, Trash2, Plus } from 'lucide-react'
 import type { Post, FeedFilter, FollowedUser } from '../types/community'
 import { FEED_FILTERS } from '../types/community'
 import PostCard from '../components/community/PostCard'
@@ -209,15 +209,6 @@ export default function CommunityPage() {
     setPostToDelete(null)
   }
 
-  const getFilterIcon = (filter: FeedFilter) => {
-    switch (filter) {
-      case 'latest': return <Clock size={14} />
-      case 'popular': return <Flame size={14} />
-      case 'department': return <Users size={14} />
-      case 'following': return <Grid3X3 size={14} />
-      default: return <Clock size={14} />
-    }
-  }
   
   // 提交检索关键词（Enter 或失焦）：与当前 filter 组合请求后端
   const submitSearchKeyword = () => {
@@ -322,93 +313,94 @@ export default function CommunityPage() {
               className={'filter-tag ' + (activeFilter === filter.value ? 'active' : '')}
               onClick={() => changeFilter(filter.value)}
             >
-              {getFilterIcon(filter.value)}
               {filter.label}
             </button>
           ))}
         </div>
       </header>
 
-      {/* 关注标签下：已关注用户横向列表 */}
-      {activeFilter === 'following' && (
-        <FollowingUserRow
-          users={followingUsers}
-          loading={followingLoading}
-          error={followingError}
-          onRetry={() => { followingLoadedRef.current = false; loadFollowingUsers() }}
-        />
-      )}
-
-      {/* 检索无结果提示：已提交关键词且列表为空且非加载错误 */}
-      {searchKeyword && !loadError && posts.length === 0 && (
-        <div className="empty-feed">
-          <p>未找到相关动态</p>
-          <p className="empty-hint">试试其他关键词或筛选条件</p>
-          <button type="button" className="load-more-btn" onClick={clearSearch}>
-            清空搜索
-          </button>
-        </div>
-      )}
-
-      {/* 动态列表 */}
-      <div
-        className={'feed-content' + (
-          slideDirection === 'left' ? ' slide-left' : slideDirection === 'right' ? ' slide-right' : ''
-        )}
-        onAnimationEnd={() => setSlideDirection(null)}
-      >
-        {loadError && (
-          <div className="empty-feed">
-            <p>{loadError}</p>
-            <button type="button" className="load-more-btn" onClick={() => loadPosts(true)}>
-              重试
-            </button>
-          </div>
-        )}
-        {!loadError && posts.map((post) => (
-          <PostCard
-            key={post.id}
-            post={{
-              ...post,
-              isAuthorFollowed: followingUserIds.has(post.author.id) || post.isAuthorFollowed,
-            }}
-            currentUserId={currentUserId}
-            onLike={handleLike}
-            onComment={handleComment}
-            onShare={handleShare}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            onFollow={handleFollow}
-            onUnfollow={handleUnfollow}
-            onOpenDetail={(postId) => navigate('/community/' + postId, { state: { post } })}
+      <div className="community-body-frame">
+        {/* 关注标签下：已关注用户横向列表 */}
+        {activeFilter === 'following' && (
+          <FollowingUserRow
+            users={followingUsers}
+            loading={followingLoading}
+            error={followingError}
+            onRetry={() => { followingLoadedRef.current = false; loadFollowingUsers() }}
           />
-        ))}
-        
-        {/* 加载更多 */}
-        {hasMore && posts.length > 0 && (
-          <div className="loading-more">
-            <button 
-              className="load-more-btn"
-              onClick={handleLoadMore}
-              disabled={isLoadingMore}
-            >
-              {isLoadingMore ? '加载中...' : '加载更多'}
+        )}
+
+        {/* 检索无结果提示：已提交关键词且列表为空且非加载错误 */}
+        {searchKeyword && !loadError && posts.length === 0 && (
+          <div className="empty-feed">
+            <p>未找到相关动态</p>
+            <p className="empty-hint">试试其他关键词或筛选条件</p>
+            <button type="button" className="load-more-btn" onClick={clearSearch}>
+              清空搜索
             </button>
           </div>
         )}
 
-        {!hasMore && posts.length > 0 && !loadError && (
-          <div className="loading-more">
-            <span className="load-all">已加载全部</span>
-          </div>
-        )}
+        {/* 动态列表 */}
+        <div
+          className={'feed-content' + (
+            slideDirection === 'left' ? ' slide-left' : slideDirection === 'right' ? ' slide-right' : ''
+          )}
+          onAnimationEnd={() => setSlideDirection(null)}
+        >
+          {loadError && (
+            <div className="empty-feed">
+              <p>{loadError}</p>
+              <button type="button" className="load-more-btn" onClick={() => loadPosts(true)}>
+                重试
+              </button>
+            </div>
+          )}
+          {!loadError && posts.map((post) => (
+            <PostCard
+              key={post.id}
+              post={{
+                ...post,
+                isAuthorFollowed: followingUserIds.has(post.author.id) || post.isAuthorFollowed,
+              }}
+              currentUserId={currentUserId}
+              onLike={handleLike}
+              onComment={handleComment}
+              onShare={handleShare}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+              onFollow={handleFollow}
+              onUnfollow={handleUnfollow}
+              onOpenDetail={(postId) => navigate('/community/' + postId, { state: { post } })}
+            />
+          ))}
+          
+          {/* 加载更多 */}
+          {hasMore && posts.length > 0 && (
+            <div className="loading-more">
+              <button
+                className="load-more-btn"
+                onClick={handleLoadMore}
+                disabled={isLoadingMore}
+              >
+                {isLoadingMore ? '加载中...' : '加载更多'}
+              </button>
+            </div>
+          )}
 
-        {!loadError && posts.length === 0 && !searchKeyword && activeFilter !== 'following' && (
-          <div className="empty-feed">
-            <p>暂无动态</p>
-            <p className="empty-hint">快来发布第一条动态吧~</p>
-          </div>
-        )}
+          {!hasMore && posts.length > 0 && !loadError && (
+            <div className="loading-more">
+              <span className="load-all">已加载全部</span>
+            </div>
+          )}
+
+          {!loadError && posts.length === 0 && !searchKeyword && activeFilter !== 'following' && (
+            <div className="empty-feed">
+              <p>暂无动态</p>
+              <p className="empty-hint">快来发布第一条动态吧~</p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* 右下角悬浮发布按钮（与设计系统 .fab-button 统一） */}

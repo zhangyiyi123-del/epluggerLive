@@ -102,7 +102,7 @@ export interface Comment {
 }
 
 // 筛选类型
-export type FeedFilter = 'latest' | 'popular' | 'department' | 'following'
+export type FeedFilter = 'latest' | 'popular' | 'following'
 
 // 动态筛选选项
 export interface FeedFilterOption {
@@ -112,10 +112,9 @@ export interface FeedFilterOption {
 }
 
 export const FEED_FILTERS: FeedFilterOption[] = [
-  { value: 'latest', label: '最新', icon: '🕐' },
-  { value: 'popular', label: '热门', icon: '🔥' },
-  { value: 'department', label: '本部门', icon: '🏢' },
-  { value: 'following', label: '关注', icon: '❤️' },
+  { value: 'latest', label: '最新', icon: '' },
+  { value: 'popular', label: '热门', icon: '' },
+  { value: 'following', label: '关注', icon: '' },
 ]
 
 // 表单数据

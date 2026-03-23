@@ -17,6 +17,7 @@ C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\HealthController.ja
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\dto\PositiveCheckInRequest.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\repository\NotificationRepository.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\repository\UserPointsRepository.java
+C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\domain\entity\UserFollow.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\repository\SportTypeRepository.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\PointsController.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\NotificationController.java
@@ -45,6 +46,7 @@ C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\service\MallService.jav
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\dto\PostDto.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\dto\PositiveRecordItem.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\dto\UserMeResponse.java
+C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\FollowController.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\domain\entity\CommentLike.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\CommentController.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\domain\entity\PositiveCategory.java
@@ -58,7 +60,9 @@ C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\domain\entity\Notificat
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\AuthController.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\FileUploadController.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\repository\PositiveCategoryRepository.java
+C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\dto\FollowedUserDto.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\HomeController.java
+C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\service\FollowService.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\repository\PostRepository.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\domain\entity\PositiveRecord.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\domain\entity\CheckInRecord.java
@@ -95,5 +99,6 @@ C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\service\NotificationSer
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\service\PostService.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\repository\PointsRecordRepository.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\repository\TopicRepository.java
+C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\repository\UserFollowRepository.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\service\PositiveCheckInService.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\MallController.java

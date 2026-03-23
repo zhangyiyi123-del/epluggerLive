@@ -1,10 +1,12 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Flame, Users, Clock, Grid3X3, Search, X, Trash2, Plus } from 'lucide-react'
-import type { Post, FeedFilter } from '../types/community'
+import type { Post, FeedFilter, FollowedUser } from '../types/community'
 import { FEED_FILTERS } from '../types/community'
 import PostCard from '../components/community/PostCard'
+import FollowingUserRow from '../components/community/FollowingUserRow'
 import { getPosts, likePost, deletePost } from '../api/community'
+import { followUser, unfollowUser, getFollowingUsers } from '../api/follow'
 import { getUnreadCount } from '../api/points'
 
 export default function CommunityPage() {
@@ -26,6 +28,25 @@ export default function CommunityPage() {
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null)
   
   const [unreadCount, setUnreadCount] = useState(0)
+
+  // 已关注用户列表
+  const [followingUsers, setFollowingUsers] = useState<FollowedUser[]>([])
+  const [followingUserIds, setFollowingUserIds] = useState<Set<string>>(new Set())
+  const [followingLoading, setFollowingLoading] = useState(false)
+  const [followingError, setFollowingError] = useState(false)
+  const followingLoadedRef = useRef(false)
+
+  // 当前用户 ID（从 localStorage 读取）
+  const currentUserId = (() => {
+    try {
+      const raw = localStorage.getItem('currentUser') || localStorage.getItem('user')
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        return String(parsed.id ?? parsed.userId ?? '')
+      }
+    } catch {}
+    return ''
+  })()
 
   useEffect(() => {
     getUnreadCount().then(setUnreadCount)
@@ -97,6 +118,70 @@ export default function CommunityPage() {
 
   const handleEdit = (postId: string) => {
     console.log('Edit post:', postId)
+  }
+
+  // 加载已关注用户列表（切换到"关注"标签时调用）
+  const loadFollowingUsers = async () => {
+    setFollowingLoading(true)
+    setFollowingError(false)
+    try {
+      const users = await getFollowingUsers()
+      setFollowingUsers(users)
+      setFollowingUserIds(new Set(users.map(u => u.id)))
+    } catch {
+      setFollowingError(true)
+    } finally {
+      setFollowingLoading(false)
+    }
+  }
+
+  // 切换到"关注"标签时加载关注列表
+  useEffect(() => {
+    if (activeFilter === 'following' && !followingLoadedRef.current) {
+      followingLoadedRef.current = true
+      loadFollowingUsers()
+    }
+  }, [activeFilter])
+
+  const handleFollow = async (authorId: string) => {
+    // 乐观更新
+    setPosts(prev => prev.map(p =>
+      p.author.id === authorId ? { ...p, isAuthorFollowed: true } : p
+    ))
+    try {
+      const followed = await followUser(authorId)
+      setFollowingUsers(prev => {
+        if (prev.find(u => u.id === authorId)) return prev
+        return [followed, ...prev]
+      })
+      setFollowingUserIds(prev => new Set([...prev, authorId]))
+    } catch {
+      // 回退乐观更新
+      setPosts(prev => prev.map(p =>
+        p.author.id === authorId ? { ...p, isAuthorFollowed: false } : p
+      ))
+    }
+  }
+
+  const handleUnfollow = async (authorId: string) => {
+    // 乐观更新
+    setPosts(prev => prev.map(p =>
+      p.author.id === authorId ? { ...p, isAuthorFollowed: false } : p
+    ))
+    try {
+      await unfollowUser(authorId)
+      setFollowingUsers(prev => prev.filter(u => u.id !== authorId))
+      setFollowingUserIds(prev => {
+        const next = new Set(prev)
+        next.delete(authorId)
+        return next
+      })
+    } catch {
+      // 回退乐观更新
+      setPosts(prev => prev.map(p =>
+        p.author.id === authorId ? { ...p, isAuthorFollowed: true } : p
+      ))
+    }
   }
 
   const handleDelete = (postId: string) => {
@@ -244,6 +329,16 @@ export default function CommunityPage() {
         </div>
       </header>
 
+      {/* 关注标签下：已关注用户横向列表 */}
+      {activeFilter === 'following' && (
+        <FollowingUserRow
+          users={followingUsers}
+          loading={followingLoading}
+          error={followingError}
+          onRetry={() => { followingLoadedRef.current = false; loadFollowingUsers() }}
+        />
+      )}
+
       {/* 检索无结果提示：已提交关键词且列表为空且非加载错误 */}
       {searchKeyword && !loadError && posts.length === 0 && (
         <div className="empty-feed">
@@ -273,12 +368,18 @@ export default function CommunityPage() {
         {!loadError && posts.map((post) => (
           <PostCard
             key={post.id}
-            post={post}
+            post={{
+              ...post,
+              isAuthorFollowed: followingUserIds.has(post.author.id) || post.isAuthorFollowed,
+            }}
+            currentUserId={currentUserId}
             onLike={handleLike}
             onComment={handleComment}
             onShare={handleShare}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            onFollow={handleFollow}
+            onUnfollow={handleUnfollow}
             onOpenDetail={(postId) => navigate('/community/' + postId, { state: { post } })}
           />
         ))}
@@ -302,7 +403,7 @@ export default function CommunityPage() {
           </div>
         )}
 
-        {!loadError && posts.length === 0 && !searchKeyword && (
+        {!loadError && posts.length === 0 && !searchKeyword && activeFilter !== 'following' && (
           <div className="empty-feed">
             <p>暂无动态</p>
             <p className="empty-hint">快来发布第一条动态吧~</p>

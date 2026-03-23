@@ -20,6 +20,7 @@ public class PostDto {
     private int commentsCount;
     private boolean liked;
     private boolean collected;
+    private boolean following;
     private boolean canEdit;
     private boolean canDelete;
     private Instant createdAt;
@@ -49,6 +50,8 @@ public class PostDto {
     public void setLiked(boolean liked) { this.liked = liked; }
     public boolean isCollected() { return collected; }
     public void setCollected(boolean collected) { this.collected = collected; }
+    public boolean isFollowing() { return following; }
+    public void setFollowing(boolean following) { this.following = following; }
     public boolean isCanEdit() { return canEdit; }
     public void setCanEdit(boolean canEdit) { this.canEdit = canEdit; }
     public boolean isCanDelete() { return canDelete; }

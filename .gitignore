@@ -1,2 +1,22 @@
 /.cursor
 /.specify
+
+# Java / Maven
+target/
+*.class
+*.jar
+.gradle/
+
+# Node.js / Frontend
+node_modules/
+dist/
+build/
+*.log
+
+# Environment
+.env
+.env.*
+
+# OS
+.DS_Store
+Thumbs.db

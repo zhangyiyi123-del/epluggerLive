@@ -7,6 +7,7 @@ import com.eplugger.repository.PostFavoriteRepository;
 import com.eplugger.repository.PostLikeRepository;
 import com.eplugger.repository.PostRepository;
 import com.eplugger.repository.TopicRepository;
+import com.eplugger.repository.UserFollowRepository;
 import com.eplugger.repository.UserRepository;
 import com.eplugger.web.dto.PostCreateRequest;
 import com.eplugger.web.dto.PostDto;
@@ -40,6 +41,7 @@ public class PostService {
     private final PostFavoriteRepository postFavoriteRepository;
     private final TopicRepository topicRepository;
     private final UserRepository userRepository;
+    private final UserFollowRepository userFollowRepository;
     private final NotificationService notificationService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -49,6 +51,7 @@ public class PostService {
             PostFavoriteRepository postFavoriteRepository,
             TopicRepository topicRepository,
             UserRepository userRepository,
+            UserFollowRepository userFollowRepository,
             NotificationService notificationService
     ) {
         this.postRepository = postRepository;
@@ -56,6 +59,7 @@ public class PostService {
         this.postFavoriteRepository = postFavoriteRepository;
         this.topicRepository = topicRepository;
         this.userRepository = userRepository;
+        this.userFollowRepository = userFollowRepository;
         this.notificationService = notificationService;
     }
 
@@ -107,6 +111,15 @@ public class PostService {
                             : postRepository.findByKeywordOrderByCreatedAtDesc(keyword.trim(), pageable);
                     break;
                 case "following":
+                    if (currentUserId == null) {
+                        page = new PageImpl<>(List.of(), pageable, 0);
+                    } else {
+                        List<Long> followeeIds = userFollowRepository.findFolloweeIdsByFollowerId(currentUserId);
+                        page = followeeIds.isEmpty()
+                                ? new PageImpl<>(List.of(), pageable, 0)
+                                : postRepository.findByAuthor_IdInAndKeywordOrderByCreatedAtDesc(followeeIds, keyword.trim(), pageable);
+                    }
+                    break;
                 default:
                     page = postRepository.findByKeywordOrderByCreatedAtDesc(keyword.trim(), pageable);
                     break;
@@ -122,7 +135,14 @@ public class PostService {
                             : postRepository.findAllByOrderByCreatedAtDesc(pageable);
                     break;
                 case "following":
-                    page = postRepository.findAllByOrderByCreatedAtDesc(pageable);
+                    if (currentUserId == null) {
+                        page = new PageImpl<>(List.of(), pageable, 0);
+                    } else {
+                        List<Long> followeeIds = userFollowRepository.findFolloweeIdsByFollowerId(currentUserId);
+                        page = followeeIds.isEmpty()
+                                ? new PageImpl<>(List.of(), pageable, 0)
+                                : postRepository.findByAuthor_IdInOrderByCreatedAtDesc(followeeIds, pageable);
+                    }
                     break;
                 default:
                     page = postRepository.findAllByOrderByCreatedAtDesc(pageable);
@@ -140,7 +160,7 @@ public class PostService {
 
     /**
      * 批量将 Post 列表转为 PostDto，避免 N+1 查询：
-     * likes/favorites/topics/mentionUsers 均批量加载。
+     * likes/favorites/following/topics/mentionUsers 均批量加载。
      */
     private List<PostDto> mapPageToDtos(List<Post> posts, Long currentUserId) {
         if (posts.isEmpty()) return List.of();
@@ -153,6 +173,14 @@ public class PostService {
                 : Collections.emptySet();
         Set<Long> favoritedIds = currentUserId != null && !postIds.isEmpty()
                 ? postFavoriteRepository.findFavoritedPostIds(currentUserId, postIds)
+                : Collections.emptySet();
+
+        // 批量加载 following：当前用户是否关注了这批动态的作者
+        Set<Long> authorIds = posts.stream()
+                .map(p -> p.getAuthor().getId())
+                .collect(Collectors.toSet());
+        Set<Long> followingAuthorIds = currentUserId != null && !authorIds.isEmpty()
+                ? userFollowRepository.findFolloweeIdsByFollowerIdAndFolloweeIdIn(currentUserId, authorIds)
                 : Collections.emptySet();
 
         // 批量加载 topics（一次查询代替 N*T 次）
@@ -178,7 +206,7 @@ public class PostService {
                         .collect(Collectors.toMap(User::getId, Function.identity()));
 
         return posts.stream()
-                .map(p -> toPostDtoBatch(p, currentUserId, likedIds, favoritedIds, topicMap, mentionUserMap))
+                .map(p -> toPostDtoBatch(p, currentUserId, likedIds, favoritedIds, followingAuthorIds, topicMap, mentionUserMap))
                 .collect(Collectors.toList());
     }
 
@@ -253,6 +281,7 @@ public class PostService {
     /** 批量场景下使用：所有关联数据已预先加载。 */
     private PostDto toPostDtoBatch(Post p, Long currentUserId,
                                    Set<Long> likedPostIds, Set<Long> favoritedPostIds,
+                                   Set<Long> followingAuthorIds,
                                    Map<String, Topic> topicMap, Map<Long, User> mentionUserMap) {
         PostDto dto = new PostDto();
         dto.setId(p.getId());
@@ -267,6 +296,7 @@ public class PostService {
         dto.setCommentsCount(p.getCommentsCount());
         dto.setLiked(currentUserId != null && likedPostIds.contains(p.getId()));
         dto.setCollected(currentUserId != null && favoritedPostIds.contains(p.getId()));
+        dto.setFollowing(currentUserId != null && followingAuthorIds.contains(p.getAuthor().getId()));
         dto.setCanEdit(currentUserId != null && p.getAuthor().getId().equals(currentUserId));
         dto.setCanDelete(currentUserId != null && p.getAuthor().getId().equals(currentUserId));
         dto.setCreatedAt(p.getCreatedAt());
@@ -289,6 +319,8 @@ public class PostService {
         dto.setCommentsCount(p.getCommentsCount());
         dto.setLiked(currentUserId != null && postLikeRepository.existsByPost_IdAndUser_Id(p.getId(), currentUserId));
         dto.setCollected(currentUserId != null && postFavoriteRepository.existsByPost_IdAndUser_Id(p.getId(), currentUserId));
+        dto.setFollowing(currentUserId != null && !currentUserId.equals(p.getAuthor().getId())
+                && userFollowRepository.existsByFollower_IdAndFollowee_Id(currentUserId, p.getAuthor().getId()));
         dto.setCanEdit(currentUserId != null && p.getAuthor().getId().equals(currentUserId));
         dto.setCanDelete(currentUserId != null && p.getAuthor().getId().equals(currentUserId));
         dto.setCreatedAt(p.getCreatedAt());

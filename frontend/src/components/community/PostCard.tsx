@@ -6,23 +6,47 @@ import ImageLightbox from './ImageLightbox'
 
 interface PostCardProps {
   post: Post
+  currentUserId?: string
   onLike: (postId: string) => void
   onComment: (postId: string) => void
   onShare: (postId: string) => void
   onEdit?: (postId: string) => void
   onDelete?: (postId: string) => void
-   // 进入帖子详情
+  onFollow?: (authorId: string) => Promise<void>
+  onUnfollow?: (authorId: string) => Promise<void>
+  // 进入帖子详情
   onOpenDetail?: (postId: string) => void
 }
 
-export default function PostCard({ post, onLike, onComment, onShare, onEdit: _onEdit, onDelete, onOpenDetail }: PostCardProps) {
+export default function PostCard({ post, currentUserId, onLike, onComment, onShare, onEdit: _onEdit, onDelete, onFollow, onUnfollow, onOpenDetail }: PostCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
+  const [followLoading, setFollowLoading] = useState(false)
+  const [followAnimating, setFollowAnimating] = useState(false)
 
   const handleLike = () => {
-    // 仅触发数据层面的点赞，不额外添加样式或动画
     onLike(post.id)
+  }
+
+  const isOwnPost = currentUserId && currentUserId === post.author.id
+  const showFollowBtn = !isOwnPost && (onFollow || onUnfollow)
+
+  const handleFollowClick = async (e: MouseEvent<HTMLButtonElement>) => {
+    e.stopPropagation()
+    if (followLoading) return
+    setFollowLoading(true)
+    try {
+      if (post.isAuthorFollowed) {
+        await onUnfollow?.(post.author.id)
+      } else {
+        await onFollow?.(post.author.id)
+      }
+      // 操作成功后触发动画
+      setFollowAnimating(true)
+    } finally {
+      setFollowLoading(false)
+    }
   }
 
   const formatTime = (dateStr: string) => {
@@ -72,15 +96,34 @@ export default function PostCard({ post, onLike, onComment, onShare, onEdit: _on
         </div>
       )}
 
-      {/* 头部：头像、昵称、部门时间一行对齐 */}
-      <div className="post-header" onClick={handleOpenDetail} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleOpenDetail() } }} aria-label="查看详情">
-        <div className="post-author">
+      {/* 头部：头像、昵称、部门时间、关注按钮 */}
+      <div className="post-header">
+        <div className="post-author" onClick={handleOpenDetail} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleOpenDetail() } }} aria-label="查看详情" style={{ flex: 1, cursor: 'pointer' }}>
           <div className="avatar">{post.author.avatar || post.author.name[0]}</div>
           <div className="post-author-info">
             <span className="author-name">{post.author.name}</span>
             <span className="author-dept">{post.author.department} · {formatTime(post.createdAt)}</span>
           </div>
         </div>
+        {showFollowBtn && (
+          <button
+            type="button"
+            className={[
+              'follow-btn',
+              post.isAuthorFollowed ? 'following' : '',
+              followAnimating ? 'follow-btn--pop' : '',
+            ].filter(Boolean).join(' ')}
+            onClick={handleFollowClick}
+            disabled={followLoading}
+            aria-label={post.isAuthorFollowed ? '取消关注' : '关注'}
+            onAnimationEnd={() => setFollowAnimating(false)}
+          >
+            <span className="follow-btn__icon" aria-hidden>
+              {post.isAuthorFollowed ? '✓' : '+'}
+            </span>
+            {post.isAuthorFollowed ? '已关注' : '关注'}
+          </button>
+        )}
       </div>
 
       {/* 内容 */}

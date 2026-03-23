@@ -73,6 +73,7 @@ interface PostDto {
   commentsCount: number
   liked: boolean
   collected: boolean
+  following: boolean
   canEdit: boolean
   canDelete: boolean
   createdAt: string
@@ -129,6 +130,7 @@ function mapPost(d: PostDto): Post {
     commentsCount: d.commentsCount ?? 0,
     isLiked: d.liked ?? false,
     isCollected: d.collected ?? false,
+    isAuthorFollowed: d.following ?? false,
     isFeatured: false,
     isPinned: false,
     canEdit: d.canEdit ?? false,

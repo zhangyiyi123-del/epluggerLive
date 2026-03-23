@@ -1,5 +1,6 @@
 com\eplugger\domain\entity\PositiveRecord.class
 com\eplugger\web\dto\CommentCreateRequest.class
+com\eplugger\web\dto\FollowedUserDto.class
 com\eplugger\repository\SportTypeRepository.class
 com\eplugger\domain\entity\Topic.class
 com\eplugger\repository\PositiveRecordRepository.class
@@ -9,6 +10,8 @@ com\eplugger\web\dto\UserDto.class
 com\eplugger\web\dto\PositiveRecordItem.class
 com\eplugger\web\dto\LoginResponse.class
 com\eplugger\security\JwtAuthenticationFilter.class
+com\eplugger\repository\UserFollowRepository.class
+com\eplugger\domain\entity\UserFollow.class
 com\eplugger\web\dto\PostDto.class
 com\eplugger\web\dto\TopicDto.class
 com\eplugger\web\GlobalExceptionHandler$ErrorBody.class
@@ -94,9 +97,11 @@ com\eplugger\service\PostService$1.class
 com\eplugger\domain\entity\CheckInRecord.class
 com\eplugger\service\AuthService.class
 com\eplugger\repository\NotificationRepository.class
+com\eplugger\service\FollowService.class
 com\eplugger\service\NotificationService.class
 com\eplugger\domain\entity\User.class
 com\eplugger\repository\CheckInRecordRepository.class
+com\eplugger\web\FollowController.class
 com\eplugger\service\HomeAggregateService$RecordWithTime.class
 com\eplugger\web\dto\PointsRecordDto.class
 com\eplugger\EpluggerApplication.class

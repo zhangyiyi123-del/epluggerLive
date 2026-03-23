@@ -7,6 +7,14 @@ export interface User {
   position?: string
 }
 
+// 已关注用户摘要（用于「关注」标签下横向列表展示）
+export interface FollowedUser {
+  id: string
+  name: string
+  avatar?: string
+  department: string
+}
+
 // 可见范围
 export type VisibilityType = 'company' | 'department' | 'project' | 'custom'
 
@@ -69,6 +77,7 @@ export interface Post {
   commentsCount: number
   isLiked: boolean
   isCollected: boolean
+  isAuthorFollowed: boolean
   isFeatured: boolean
   isPinned: boolean
   canEdit: boolean

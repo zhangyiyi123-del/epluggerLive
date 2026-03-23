@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Flame, Users, Clock, Grid3X3, Search, X, RefreshCw, Trash2, Plus } from 'lucide-react'
+import { Flame, Users, Clock, Grid3X3, Search, X, Trash2, Plus } from 'lucide-react'
 import type { Post, FeedFilter } from '../types/community'
 import { FEED_FILTERS } from '../types/community'
 import PostCard from '../components/community/PostCard'
 import { getPosts, likePost, deletePost } from '../api/community'
+import { getUnreadCount } from '../api/points'
 
 export default function CommunityPage() {
   const navigate = useNavigate()
@@ -18,13 +19,20 @@ export default function CommunityPage() {
   // 搜索：输入框内容与提交给后端的 keyword（Enter/失焦时提交）
   const [searchQuery, setSearchQuery] = useState('')
   const [searchKeyword, setSearchKeyword] = useState<string>('')
-  const [isRefreshing, setIsRefreshing] = useState(false)
   const [touchStartX, setTouchStartX] = useState<number | null>(null)
   const [currentFilterIndex, setCurrentFilterIndex] = useState(
     initialFilterIndex === -1 ? 0 : initialFilterIndex
   )
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null)
   
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  useEffect(() => {
+    getUnreadCount().then(setUnreadCount)
+    const timer = setInterval(() => getUnreadCount().then(setUnreadCount), 30000)
+    return () => clearInterval(timer)
+  }, [])
+
   // 删除确认弹窗状态
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [postToDelete, setPostToDelete] = useState<string | null>(null)
@@ -126,13 +134,6 @@ export default function CommunityPage() {
     }
   }
   
-  // 刷新功能
-  const handleAutoRefresh = async () => {
-    setIsRefreshing(true)
-    await loadPosts(true)
-    setIsRefreshing(false)
-  }
-
   // 提交检索关键词（Enter 或失焦）：与当前 filter 组合请求后端
   const submitSearchKeyword = () => {
     const k = searchQuery.trim()
@@ -217,11 +218,14 @@ export default function CommunityPage() {
         </div>
         <button
           type="button"
-          className="top-search-refresh"
-          onClick={handleAutoRefresh}
-          disabled={isRefreshing}
+          className="top-search-message"
+          onClick={() => navigate('/profile/messages')}
+          aria-label="私信"
         >
-          <RefreshCw size={16} className={isRefreshing ? 'spinning' : ''} />
+          <span className="msg-icon-wrap">
+            <img src="/icon-message.png" alt="私信" style={{ width: 36, height: 36 }} />
+            {unreadCount > 0 && <span className="msg-badge">{unreadCount > 99 ? '99+' : unreadCount}</span>}
+          </span>
         </button>
         </div>
         {/* 筛选标签 */}

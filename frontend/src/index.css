@@ -7747,10 +7747,6 @@ body {
   top: 0;
   z-index: 100;
   background: var(--bg-white);
-  background-image: url('/bg-community-header.png');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -7856,6 +7852,50 @@ body {
 .top-search-refresh:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.top-search-message {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  background: transparent;
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  padding: 2px;
+}
+
+.top-search-message:active {
+  transform: scale(0.92);
+}
+
+.msg-icon-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.msg-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 16px;
+  border-radius: 999px;
+  text-align: center;
+  white-space: nowrap;
+  box-shadow: 0 0 0 2px #fff;
 }
 
 /* 搜索结果提示�?*/

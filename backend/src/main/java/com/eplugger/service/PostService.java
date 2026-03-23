@@ -15,6 +15,7 @@ import com.eplugger.web.dto.UserDto;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,7 +23,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -82,7 +86,7 @@ public class PostService {
 
     public Optional<PostDto> getById(Long postId, Long currentUserId) {
         return postRepository.findById(postId)
-                .map(p -> toPostDto(p, currentUserId));
+                .map(p -> mapPageToDtos(List.of(p), currentUserId).get(0));
     }
 
     /**
@@ -124,12 +128,58 @@ public class PostService {
                     page = postRepository.findAllByOrderByCreatedAtDesc(pageable);
             }
         }
-        return page.map(p -> toPostDto(p, currentUserId));
+        List<PostDto> dtos = mapPageToDtos(page.getContent(), currentUserId);
+        return new PageImpl<>(dtos, pageable, page.getTotalElements());
     }
 
     public Page<PostDto> findMyPosts(Long authorId, Long currentUserId, Pageable pageable) {
-        return postRepository.findByAuthor_IdOrderByCreatedAtDesc(authorId, pageable)
-                .map(p -> toPostDto(p, currentUserId));
+        Page<Post> page = postRepository.findByAuthor_IdOrderByCreatedAtDesc(authorId, pageable);
+        List<PostDto> dtos = mapPageToDtos(page.getContent(), currentUserId);
+        return new PageImpl<>(dtos, pageable, page.getTotalElements());
+    }
+
+    /**
+     * 批量将 Post 列表转为 PostDto，避免 N+1 查询：
+     * likes/favorites/topics/mentionUsers 均批量加载。
+     */
+    private List<PostDto> mapPageToDtos(List<Post> posts, Long currentUserId) {
+        if (posts.isEmpty()) return List.of();
+
+        List<Long> postIds = posts.stream().map(Post::getId).collect(Collectors.toList());
+
+        // 批量加载 likes 和 favorites（一次查询代替 N 次）
+        Set<Long> likedIds = currentUserId != null && !postIds.isEmpty()
+                ? postLikeRepository.findLikedPostIds(currentUserId, postIds)
+                : Collections.emptySet();
+        Set<Long> favoritedIds = currentUserId != null && !postIds.isEmpty()
+                ? postFavoriteRepository.findFavoritedPostIds(currentUserId, postIds)
+                : Collections.emptySet();
+
+        // 批量加载 topics（一次查询代替 N*T 次）
+        Set<String> allTopicIds = posts.stream()
+                .map(Post::getTopicIds)
+                .filter(s -> s != null && !s.isBlank())
+                .flatMap(s -> java.util.Arrays.stream(s.split(",")))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .collect(Collectors.toSet());
+        Map<String, Topic> topicMap = allTopicIds.isEmpty() ? Collections.emptyMap()
+                : topicRepository.findAllById(allTopicIds).stream()
+                        .collect(Collectors.toMap(Topic::getId, Function.identity()));
+
+        // 批量加载 mention users（一次查询代替 N*M 次）
+        Set<Long> allMentionUserIds = posts.stream()
+                .map(Post::getMentionUserIds)
+                .filter(s -> s != null && !s.isBlank())
+                .flatMap(s -> splitLongIds(s).stream())
+                .collect(Collectors.toSet());
+        Map<Long, User> mentionUserMap = allMentionUserIds.isEmpty() ? Collections.emptyMap()
+                : userRepository.findAllById(allMentionUserIds).stream()
+                        .collect(Collectors.toMap(User::getId, Function.identity()));
+
+        return posts.stream()
+                .map(p -> toPostDtoBatch(p, currentUserId, likedIds, favoritedIds, topicMap, mentionUserMap))
+                .collect(Collectors.toList());
     }
 
     @Transactional
@@ -200,6 +250,31 @@ public class PostService {
                 .collect(Collectors.toList());
     }
 
+    /** 批量场景下使用：所有关联数据已预先加载。 */
+    private PostDto toPostDtoBatch(Post p, Long currentUserId,
+                                   Set<Long> likedPostIds, Set<Long> favoritedPostIds,
+                                   Map<String, Topic> topicMap, Map<Long, User> mentionUserMap) {
+        PostDto dto = new PostDto();
+        dto.setId(p.getId());
+        dto.setAuthor(toUserDto(p.getAuthor()));
+        dto.setContentText(p.getContentText());
+        dto.setContentImages(parseImages(p.getContentImages()));
+        dto.setVisibilityType(p.getVisibilityType());
+        dto.setTopics(resolveTopicsFromMap(p.getTopicIds(), topicMap));
+        dto.setMentionUserIds(splitLongIds(p.getMentionUserIds()));
+        dto.setMentionUsers(resolveMentionUsersFromMap(p.getMentionUserIds(), mentionUserMap));
+        dto.setLikesCount(p.getLikesCount());
+        dto.setCommentsCount(p.getCommentsCount());
+        dto.setLiked(currentUserId != null && likedPostIds.contains(p.getId()));
+        dto.setCollected(currentUserId != null && favoritedPostIds.contains(p.getId()));
+        dto.setCanEdit(currentUserId != null && p.getAuthor().getId().equals(currentUserId));
+        dto.setCanDelete(currentUserId != null && p.getAuthor().getId().equals(currentUserId));
+        dto.setCreatedAt(p.getCreatedAt());
+        dto.setUpdatedAt(p.getUpdatedAt());
+        return dto;
+    }
+
+    /** 单条场景（create/update）：直接查询数据库。 */
     private PostDto toPostDto(Post p, Long currentUserId) {
         PostDto dto = new PostDto();
         dto.setId(p.getId());
@@ -250,6 +325,18 @@ public class PostService {
         return out;
     }
 
+    private List<TopicDto> resolveTopicsFromMap(String topicIds, Map<String, Topic> topicMap) {
+        if (topicIds == null || topicIds.isBlank()) return List.of();
+        List<TopicDto> out = new ArrayList<>();
+        for (String id : topicIds.split(",")) {
+            String tid = id.trim();
+            if (tid.isEmpty()) continue;
+            Topic t = topicMap.get(tid);
+            if (t != null) out.add(toTopicDto(t));
+        }
+        return out;
+    }
+
     private List<UserDto> resolveMentionUsers(String mentionUserIds) {
         List<Long> ids = splitLongIds(mentionUserIds);
         if (ids.isEmpty()) return List.of();
@@ -258,6 +345,16 @@ public class PostService {
             userRepository.findById(id).map(this::toUserDto).ifPresent(out::add);
         }
         return out;
+    }
+
+    private List<UserDto> resolveMentionUsersFromMap(String mentionUserIds, Map<Long, User> userMap) {
+        List<Long> ids = splitLongIds(mentionUserIds);
+        if (ids.isEmpty()) return List.of();
+        return ids.stream()
+                .map(userMap::get)
+                .filter(u -> u != null)
+                .map(this::toUserDto)
+                .collect(Collectors.toList());
     }
 
     private String serializeImages(List<String> list) {

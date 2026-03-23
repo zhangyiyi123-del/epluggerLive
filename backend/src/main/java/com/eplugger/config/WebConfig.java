@@ -2,11 +2,13 @@ package com.eplugger.config;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.CacheControl;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 import java.nio.file.Paths;
+import java.util.concurrent.TimeUnit;
 
 /**
  * 前端来源 CORS：允许前端开发/生产域名访问 /api。
@@ -22,11 +24,11 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
-        String[] origins = allowedOriginsConfig.trim().isEmpty()
-                ? new String[0]
+        String[] patterns = allowedOriginsConfig.trim().isEmpty()
+                ? new String[]{"http://localhost:5173"}
                 : allowedOriginsConfig.split("\\s*,\\s*");
         registry.addMapping("/api/**")
-                .allowedOrigins(origins.length > 0 ? origins : new String[]{"http://localhost:5173"})
+                .allowedOriginPatterns(patterns)
                 .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true)
@@ -37,6 +39,7 @@ public class WebConfig implements WebMvcConfigurer {
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         String dir = (uploadDirPath != null && !uploadDirPath.isEmpty()) ? uploadDirPath : "./upload";
         registry.addResourceHandler("/api/uploads/**")
-                .addResourceLocations("file:" + Paths.get(dir).toAbsolutePath().normalize() + "/");
+                .addResourceLocations("file:" + Paths.get(dir).toAbsolutePath().normalize() + "/")
+                .setCacheControl(CacheControl.maxAge(30, TimeUnit.DAYS).cachePublic().immutable());
     }
 }

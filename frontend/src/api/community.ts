@@ -4,11 +4,20 @@
 import { apiRequest, getApiBaseUrl } from './client'
 import type { Post, Comment, Topic, User, Visibility, FeedFilter } from '../types/community'
 
+/**
+ * 上传文件的基础地址：开发时直连后端 8080，避免走 Vite proxy 导致大文件极慢；
+ * 生产环境未配置时退回到 API 基础地址（同源部署）。
+ */
+const UPLOADS_BASE =
+  typeof import.meta !== 'undefined' && import.meta.env?.VITE_UPLOADS_BASE_URL
+    ? (import.meta.env.VITE_UPLOADS_BASE_URL as string).replace(/\/$/, '')
+    : null
+
 /** 将后端返回的相对路径（如 /api/uploads/xxx）转为可访问的完整 URL */
 export function toImageUrl(url: string): string {
   if (!url) return url
   if (url.startsWith('http://') || url.startsWith('https://')) return url
-  const base = getApiBaseUrl().replace(/\/$/, '')
+  const base = (UPLOADS_BASE ?? getApiBaseUrl()).replace(/\/$/, '')
   return url.startsWith('/') ? base + url : base + '/' + url
 }
 

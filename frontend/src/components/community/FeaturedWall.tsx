@@ -58,7 +58,7 @@ export default function FeaturedWall({ posts, onSelectPost }: FeaturedWallProps)
           {/* 封面图 */}
           {currentPost.content.images && currentPost.content.images.length > 0 ? (
             <div className="featured-cover">
-              <img src={currentPost.content.images[0]} alt="" />
+              <img src={currentPost.content.images[0]} alt="" loading="lazy" />
               <div className="featured-overlay" />
             </div>
           ) : (

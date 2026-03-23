@@ -119,7 +119,7 @@ export default function PostCard({ post, onLike, onComment, onShare, onEdit: _on
                     setLightboxOpen(true)
                   }}
                 >
-                  <img src={img} alt="" />
+                  <img src={img} alt="" loading="lazy" />
                 </button>
               ))}
             </div>
@@ -136,7 +136,7 @@ export default function PostCard({ post, onLike, onComment, onShare, onEdit: _on
         {/* 视频 */}
         {post.content.video && (
           <div className="post-video">
-            <img src={post.content.video.cover} alt="" className="video-cover" />
+            <img src={post.content.video.cover} alt="" className="video-cover" loading="lazy" />
             <div className="play-btn">
               <Play size={24} />
             </div>

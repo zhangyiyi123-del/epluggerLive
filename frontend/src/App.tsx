@@ -28,6 +28,9 @@ function AppContent({ isLoggedIn, onLogin, onLogout }: { isLoggedIn: boolean; on
     location.pathname === '/publish' ||
     location.pathname === '/profile/posts' ||
     location.pathname === '/profile/messages' ||
+    location.pathname === '/checkin/exercise-records' ||
+    location.pathname === '/checkin/positive-records' ||
+    location.pathname === '/checkin/positive' ||
     location.pathname === '/login'
 
   const bottomNavVisible = isLoggedIn && !hideBottomNav && !suppressBottomNav

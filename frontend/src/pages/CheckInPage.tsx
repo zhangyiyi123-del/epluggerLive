@@ -17,6 +17,8 @@ import {
   Activity,
   Volleyball,
   MountainSnow,
+  Info,
+  X,
 } from 'lucide-react'
 import type { SportType, CheckInFormData, CheckInMode } from '../types/checkIn'
 import { DEFAULT_SPORT_TYPES } from '../types/checkIn'
@@ -59,6 +61,9 @@ export default function CheckInPage() {
     type: string
     title: string
     communitySyncWarning?: string
+    /** 有发圈分时用于副文案：打卡 + 发圈 */
+    sessionCheckInPoints?: number
+    sessionSyncPoints?: number
   } | null>(null)
   const [submitError, setSubmitError] = useState('')
 
@@ -160,13 +165,22 @@ const getExerciseIcon = (sportTypeId: string) => {
         attachmentUrls: attachmentUrls.length > 0 ? attachmentUrls : undefined,
         syncToCommunity: data.syncToCommunity !== false,
       })
-      setEarnedPoints(res.points)
+      const syncPts =
+        res.communitySync?.success === true ? (res.communitySync.pointsEarnedForSync ?? 0) : 0
+      setEarnedPoints(checkInApi.totalSessionEarnedPoints(res.points, res.communitySync))
+      setTodayEarnedPoints(typeof res.todayEarnedPoints === 'number' ? res.todayEarnedPoints : null)
       const syncWarn =
         res.communitySync?.attempted && res.communitySync?.success === false
           ? res.communitySync?.message || '未能同步到圈子，可稍后在圈子手动分享'
           : undefined
       setShowSuccess(true)
-      setSuccessData({ type: 'exercise', title: '运动打卡成功', communitySyncWarning: syncWarn })
+      setSuccessData({
+        type: 'exercise',
+        title: '运动打卡成功',
+        communitySyncWarning: syncWarn,
+        sessionCheckInPoints: res.points,
+        sessionSyncPoints: syncPts > 0 ? syncPts : undefined,
+      })
       await loadExerciseRecords()
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : '提交失败')
@@ -182,6 +196,7 @@ const getExerciseIcon = (sportTypeId: string) => {
   }
 
   const handleSuccessClose = () => {
+    setSessionPointsHintOpen(false)
     setShowSuccess(false)
     setCheckInMode(null)
     setSelectedSportType(null)
@@ -214,6 +229,7 @@ const getPositiveIcon = (categoryId: string) => {
   const [displayPoints, setDisplayPoints] = useState(0)
   const [showConfetti, setShowConfetti] = useState(false)
   const [todayEarnedPoints, setTodayEarnedPoints] = useState<number | null>(null)
+  const [sessionPointsHintOpen, setSessionPointsHintOpen] = useState(false)
 
   useEffect(() => {
     if (!showSuccess) return
@@ -241,9 +257,11 @@ const getPositiveIcon = (categoryId: string) => {
 
   useEffect(() => {
     if (!showSuccess) {
+      setSessionPointsHintOpen(false)
       setTodayEarnedPoints(null)
       return
     }
+    if (todayEarnedPoints !== null) return
     let cancelled = false
     getTodayEarnedPoints().then((n) => {
       if (!cancelled) setTodayEarnedPoints(n ?? 0)
@@ -251,11 +269,27 @@ const getPositiveIcon = (categoryId: string) => {
     return () => {
       cancelled = true
     }
-  }, [showSuccess])
+  }, [showSuccess, todayEarnedPoints])
+
+  useEffect(() => {
+    if (!sessionPointsHintOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSessionPointsHintOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [sessionPointsHintOpen])
 
   if (showSuccess) {
     const successKind = successData?.type ?? 'exercise'
+    const checkInPts = successData?.sessionCheckInPoints
+    const syncPts = successData?.sessionSyncPoints
+    const sessionPointsHintText =
+      syncPts != null && syncPts > 0 && typeof checkInPts === 'number'
+        ? `本次积分含运动打卡 ${checkInPts} 分、同步到圈子的发圈奖励 ${syncPts} 分，上方数字为两项合计。`
+        : '上方为运动打卡奖励。若勾选同步到圈子且发布成功，还会叠加发圈奖励；未同步或发布失败时不含发圈分。'
     return (
+      <>
       <div className="page checkin-success-page" style={{ padding: 0 }}>
         <div className={`success-page-wrapper success-page-wrapper--${successKind}`}>
           {showConfetti && (
@@ -321,7 +355,7 @@ const getPositiveIcon = (categoryId: string) => {
 
               <div className="success-card-header">
                 <div className="success-title-with-stamp">
-                  <h1 className="success-title">恭喜！挑战成功</h1>
+                  <h1 className="success-title">恭喜！打卡成功</h1>
                   <img
                     src="/今日已完成.png"
                     alt=""
@@ -339,16 +373,28 @@ const getPositiveIcon = (categoryId: string) => {
                   <div className="reward-inline-row">
                     <div className="reward-segment">
                       <span className="reward-inline-value">{displayPoints}</span>
-                      <span className="reward-caption">本次获得积分</span>
+                      <div className="reward-segment-fill" aria-hidden />
+                      <div className="reward-caption-with-hint">
+                        <span className="reward-caption">本次获得积分</span>
+                        <button
+                          type="button"
+                          className="reward-points-hint-trigger"
+                          aria-haspopup="dialog"
+                          aria-expanded={sessionPointsHintOpen}
+                          aria-label="查看本次获得积分说明"
+                          onClick={() => setSessionPointsHintOpen(true)}
+                        >
+                          <Info size={13} strokeWidth={2.5} aria-hidden />
+                        </button>
+                      </div>
                     </div>
                     <span className="reward-meta-divider" aria-hidden />
                     <div className="reward-segment reward-segment--today">
-                      <div className="reward-today-badge-wrap">
-                        <span className="reward-inline-value">
-                          {todayEarnedPoints === null ? '…' : todayEarnedPoints}
-                        </span>
-                        <span className="reward-today-label">今日获得积分</span>
-                      </div>
+                      <span className="reward-inline-value">
+                        {todayEarnedPoints === null ? '…' : todayEarnedPoints}
+                      </span>
+                      <div className="reward-segment-fill" aria-hidden />
+                      <span className="reward-today-label">今日获得积分</span>
                     </div>
                   </div>
                 </div>
@@ -366,6 +412,44 @@ const getPositiveIcon = (categoryId: string) => {
           </div>
         </div>
       </div>
+      {sessionPointsHintOpen ? (
+        <div
+          className="checkin-points-hint-overlay"
+          role="presentation"
+          onClick={() => setSessionPointsHintOpen(false)}
+        >
+          <div
+            className="checkin-points-hint-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="checkin-session-points-hint-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="checkin-points-hint-close"
+              aria-label="关闭"
+              onClick={() => setSessionPointsHintOpen(false)}
+            >
+              <X size={18} strokeWidth={2} aria-hidden />
+            </button>
+            <h2 id="checkin-session-points-hint-title" className="checkin-points-hint-title">
+              本次获得积分说明
+            </h2>
+            <p className="checkin-points-hint-body">{sessionPointsHintText}</p>
+            <div className="checkin-points-hint-actions">
+              <button
+                type="button"
+                className="checkin-points-hint-ok"
+                onClick={() => setSessionPointsHintOpen(false)}
+              >
+                知道了
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      </>
     )
   }
 

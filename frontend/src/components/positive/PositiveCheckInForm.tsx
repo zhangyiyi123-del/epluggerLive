@@ -10,14 +10,12 @@ interface PositiveCheckInFormProps {
   tags: PositiveTag[]
   colleagueList: { userId: string; name: string; avatar?: string }[]
   projectList: string[]
-  customerList: string[]
   onSubmit: (data: {
     title?: string
     categoryId: string
     tagIds: string[]
     description: string
     relatedProject?: string
-    relatedCustomer?: string
     relatedColleagues: RelatedColleague[]
     evidences: File[]
   }) => void
@@ -30,7 +28,6 @@ export default function PositiveCheckInForm({
   tags,
   colleagueList,
   projectList,
-  customerList,
   onSubmit,
   onCancel,
   isSubmitting = false
@@ -40,12 +37,9 @@ export default function PositiveCheckInForm({
   const [tagIds, setTagIds] = useState<string[]>([])
   const [description, setDescription] = useState('')
   const [relatedProject, setRelatedProject] = useState('')
-  const [relatedCustomer, setRelatedCustomer] = useState('')
   const [relatedColleagues, setRelatedColleagues] = useState<RelatedColleague[]>([])
   const [evidences, setEvidences] = useState<File[]>([])
   const [errors, setErrors] = useState<Record<string, string>>({})
-
-  const currentCategory = categories.find(c => c.id === categoryId)
 
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {}
@@ -60,18 +54,10 @@ export default function PositiveCheckInForm({
       newErrors.tag = '请至少选择一个行为标签'
     }
     
-    // 描述 20-500字
-    if (!description || description.length < 20) {
-      newErrors.description = '详细描述至少需要20个字'
-    } else if (description.length > 500) {
-      newErrors.description = '详细描述不能超过500字'
+    if (description.length > 2000) {
+      newErrors.description = '详细描述不能超过2000字'
     }
-    
-    // 佐证检查
-    if (currentCategory?.evidenceRequirement === 'required' && evidences.length === 0) {
-      newErrors.evidence = '该分类需要上传佐证材料'
-    }
-    
+
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
@@ -87,7 +73,6 @@ export default function PositiveCheckInForm({
       tagIds,
       description,
       relatedProject: relatedProject || undefined,
-      relatedCustomer: relatedCustomer || undefined,
       relatedColleagues,
       evidences,
     })
@@ -137,20 +122,19 @@ export default function PositiveCheckInForm({
       <div className="form-group">
         <label className="form-label">
           <FileText size={16} />
-          详细描述 <span className="required">*</span>
+          详细描述 <span className="form-hint">（选填）</span>
         </label>
         <textarea
           className={`input description-input ${errors.description ? 'input-error' : ''}`}
-          placeholder="请按「背景 - 过程 - 结果 - 影响」的逻辑填写，字数20-500字"
+          placeholder="选填，可描述背景、过程、结果与影响等"
           value={description}
-          onChange={(e) => setDescription(e.target.value)}
+          onChange={(e) => setDescription(e.target.value.slice(0, 2000))}
           rows={6}
+          maxLength={2000}
         />
         <div className="textarea-counter">
-          <span className={description.length < 20 ? 'text-warning' : description.length > 500 ? 'text-danger' : 'text-success'}>
-            {description.length}
-          </span>
-          <span>/ 500 字 {description.length < 20 ? '（还需补充）' : description.length > 500 ? '（已超限）' : '（符合要求）'}</span>
+          <span className={description.length > 2000 ? 'text-danger' : ''}>{description.length}</span>
+          <span>/ 2000 字</span>
         </div>
         {errors.description && (
           <div className="form-error">
@@ -160,10 +144,10 @@ export default function PositiveCheckInForm({
         )}
       </div>
 
-      {/* 关联项目/客户 */}
+      {/* 关联项目 */}
       <div className="form-group">
         <label className="form-label">
-          关联项目 / 客户
+          关联项目
           <span className="form-hint">（选填）</span>
         </label>
         <div className="related-inputs">
@@ -178,18 +162,6 @@ export default function PositiveCheckInForm({
           <datalist id="project-list">
             {projectList.map((p, i) => <option key={i} value={p} />)}
           </datalist>
-          
-          <input
-            type="text"
-            className="input"
-            placeholder="关联客户（支持搜索）"
-            list="customer-list"
-            value={relatedCustomer}
-            onChange={(e) => setRelatedCustomer(e.target.value)}
-          />
-          <datalist id="customer-list">
-            {customerList.map((c, i) => <option key={i} value={c} />)}
-          </datalist>
         </div>
       </div>
 
@@ -202,17 +174,10 @@ export default function PositiveCheckInForm({
 
       {/* 佐证上传 */}
       <PositiveEvidenceUpload
-        evidenceRequirement={currentCategory?.evidenceRequirement || 'optional'}
+        evidenceRequirement="optional"
         evidences={evidences}
         onChange={setEvidences}
       />
-      {errors.evidence && (
-        <div className="form-error" style={{ marginTop: -16 }}>
-          <AlertCircle size={14} />
-          {errors.evidence}
-        </div>
-      )}
-
       {/* 提交按钮 */}
       <div className="form-actions">
         <button type="button" className="btn btn-secondary" onClick={onCancel}>

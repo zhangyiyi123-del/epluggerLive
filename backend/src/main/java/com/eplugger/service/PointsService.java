@@ -108,7 +108,8 @@ public class PointsService {
     }
 
     /**
-     * 当前用户在当地自然日内已获得积分总和（仅统计 amount &gt; 0 的入账流水）。
+     * 当前用户在当地自然日内已获得积分总和：{@code points_record} 中当日 {@code amount &gt; 0} 的合计，
+     * 不按类型过滤（运动/正向打卡、发帖奖励、互动奖励等均计入）；兑换等扣分为负，不计入。
      */
     public int getTodayEarnedPoints(Long userId, ZoneId zoneId) {
         if (zoneId == null) {
@@ -174,27 +175,41 @@ public class PointsService {
         return dto;
     }
 
-    /** 发布圈子动态积分：与手动发帖、打卡同步发帖共用（FR-009）。 */
-    @Transactional
-    public void earnForPostPublish(long userId, long postId) {
-        final int amount = 15;
-        if (amount <= 0) return;
-        UserPoints up = getOrCreateUserPoints(userId);
-        int newTotalEarned = up.getTotalEarned() + amount;
-        int newAvailable = up.getAvailable() + amount;
-        up.setTotalEarned(newTotalEarned);
-        up.setAvailable(newAvailable);
-        up.setUpdatedAt(Instant.now());
-        userPointsRepository.save(up);
+    /** 发布动态单次奖励分值（与 {@link #earnForPostPublish} 入账一致）。 */
+    public static int postPublishRewardAmount() {
+        return 15;
+    }
 
-        PointsRecord pr = new PointsRecord();
-        pr.setUser(userRepository.getReferenceById(userId));
-        pr.setType("post_publish");
-        pr.setAmount(amount);
-        pr.setBalanceAfter(newAvailable);
-        pr.setDescription("发布动态");
-        pr.setSourceId("post:" + postId);
-        pr.setCreatedAt(Instant.now());
-        pointsRecordRepository.save(pr);
+    /**
+     * 发布圈子动态积分：与手动发帖、打卡同步发帖共用（FR-009）。
+     *
+     * @return 实际入账积分，失败时为 0
+     */
+    @Transactional
+    public int earnForPostPublish(long userId, long postId) {
+        final int amount = postPublishRewardAmount();
+        if (amount <= 0) return 0;
+        try {
+            UserPoints up = getOrCreateUserPoints(userId);
+            int newTotalEarned = up.getTotalEarned() + amount;
+            int newAvailable = up.getAvailable() + amount;
+            up.setTotalEarned(newTotalEarned);
+            up.setAvailable(newAvailable);
+            up.setUpdatedAt(Instant.now());
+            userPointsRepository.save(up);
+
+            PointsRecord pr = new PointsRecord();
+            pr.setUser(userRepository.getReferenceById(userId));
+            pr.setType("post_publish");
+            pr.setAmount(amount);
+            pr.setBalanceAfter(newAvailable);
+            pr.setDescription("发布动态");
+            pr.setSourceId("post:" + postId);
+            pr.setCreatedAt(Instant.now());
+            pointsRecordRepository.save(pr);
+            return amount;
+        } catch (Exception e) {
+            return 0;
+        }
     }
 }

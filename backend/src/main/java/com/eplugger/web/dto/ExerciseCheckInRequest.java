@@ -40,6 +40,10 @@ public class ExerciseCheckInRequest {
     /** 是否同步到圈子；null 视为 true */
     private Boolean syncToCommunity;
 
+    /** 客户端 IANA 时区，用于「今日已获得积分」与 GET /api/points/today-earned 口径一致 */
+    @Size(max = 100)
+    private String timeZone;
+
     public String getSportTypeId() {
         return sportTypeId;
     }
@@ -102,5 +106,13 @@ public class ExerciseCheckInRequest {
 
     public void setSyncToCommunity(Boolean syncToCommunity) {
         this.syncToCommunity = syncToCommunity;
+    }
+
+    public String getTimeZone() {
+        return timeZone;
+    }
+
+    public void setTimeZone(String timeZone) {
+        this.timeZone = timeZone;
     }
 }

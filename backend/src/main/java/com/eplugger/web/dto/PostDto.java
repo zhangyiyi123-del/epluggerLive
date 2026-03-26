@@ -25,6 +25,8 @@ public class PostDto {
     private boolean canDelete;
     private Instant createdAt;
     private Instant updatedAt;
+    /** 本条动态创建时因「发布动态」获得的积分（列表/详情接口通常为 0） */
+    private int pointsEarnedForPublish;
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -60,4 +62,6 @@ public class PostDto {
     public void setCreatedAt(Instant createdAt) { this.createdAt = createdAt; }
     public Instant getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
+    public int getPointsEarnedForPublish() { return pointsEarnedForPublish; }
+    public void setPointsEarnedForPublish(int pointsEarnedForPublish) { this.pointsEarnedForPublish = pointsEarnedForPublish; }
 }

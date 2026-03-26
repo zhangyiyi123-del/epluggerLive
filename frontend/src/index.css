@@ -3490,7 +3490,7 @@ body {
 .reward-inline-row {
   display: flex;
   align-items: stretch;
-  justify-content: space-evenly;
+  justify-content: center;
   flex-wrap: wrap;
   gap: 0;
   width: 100%;
@@ -3499,12 +3499,21 @@ body {
 }
 
 .reward-segment {
-  display: inline-flex;
+  display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: flex-start;
-  gap: 10px;
+  flex: 1 1 0;
   min-width: 0;
+  gap: 0;
+}
+
+/* 将底部说明行顶到与另一列同一水平线 */
+.reward-segment-fill {
+  flex: 1 1 auto;
+  min-height: 0;
+  width: 100%;
+  pointer-events: none;
 }
 
 .reward-caption {
@@ -3514,6 +3523,172 @@ body {
   color: #0f172a;
   line-height: 1.35;
   white-space: nowrap;
+}
+
+/* 仅包裹文案宽度，图标绝对定位在右侧，避免大号数字与文案的居中被拉偏 */
+.reward-caption-with-hint {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+  margin: 0;
+  max-width: 100%;
+}
+
+/* 成功页「本次获得积分」旁说明入口 */
+.reward-points-hint-trigger {
+  position: absolute;
+  left: 100%;
+  top: 50%;
+  transform: translateY(-50%);
+  margin-left: 2px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+.reward-points-hint-trigger:hover {
+  color: #64748b;
+}
+
+.reward-points-hint-trigger:active {
+  transform: translateY(-50%) scale(0.92);
+  color: #475569;
+}
+
+.reward-points-hint-trigger:focus-visible {
+  outline: 2px solid rgba(100, 116, 139, 0.45);
+  outline-offset: 2px;
+}
+
+.reward-points-hint-trigger svg {
+  flex-shrink: 0;
+}
+
+/* 打卡成功页 · 积分说明弹层 */
+.checkin-points-hint-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  padding-bottom: max(24px, env(safe-area-inset-bottom));
+  box-sizing: border-box;
+  background: rgba(15, 23, 42, 0.48);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: checkin-hint-overlay-in 0.2s ease;
+}
+
+@keyframes checkin-hint-overlay-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.checkin-points-hint-dialog {
+  position: relative;
+  width: 100%;
+  max-width: 312px;
+  padding: 22px 20px 16px;
+  border-radius: 20px;
+  background: #ffffff;
+  box-shadow:
+    0 24px 48px -12px rgba(30, 58, 138, 0.22),
+    0 0 0 1px rgba(255, 255, 255, 0.8) inset;
+  text-align: left;
+  animation: checkin-hint-dialog-in 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes checkin-hint-dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.checkin-points-hint-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: rgba(241, 245, 249, 0.9);
+  color: #64748b;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.checkin-points-hint-close:hover {
+  background: #e2e8f0;
+  color: #334155;
+}
+
+.checkin-points-hint-title {
+  margin: 0 36px 0 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: #0f172a;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+}
+
+.checkin-points-hint-body {
+  margin: 14px 0 0;
+  font-size: 14px;
+  font-weight: 400;
+  color: #475569;
+  line-height: 1.55;
+}
+
+.checkin-points-hint-actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: stretch;
+}
+
+.checkin-points-hint-ok {
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  border-radius: 12px;
+  background: linear-gradient(145deg, #3b82f6 0%, #2563eb 100%);
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+  transition: transform 0.12s ease, filter 0.12s ease;
+}
+
+.checkin-points-hint-ok:active {
+  transform: scale(0.98);
+  filter: brightness(0.96);
 }
 
 .reward-inline-value {
@@ -3535,16 +3710,8 @@ body {
   border-radius: 1px;
 }
 
-.reward-today-badge-wrap {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  gap: 10px;
-  min-width: 0;
-}
-
 .reward-today-label {
+  flex-shrink: 0;
   margin: 0;
   font-size: 14px;
   font-weight: 400;
@@ -3669,10 +3836,120 @@ body {
   margin-right: 0;
 }
 
+/* 正向正文：字数与提示居左，「同步到圈子」居右同行 */
+.positive-body-counter-sync-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  text-align: left;
+  width: 100%;
+}
+
+.positive-counter-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  min-width: 0;
+}
+
+.positive-checkin-content .positive-body-counter-sync-row .positive-sync-on-counter-row {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+/* 与 0/2000 同行：文字、圆环、对勾均用字数同色 */
+.positive-checkin-content .positive-body-counter-sync-row .positive-sync-circular-checkbox.checkin-sync-to-community-row {
+  color: var(--text-light);
+  font-size: 13px;
+}
+
+.positive-checkin-content .positive-body-counter-sync-row .positive-sync-checkbox-face {
+  border-color: var(--text-light);
+}
+
+.positive-checkin-content .positive-body-counter-sync-row .positive-sync-circular-checkbox:has(.positive-sync-checkbox-native:checked) .positive-sync-checkbox-face {
+  border-color: var(--text-light);
+}
+
+.positive-checkin-content .positive-body-counter-sync-row .positive-sync-circular-checkbox:has(.positive-sync-checkbox-native:checked) .positive-sync-checkbox-face::after {
+  border-color: var(--text-light);
+}
+
+.positive-checkin-content .positive-body-counter-sync-row .positive-sync-circular-checkbox:has(.positive-sync-checkbox-native:focus-visible) .positive-sync-checkbox-face {
+  outline: 2px solid var(--text-light);
+  outline-offset: 2px;
+}
+
+/* 正向「同步到圈子」：小圆环、白底、灰边框与对勾（非系统蓝） */
+.positive-sync-circular-checkbox {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.positive-sync-checkbox-native {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.positive-sync-checkbox-face {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid #9ca3af;
+  background: #fff;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  pointer-events: none;
+  position: relative;
+}
+
+.positive-sync-circular-checkbox:has(.positive-sync-checkbox-native:checked) .positive-sync-checkbox-face {
+  background: #fff;
+  border-color: #6b7280;
+}
+
+.positive-sync-circular-checkbox:has(.positive-sync-checkbox-native:checked) .positive-sync-checkbox-face::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 3px;
+  height: 6px;
+  border: solid #6b7280;
+  border-width: 0 1.5px 1.5px 0;
+  transform: translate(-50%, -50%) rotate(45deg);
+  box-sizing: border-box;
+}
+
+.positive-sync-circular-checkbox:has(.positive-sync-checkbox-native:focus-visible) .positive-sync-checkbox-face {
+  outline: 2px solid var(--text-light, #9ca3af);
+  outline-offset: 2px;
+}
+
 .checkin-sync-to-community-row input {
   width: 18px;
   height: 18px;
   accent-color: var(--primary-color, #4f46e5);
+}
+
+/* 正向页内嵌勾选不用通用 input 尺寸（由 .positive-sync-checkbox-native 覆盖） */
+.positive-checkin-content .positive-sync-circular-checkbox.checkin-sync-to-community-row input.positive-sync-checkbox-native {
+  width: 16px;
+  height: 16px;
 }
 
 .checkin-success-details {
@@ -10467,6 +10744,21 @@ MT
   background: transparent;
 }
 
+/* 运动打卡：重置窄、确认打卡宽（与正向打卡一致） */
+.exercise-checkin-content .exercise-checkin-form-actions {
+  align-items: stretch;
+}
+
+.exercise-checkin-content .exercise-checkin-form-actions .btn-secondary {
+  flex: 0 0 auto;
+  min-width: 88px;
+}
+
+.exercise-checkin-content .exercise-checkin-form-actions .exercise-checkin-submit-btn {
+  flex: 1 1 auto;
+  min-width: 140px;
+}
+
 .positive-checkin-page {
   background: #FFFFFF;
 }
@@ -10548,8 +10840,22 @@ MT
 }
 
 .positive-checkin-content .form-actions {
-  margin-top: 8px;
+  margin-top: 28px;
   margin-bottom: 24px;
+}
+
+.positive-checkin-content .positive-checkin-form-actions {
+  align-items: stretch;
+}
+
+.positive-checkin-content .positive-checkin-form-actions .btn-secondary {
+  flex: 0 0 auto;
+  min-width: 88px;
+}
+
+.positive-checkin-content .positive-checkin-form-actions .positive-checkin-submit-btn {
+  flex: 1 1 auto;
+  min-width: 140px;
 }
 
 /* 选择分类 - 一行两�?*/
@@ -10734,9 +11040,9 @@ MT
   cursor: not-allowed;
 }
 
-/* 上传图片区块 - 与发布动态一致的下方间距 */
+/* 上传图片区块：与标题区间距收紧 */
 .positive-evidence-section {
-  margin-bottom: 16px;
+  margin-bottom: 8px;
 }
 
 /* 标题、正文与图片上传左对齐（�?content �?16px 一致，去掉 wrapper 额外左右内边距） */
@@ -10744,6 +11050,15 @@ MT
 .positive-checkin-content .publish-textarea-wrapper.positive-body-section {
   padding-left: 0;
   padding-right: 0;
+}
+
+.positive-checkin-content .publish-textarea-wrapper.positive-body-section {
+  margin-bottom: 6px;
+}
+
+/* 标题区与下方分隔线/正文更紧凑（覆盖通用 .publish-textarea-wrapper 的 12px） */
+.positive-checkin-content .publish-textarea-wrapper.positive-title-section {
+  margin-bottom: 4px;
 }
 
 .positive-title-section {
@@ -10755,7 +11070,7 @@ MT
   height: 0;
   border: none;
   border-top: 1px solid var(--border-color);
-  margin: 4px 0;
+  margin: 2px 0;
 }
 
 .positive-body-section {
@@ -10765,6 +11080,19 @@ MT
 
 .positive-options-below-body {
   margin-top: 12px;
+}
+
+/* 正向：参与同事 / 选择标签 更靠左右，减少两侧留白 */
+.positive-checkin-content .positive-options-below-body {
+  margin-top: 4px;
+  margin-left: -8px;
+  margin-right: -8px;
+  width: calc(100% + 16px);
+}
+
+.positive-checkin-content .positive-options-below-body .publish-option-item {
+  padding: 14px 8px;
+  gap: 10px;
 }
 
 /* 正文中已选标�?- 可手动删�?*/
@@ -10932,7 +11260,8 @@ MT
 
 .metric-row {
   display: grid;
-  grid-template-columns: 3px 1fr auto;
+  /* 标签列按文字宽度，值列占剩余空间；避免长文案挤压「内容」等标签竖排换行 */
+  grid-template-columns: 3px max-content minmax(0, 1fr);
   align-items: center;
   gap: 6px;
   padding: 3px 0;
@@ -10944,6 +11273,9 @@ MT
 .metric-row .metric-label {
   font-weight: 600;
   color: var(--text-primary);
+  white-space: nowrap;
+  word-break: keep-all;
+  min-width: max-content;
 }
 
 .metric-row .metric-value {
@@ -11321,15 +11653,6 @@ MT
   color: #D97706;
 }
 
-.positive-records-section .record-card-points {
-  background: transparent;
-  padding: 0;
-}
-
-.positive-records-section .record-card-points .points-value {
-  color: var(--text-primary);
-}
-
 .positive-records-page .exercise-record-card {
   gap: 12px;
 }
@@ -11352,6 +11675,30 @@ MT
   padding: 10px 12px;
   box-shadow: 0 6px 16px rgba(15, 23, 42, 0.06);
   background: var(--bg-white);
+}
+
+/* 正向记录：长文案时避免「内容」等标签列被压窄导致逐字竖排 */
+.positive-records-page .metric-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.positive-records-page .metric-row .metric-bar {
+  flex-shrink: 0;
+}
+
+.positive-records-page .metric-row .metric-label {
+  flex: 0 0 auto;
+  white-space: nowrap;
+  word-break: keep-all;
+  width: max-content;
+  max-width: none;
+}
+
+.positive-records-page .metric-row .metric-value {
+  flex: 1 1 0;
+  min-width: 0;
 }
 
 .checkin-page .record-card-title {

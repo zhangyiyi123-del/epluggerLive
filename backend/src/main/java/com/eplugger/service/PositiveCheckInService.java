@@ -19,6 +19,7 @@ import com.eplugger.web.dto.PositiveCategoryDto;
 import com.eplugger.web.dto.PositiveCheckInRequest;
 import com.eplugger.web.dto.PositiveCheckInResponse;
 import com.eplugger.web.dto.PositiveRecordItem;
+import com.eplugger.web.util.ZoneIdResolver;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -48,6 +49,7 @@ public class PositiveCheckInService {
     private final PointsRecordRepository pointsRecordRepository;
     private final NotificationService notificationService;
     private final CheckInCommunitySyncService checkInCommunitySyncService;
+    private final PointsService pointsService;
 
     public PositiveCheckInService(
             PositiveRecordRepository positiveRecordRepository,
@@ -56,7 +58,8 @@ public class PositiveCheckInService {
             UserPointsRepository userPointsRepository,
             PointsRecordRepository pointsRecordRepository,
             NotificationService notificationService,
-            CheckInCommunitySyncService checkInCommunitySyncService
+            CheckInCommunitySyncService checkInCommunitySyncService,
+            PointsService pointsService
     ) {
         this.positiveRecordRepository = positiveRecordRepository;
         this.positiveCategoryRepository = positiveCategoryRepository;
@@ -65,6 +68,7 @@ public class PositiveCheckInService {
         this.pointsRecordRepository = pointsRecordRepository;
         this.notificationService = notificationService;
         this.checkInCommunitySyncService = checkInCommunitySyncService;
+        this.pointsService = pointsService;
     }
 
     @Transactional
@@ -76,8 +80,12 @@ public class PositiveCheckInService {
 
         int colleagueCount = request.getRelatedColleagueIds() != null ? request.getRelatedColleagueIds().size() : 0;
         int evidenceCount = request.getEvidenceUrls() != null ? request.getEvidenceUrls().size() : 0;
+        String description = request.getDescription() != null ? request.getDescription().trim() : "";
+        if (description.length() > 2000) {
+            throw new IllegalArgumentException("描述最多 2000 字");
+        }
         int points = calculatePoints(
-                request.getDescription() != null ? request.getDescription().length() : 0,
+                description.length(),
                 evidenceCount,
                 colleagueCount
         );
@@ -86,7 +94,7 @@ public class PositiveCheckInService {
         record.setUser(user);
         record.setCategory(category);
         record.setTitle(trimToNull(request.getTitle()));
-        record.setDescription(request.getDescription().trim());
+        record.setDescription(description);
         record.setTagIds(joinIds(request.getTagIds()));
         record.setRelatedColleagueIds(joinLongIds(request.getRelatedColleagueIds()));
         record.setPoints(points);
@@ -146,6 +154,7 @@ public class PositiveCheckInService {
         response.setCommunitySync(wantSync
                 ? checkInCommunitySyncService.syncPositiveCheckIn(userId, record.getId())
                 : CommunitySyncResult.notAttempted());
+        response.setTodayEarnedPoints(pointsService.getTodayEarnedPoints(userId, ZoneIdResolver.resolve(request.getTimeZone())));
         return response;
     }
 

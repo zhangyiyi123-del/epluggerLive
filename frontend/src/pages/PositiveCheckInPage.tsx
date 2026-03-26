@@ -1,11 +1,12 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, type CSSProperties } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Check, ChevronLeft, ChevronRight, Building2, UserPlus, X, Tag } from 'lucide-react'
+import { Check, ChevronLeft, ChevronRight, UserPlus, X, Tag, Info } from 'lucide-react'
 import type { PositiveCategory, PositiveTag, RelatedColleague } from '../types/positive'
-import { DEFAULT_POSITIVE_TAGS, MOCK_CUSTOMERS } from '../types/positive'
+import { DEFAULT_POSITIVE_TAGS } from '../types/positive'
 import * as checkInApi from '../api/checkin'
 import { getColleagues } from '../api/auth'
 import type { PositiveCategoryDto } from '../api/checkin'
+import { getTodayEarnedPoints } from '../api/points'
 
 export default function PositiveCheckInPage() {
   const navigate = useNavigate()
@@ -45,26 +46,30 @@ export default function PositiveCheckInPage() {
   }
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [relatedCustomer, setRelatedCustomer] = useState('')
   const [selectedColleagues, setSelectedColleagues] = useState<RelatedColleague[]>([])
   const [evidences, setEvidences] = useState<File[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [earnedPoints, setEarnedPoints] = useState(0)
-  const [showCustomerPicker, setShowCustomerPicker] = useState(false)
   const [showColleaguePicker, setShowColleaguePicker] = useState(false)
   const [showTagPicker, setShowTagPicker] = useState(false)
   const [tempTags, setTempTags] = useState<PositiveTag[]>([])
   const [tempColleagues, setTempColleagues] = useState<RelatedColleague[]>([])
   const [colleagueSearchText, setColleagueSearchText] = useState('')
   const [submitError, setSubmitError] = useState('')
-  const [pointsPreview, setPointsPreview] = useState<checkInApi.PointsPreviewDto | null>(null)
   const [syncToCommunity, setSyncToCommunity] = useState(true)
   const [communitySyncWarning, setCommunitySyncWarning] = useState<string | undefined>(undefined)
   const evidenceImageInputRef = useRef<HTMLInputElement>(null)
+  const [displayPoints, setDisplayPoints] = useState(0)
+  const [showConfetti, setShowConfetti] = useState(false)
+  const [todayEarnedPoints, setTodayEarnedPoints] = useState<number | null>(null)
+  const [successRewardSplit, setSuccessRewardSplit] = useState<{
+    checkIn: number
+    sync: number
+  } | null>(null)
+  const [sessionPointsHintOpen, setSessionPointsHintOpen] = useState(false)
 
   const tags = DEFAULT_POSITIVE_TAGS
-  const customerList = MOCK_CUSTOMERS
   const [colleagueList, setColleagueList] = useState<{ userId: string; name: string; avatar?: string }[]>([])
 
   useEffect(() => {
@@ -73,20 +78,57 @@ export default function PositiveCheckInPage() {
     )
   }, [])
 
-  const evidenceRequirement = selectedCategory?.evidenceRequirement ?? 'optional'
-  const requiresEvidence = evidenceRequirement === 'required'
+  useEffect(() => {
+    if (!showSuccess) return
+    setDisplayPoints(0)
+    setShowConfetti(true)
+    const duration = 1200
+    const steps = 30
+    const increment = earnedPoints / steps || 0
+    const interval = duration / steps
+    let current = 0
+    const timer = setInterval(() => {
+      current += increment
+      if (current >= earnedPoints) {
+        setDisplayPoints(earnedPoints)
+        clearInterval(timer)
+      } else {
+        setDisplayPoints(Math.floor(current))
+      }
+    }, interval)
+    return () => {
+      clearInterval(timer)
+      setShowConfetti(false)
+    }
+  }, [showSuccess, earnedPoints])
 
   useEffect(() => {
-    checkInApi
-      .getPointsPreview(description.length, evidences.length, selectedColleagues.length)
-      .then(setPointsPreview)
-  }, [description.length, evidences.length, selectedColleagues.length])
+    if (!showSuccess) {
+      setSessionPointsHintOpen(false)
+      setTodayEarnedPoints(null)
+      setSuccessRewardSplit(null)
+      return
+    }
+    if (todayEarnedPoints !== null) return
+    let cancelled = false
+    getTodayEarnedPoints().then((n) => {
+      if (!cancelled) setTodayEarnedPoints(n ?? 0)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [showSuccess, todayEarnedPoints])
 
-  const canSubmit =
-    selectedCategory !== null &&
-    description.trim().length >= 20 &&
-    description.trim().length <= 500 &&
-    (!requiresEvidence || evidences.length > 0)
+  useEffect(() => {
+    if (!sessionPointsHintOpen) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setSessionPointsHintOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [sessionPointsHintOpen])
+
+  const canSubmit = selectedCategory !== null
 
   const handleSubmit = async () => {
     if (!canSubmit || isSubmitting || !selectedCategory) return
@@ -109,7 +151,11 @@ export default function PositiveCheckInPage() {
         evidenceUrls: evidenceUrls.length > 0 ? evidenceUrls : undefined,
         syncToCommunity,
       })
-      setEarnedPoints(res.points)
+      const syncPts =
+        res.communitySync?.success === true ? (res.communitySync.pointsEarnedForSync ?? 0) : 0
+      setEarnedPoints(checkInApi.totalSessionEarnedPoints(res.points, res.communitySync))
+      setSuccessRewardSplit(syncPts > 0 ? { checkIn: res.points, sync: syncPts } : null)
+      setTodayEarnedPoints(typeof res.todayEarnedPoints === 'number' ? res.todayEarnedPoints : null)
       setCommunitySyncWarning(
         res.communitySync?.attempted && res.communitySync?.success === false
           ? res.communitySync?.message || '未能同步到圈子，可稍后在圈子手动分享'
@@ -125,6 +171,8 @@ export default function PositiveCheckInPage() {
   }
 
   const handleSuccessClose = () => {
+    setSessionPointsHintOpen(false)
+    setSuccessRewardSplit(null)
     navigate('/checkin')
   }
 
@@ -132,7 +180,6 @@ export default function PositiveCheckInPage() {
     setSelectedTags([])
     setTitle('')
     setDescription('')
-    setRelatedCustomer('')
     setSelectedColleagues([])
     setEvidences([])
     setSyncToCommunity(true)
@@ -154,48 +201,176 @@ export default function PositiveCheckInPage() {
   }
 
   if (showSuccess) {
+    const split = successRewardSplit
+    const sessionPointsHintText =
+      split != null && split.sync > 0
+        ? `本次积分含正向打卡 ${split.checkIn} 分、同步到圈子的发圈奖励 ${split.sync} 分，上方数字为两项合计。`
+        : '上方为正向打卡奖励。若勾选同步到圈子且发布成功，还会叠加发圈奖励；未同步或发布失败时不含发圈分。'
     return (
-      <div className="page">
-        <div className="checkin-success">
-          <div className="checkin-success-icon">
-            <Check size={40} />
-          </div>
-          <h2 className="checkin-success-title">正向打卡成功！</h2>
-          <div className="checkin-success-points">+{earnedPoints} 积分</div>
-          {communitySyncWarning && (
-            <p className="checkin-success-sync-warning" role="status">
-              {communitySyncWarning}
-            </p>
-          )}
-          <div className="checkin-success-breakdown">
-            <div className="breakdown-item">
-              <span>基础奖励</span>
-              <span>+30</span>
+      <>
+      <div className="page checkin-success-page" style={{ padding: 0 }}>
+        <div className="success-page-wrapper success-page-wrapper--positive">
+          {showConfetti && (
+            <div className="confetti-container" aria-hidden>
+              {[...Array(30)].map((_, i) => (
+                <div
+                  key={i}
+                  className={`confetti confetti--${i % 5}`}
+                  style={{
+                    '--delay': `${Math.random() * 2.8}s`,
+                    '--x': `${4 + Math.random() * 92}%`,
+                    '--rotation': `${Math.random() * 360}deg`,
+                  } as CSSProperties}
+                />
+              ))}
             </div>
-            {selectedColleagues.length > 0 && (
-              <div className="breakdown-item">
-                <span>参与人奖励</span>
-                <span>+{selectedColleagues.length * 5}</span>
-              </div>
-            )}
-            {evidences.length > 0 && (
-              <div className="breakdown-item">
-                <span>佐证奖励</span>
-                <span>+10</span>
-              </div>
-            )}
-            {description.length > 50 && selectedColleagues.length > 0 && (
-              <div className="breakdown-item">
-                <span>优质奖励</span>
-                <span>+10</span>
-              </div>
-            )}
+          )}
+          <div className="success-bg-particles" aria-hidden>
+            {[...Array(52)].map((_, i) => {
+              const left = ((i * 37 + 11) % 92) + 4
+              const top = ((i * 19 + 23) % 88) + 6
+              const size = 2 + (i % 6) * 0.65
+              const dur = 11 + (i % 10) * 1.1
+              const delay = ((i * 0.21) % 5) + (i % 3) * 0.4
+              const tx = -14 + (i % 9) * 3.5
+              const ty = -22 + (i % 7) * 5.5
+              const opacity = 0.32 + (i % 8) * 0.06
+              return (
+                <span
+                  key={`bg-particle-${i}`}
+                  className={`success-bg-particle success-bg-particle--${i % 4}`}
+                  style={{
+                    '--p-left': `${left}%`,
+                    '--p-top': `${top}%`,
+                    '--p-size': `${size}px`,
+                    '--p-dur': `${dur}s`,
+                    '--p-delay': `${delay}s`,
+                    '--p-tx': `${tx}px`,
+                    '--p-ty': `${ty}px`,
+                    '--p-opacity': opacity,
+                  } as CSSProperties}
+                />
+              )
+            })}
           </div>
-          <button className="btn btn-primary" onClick={handleSuccessClose}>
-            完成
-          </button>
+          <div className="success-page-top-bar">
+            <button
+              type="button"
+              className="success-page-back"
+              onClick={handleSuccessClose}
+              aria-label="返回"
+            >
+              <ChevronLeft size={28} strokeWidth={2.25} />
+            </button>
+            <p className="success-page-type-label">正向打卡成功</p>
+          </div>
+          <div className="success-page-main">
+            <div className="success-card" role="status" aria-live="polite" aria-atomic="true">
+              <img
+                src="/下载.png"
+                alt=""
+                className="success-mascot"
+                width={200}
+                height={200}
+                decoding="async"
+              />
+              <div className="success-card-header">
+                <div className="success-title-with-stamp">
+                  <h1 className="success-title">恭喜！打卡成功</h1>
+                  <img
+                    src="/今日已完成.png"
+                    alt=""
+                    className="success-done-stamp"
+                    decoding="async"
+                  />
+                </div>
+              </div>
+              <div className="success-card-body">
+                <div
+                  className="reward-card"
+                  aria-label={`本次获得 ${displayPoints} 积分，今日已获得 ${todayEarnedPoints === null ? '加载中' : todayEarnedPoints} 积分`}
+                >
+                  <div className="reward-inline-row">
+                    <div className="reward-segment">
+                      <span className="reward-inline-value">{displayPoints}</span>
+                      <div className="reward-segment-fill" aria-hidden />
+                      <div className="reward-caption-with-hint">
+                        <span className="reward-caption">本次获得积分</span>
+                        <button
+                          type="button"
+                          className="reward-points-hint-trigger"
+                          aria-haspopup="dialog"
+                          aria-expanded={sessionPointsHintOpen}
+                          aria-label="查看本次获得积分说明"
+                          onClick={() => setSessionPointsHintOpen(true)}
+                        >
+                          <Info size={13} strokeWidth={2.5} aria-hidden />
+                        </button>
+                      </div>
+                    </div>
+                    <span className="reward-meta-divider" aria-hidden />
+                    <div className="reward-segment reward-segment--today">
+                      <span className="reward-inline-value">
+                        {todayEarnedPoints === null ? '…' : todayEarnedPoints}
+                      </span>
+                      <div className="reward-segment-fill" aria-hidden />
+                      <span className="reward-today-label">今日获得积分</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="success-card-footer">
+                {communitySyncWarning ? (
+                  <p className="checkin-success-sync-warning" role="alert">
+                    {communitySyncWarning}
+                  </p>
+                ) : null}
+                <p className="encourage-text">
+                感谢分享这份正向力量，继续发光吧✨
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+      {sessionPointsHintOpen ? (
+        <div
+          className="checkin-points-hint-overlay"
+          role="presentation"
+          onClick={() => setSessionPointsHintOpen(false)}
+        >
+          <div
+            className="checkin-points-hint-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="positive-checkin-points-hint-title"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              className="checkin-points-hint-close"
+              aria-label="关闭"
+              onClick={() => setSessionPointsHintOpen(false)}
+            >
+              <X size={18} strokeWidth={2} aria-hidden />
+            </button>
+            <h2 id="positive-checkin-points-hint-title" className="checkin-points-hint-title">
+              本次获得积分说明
+            </h2>
+            <p className="checkin-points-hint-body">{sessionPointsHintText}</p>
+            <div className="checkin-points-hint-actions">
+              <button
+                type="button"
+                className="checkin-points-hint-ok"
+                onClick={() => setSessionPointsHintOpen(false)}
+              >
+                知道了
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
+      </>
     )
   }
 
@@ -212,53 +387,6 @@ export default function PositiveCheckInPage() {
       </div>
 
       <div className="publish-content positive-checkin-content">
-        {/* 关联客户选择器 */}
-        {showCustomerPicker && (
-          <div className="publish-picker-overlay" onClick={() => setShowCustomerPicker(false)}>
-            <div className="publish-picker" onClick={e => e.stopPropagation()}>
-              <div className="publish-picker-header">
-                <span className="publish-picker-title">关联客户</span>
-                <button type="button" className="publish-picker-close" onClick={() => setShowCustomerPicker(false)}>
-                  <X size={20} />
-                </button>
-              </div>
-              <div className="publish-picker-list">
-                <button
-                  type="button"
-                  className={`publish-picker-item ${!relatedCustomer ? 'selected' : ''}`}
-                  onClick={() => {
-                    setRelatedCustomer('')
-                    setShowCustomerPicker(false)
-                  }}
-                >
-                  <Building2 size={18} />
-                  <div className="publish-picker-item-info">
-                    <span>不选择</span>
-                  </div>
-                  {!relatedCustomer && <span className="publish-picker-check">✓</span>}
-                </button>
-                {customerList.map((c, i) => (
-                  <button
-                    key={i}
-                    type="button"
-                    className={`publish-picker-item ${relatedCustomer === c ? 'selected' : ''}`}
-                    onClick={() => {
-                      setRelatedCustomer(c)
-                      setShowCustomerPicker(false)
-                    }}
-                  >
-                    <Building2 size={18} />
-                    <div className="publish-picker-item-info">
-                      <span>{c}</span>
-                    </div>
-                    {relatedCustomer === c && <span className="publish-picker-check">✓</span>}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        )}
-
         {/* 参与同事选择器 - 右上角仅√确认，无 X */}
         {showColleaguePicker && (
           <div className="publish-picker-overlay" onClick={() => setShowColleaguePicker(false)}>
@@ -430,36 +558,36 @@ export default function PositiveCheckInPage() {
           )}
           <textarea
             className="publish-textarea"
-            placeholder="分享你的正向故事... 描述行为内容、成果、收获等（建议50字以上）"
+            placeholder="分享你的正向故事..."
             value={description}
-            onChange={e => setDescription(e.target.value.slice(0, 500))}
+            onChange={e => setDescription(e.target.value.slice(0, 2000))}
             rows={6}
-            maxLength={500}
+            maxLength={2000}
           />
-          <div className="publish-text-counter">
-            <span className={description.length > 500 ? 'text-danger' : description.length < 1 ? 'text-warning' : ''}>
-              {description.length}
-            </span>/500
-            {description.length >= 50 && <span className="quality-hint"> 已满足优质条件</span>}
-            {description.trim().length > 0 && description.trim().length < 20 && (
-              <span className="text-warning" style={{ marginLeft: 8 }}>还需 {20 - description.trim().length} 字即可提交</span>
-            )}
-          </div>
-          <div className="positive-form-hint" style={{ fontSize: 12, color: 'var(--color-text-secondary)', marginTop: 4 }}>
-            描述需 20-500 字才能提交；必填项填完整后提交按钮才会可用。
+          <div className="publish-text-counter positive-body-counter-sync-row">
+            <div className="positive-counter-left">
+              <span className="positive-char-count">
+                <span className={description.length > 2000 ? 'text-danger' : ''}>{description.length}</span>/2000
+              </span>
+              {description.trim().length >= 50 && selectedColleagues.length > 0 && (
+                <span className="quality-hint">已满足优质加分条件</span>
+              )}
+            </div>
+            <label className="checkin-sync-to-community-row positive-sync-on-counter-row positive-sync-circular-checkbox">
+              <input
+                type="checkbox"
+                className="positive-sync-checkbox-native"
+                checked={syncToCommunity}
+                onChange={(e) => setSyncToCommunity(e.target.checked)}
+              />
+              <span className="positive-sync-checkbox-face" aria-hidden={true} />
+              <span>同步到圈子</span>
+            </label>
           </div>
         </div>
 
-        {/* 关联客户、参与同事、选择标签 - 放在正文下方 */}
+        {/* 参与同事、选择标签 - 放在正文下方 */}
         <div className="publish-options positive-options-below-body">
-          <button type="button" className="publish-option-item" onClick={() => setShowCustomerPicker(true)}>
-            <div className="publish-option-icon">
-              <Building2 size={18} />
-            </div>
-            <span className="publish-option-text">关联客户</span>
-            <span className="publish-option-value">{relatedCustomer || '请选择'}</span>
-            <ChevronRight size={18} className="publish-option-arrow" />
-          </button>
           <button type="button" className="publish-option-item" onClick={() => {
             setTempColleagues([...selectedColleagues])
             setColleagueSearchText('')
@@ -496,39 +624,23 @@ export default function PositiveCheckInPage() {
           </button>
         </div>
 
-        {pointsPreview && (
-          <div className="positive-points-preview" style={{ marginBottom: 12, fontSize: 14, color: 'var(--color-text-secondary)' }}>
-            预计积分：<strong style={{ color: 'var(--color-primary)' }}>{pointsPreview.totalPoints}</strong>
-            {pointsPreview.qualityBonus > 0 && <span>（含优质+{pointsPreview.qualityBonus}）</span>}
-            {pointsPreview.evidenceBonus > 0 && <span>（佐证+{pointsPreview.evidenceBonus}）</span>}
-            {pointsPreview.colleagueBonus > 0 && <span>（参与人+{pointsPreview.colleagueBonus}）</span>}
-          </div>
-        )}
         {submitError && (
           <div className="form-error" style={{ color: 'var(--color-danger)', marginBottom: 8 }}>
             {submitError}
           </div>
         )}
-        <label className="checkin-sync-to-community-row">
-          <input
-            type="checkbox"
-            checked={syncToCommunity}
-            onChange={(e) => setSyncToCommunity(e.target.checked)}
-          />
-          <span>同步到圈子</span>
-        </label>
-        <div className="form-actions">
+        <div className="form-actions positive-checkin-form-actions">
           <button type="button" className="btn btn-secondary" onClick={handleReset}>
             重置
           </button>
           <button
             type="button"
-            className="btn btn-primary btn-primary-green"
+            className="btn btn-primary btn-primary-green positive-checkin-submit-btn"
             onClick={handleSubmit}
             disabled={!canSubmit || isSubmitting}
-            title={!canSubmit ? (description.trim().length < 20 ? '描述至少 20 字才能提交' : !selectedCategory ? '请选择分类' : requiresEvidence && evidences.length === 0 ? '该分类需要上传佐证' : '') : undefined}
+            title={!canSubmit ? '请选择行为分类' : undefined}
           >
-            {isSubmitting ? '提交中...' : '提交'}
+            {isSubmitting ? '提交中...' : '确认打卡'}
           </button>
         </div>
       </div>

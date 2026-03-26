@@ -62,11 +62,10 @@ export interface PositiveRecord {
   categoryIcon: string
   tagIds: string[]
   tagNames: string[]
-  description: string // 20-500字
+  description: string
   
   // 关联项
   relatedProject?: string
-  relatedCustomer?: string
   relatedColleagues: RelatedColleague[]
   
   // 佐证
@@ -101,7 +100,6 @@ export interface PositiveCheckInFormData {
   tagIds: string[]
   description: string
   relatedProject?: string
-  relatedCustomer?: string
   relatedColleagues: RelatedColleague[]
   evidences: File[]
 }
@@ -192,14 +190,4 @@ export const MOCK_PROJECTS = [
   '用户增长计划',
   '技术中台建设',
   '质量优化专项',
-]
-
-// 模拟客户列表
-export const MOCK_CUSTOMERS = [
-  '阿里巴巴',
-  '腾讯科技',
-  '字节跳动',
-  '美团点评',
-  '京东集团',
-  '拼多多',
 ]

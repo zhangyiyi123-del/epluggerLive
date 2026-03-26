@@ -288,11 +288,15 @@ export default function CheckInForm({
         <span>同步到圈子</span>
       </label>
 
-      <div className="form-actions">
+      <div className="form-actions exercise-checkin-form-actions">
         <button type="button" className="btn btn-secondary" onClick={handleReset}>
           重置
         </button>
-        <button type="submit" className="btn btn-primary btn-primary-green" disabled={isSubmitting}>
+        <button
+          type="submit"
+          className="btn btn-primary btn-primary-green exercise-checkin-submit-btn"
+          disabled={isSubmitting}
+        >
           {isSubmitting ? '提交中...' : '确认打卡'}
         </button>
       </div>

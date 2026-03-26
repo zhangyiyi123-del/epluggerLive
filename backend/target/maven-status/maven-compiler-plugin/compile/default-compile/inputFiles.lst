@@ -2,6 +2,7 @@ C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\dto\PostCreateReque
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\PositiveCheckInController.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\domain\entity\CheckInAttachment.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\dto\LoginRequest.java
+C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\util\ZoneIdResolver.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\repository\CheckInRecordRepository.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\dto\ExerciseCheckInResponse.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\dto\UserProfileDto.java

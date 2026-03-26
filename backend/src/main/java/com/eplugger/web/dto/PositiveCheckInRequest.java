@@ -18,8 +18,7 @@ public class PositiveCheckInRequest {
 
     private List<String> tagIds;
 
-    @NotBlank(message = "描述不能为空")
-    @Size(min = 20, max = 500, message = "描述需 20-500 字")
+    /** 可选；长度由 {@link com.eplugger.service.PositiveCheckInService} 校验（最多 2000 字），避免与旧版 Bean 校验文案混淆 */
     private String description;
 
     /** @同事 userId 列表 */
@@ -31,6 +30,10 @@ public class PositiveCheckInRequest {
 
     /** 是否同步到圈子；null 视为 true */
     private Boolean syncToCommunity;
+
+    /** 客户端 IANA 时区，用于「今日已获得积分」与 GET /api/points/today-earned 口径一致 */
+    @Size(max = 100)
+    private String timeZone;
 
     public String getCategoryId() {
         return categoryId;
@@ -86,5 +89,13 @@ public class PositiveCheckInRequest {
 
     public void setSyncToCommunity(Boolean syncToCommunity) {
         this.syncToCommunity = syncToCommunity;
+    }
+
+    public String getTimeZone() {
+        return timeZone;
+    }
+
+    public void setTimeZone(String timeZone) {
+        this.timeZone = timeZone;
     }
 }

@@ -25,6 +25,8 @@ export interface CommunitySyncDto {
   success: boolean
   postId?: number | null
   message?: string | null
+  /** 本次同步新建动态获得的发圈积分（动态已存在时为 0） */
+  pointsEarnedForSync?: number
 }
 
 export interface ExerciseCheckInResponse {
@@ -42,6 +44,8 @@ export interface ExerciseCheckInResponse {
   checkedInAt: string
   attachments?: { id: number; url: string; type: string; uploadedAt: string }[]
   communitySync?: CommunitySyncDto | null
+  /** 与 GET /today-earned 同口径：当日所有正向入账之和（含发帖奖励等），提交事务内汇总 */
+  todayEarnedPoints?: number
 }
 
 export interface CycleProgressDto {
@@ -66,6 +70,8 @@ export interface ExerciseCheckInRequest {
   attachmentUrls?: string[]
   /** 默认 true */
   syncToCommunity?: boolean
+  /** IANA 时区，与今日积分自然日边界一致；不传则自动带浏览器时区 */
+  timeZone?: string
 }
 
 export interface PagedResult<T> {
@@ -114,10 +120,26 @@ export async function uploadAttachments(files: File[]): Promise<string[]> {
   return body.urls || []
 }
 
+/** 打卡成功页「本次获得」合计：打卡分 + 同步发圈成功且入账时的发圈分 */
+export function totalSessionEarnedPoints(
+  checkInPoints: number,
+  communitySync?: CommunitySyncDto | null
+): number {
+  const syncPts = communitySync?.success ? (communitySync.pointsEarnedForSync ?? 0) : 0
+  return checkInPoints + syncPts
+}
+
+function withClientTimeZone<T extends { timeZone?: string }>(body: T): T {
+  if (body.timeZone) return body
+  const tz =
+    typeof Intl !== 'undefined' ? Intl.DateTimeFormat().resolvedOptions().timeZone : undefined
+  return tz ? { ...body, timeZone: tz } : body
+}
+
 export async function submitExerciseCheckIn(body: ExerciseCheckInRequest): Promise<ExerciseCheckInResponse> {
   const res = await apiRequest<ExerciseCheckInResponse>('/api/checkin/exercise', {
     method: 'POST',
-    body: JSON.stringify(body),
+    body: JSON.stringify(withClientTimeZone(body)),
   })
   if (!res.ok) throw new Error(res.error?.message || '提交失败')
   return res.data
@@ -189,6 +211,8 @@ export interface PositiveCheckInRequest {
   evidenceUrls?: string[]
   /** 默认 true */
   syncToCommunity?: boolean
+  /** IANA 时区；不传则自动带浏览器时区 */
+  timeZone?: string
 }
 
 export interface PositiveEvidenceDto {
@@ -213,6 +237,8 @@ export interface PositiveCheckInResponse {
   createdAt: string
   evidences: PositiveEvidenceDto[]
   communitySync?: CommunitySyncDto | null
+  /** 与 GET /today-earned 同口径：当日所有正向入账（含发帖奖励等） */
+  todayEarnedPoints?: number
 }
 
 export interface PositiveRecordItem {
@@ -259,7 +285,7 @@ export async function uploadPositiveEvidences(files: File[]): Promise<string[]> 
 export async function submitPositiveCheckIn(body: PositiveCheckInRequest): Promise<PositiveCheckInResponse> {
   const res = await apiRequest<PositiveCheckInResponse>('/api/checkin/positive', {
     method: 'POST',
-    body: JSON.stringify(body),
+    body: JSON.stringify(withClientTimeZone(body)),
   })
   if (!res.ok) throw new Error(res.error?.message || '提交失败')
   return res.data

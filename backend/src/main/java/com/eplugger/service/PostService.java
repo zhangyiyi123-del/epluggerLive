@@ -108,12 +108,13 @@ public class PostService {
                         author.getName() != null ? author.getName() : null);
             }
         }
-        try {
-            pointsService.earnForPostPublish(userId, post.getId());
-        } catch (Exception ex) {
-            log.warn("earnForPostPublish failed for user {} post {}: {}", userId, post.getId(), ex.getMessage());
+        int publishPoints = pointsService.earnForPostPublish(userId, post.getId());
+        if (publishPoints == 0 && PointsService.postPublishRewardAmount() > 0) {
+            log.warn("earnForPostPublish credited 0 for user {} post {}", userId, post.getId());
         }
-        return toPostDto(post, userId);
+        PostDto dto = toPostDto(post, userId);
+        dto.setPointsEarnedForPublish(publishPoints);
+        return dto;
     }
 
     public Optional<PostDto> getById(Long postId, Long currentUserId) {

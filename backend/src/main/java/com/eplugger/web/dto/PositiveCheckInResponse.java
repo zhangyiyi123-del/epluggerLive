@@ -23,6 +23,9 @@ public class PositiveCheckInResponse {
 
     private CommunitySyncResult communitySync;
 
+    /** 当日累计获得积分：与 GET /today-earned 一致，含当日所有正向入账（发帖奖励等也算） */
+    private int todayEarnedPoints;
+
     public Long getId() {
         return id;
     }
@@ -125,6 +128,14 @@ public class PositiveCheckInResponse {
 
     public void setCommunitySync(CommunitySyncResult communitySync) {
         this.communitySync = communitySync;
+    }
+
+    public int getTodayEarnedPoints() {
+        return todayEarnedPoints;
+    }
+
+    public void setTodayEarnedPoints(int todayEarnedPoints) {
+        this.todayEarnedPoints = todayEarnedPoints;
     }
 
     public static class EvidenceDto {

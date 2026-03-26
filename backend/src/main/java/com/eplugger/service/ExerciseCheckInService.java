@@ -18,6 +18,7 @@ import com.eplugger.web.dto.ExerciseCheckInResponse;
 import com.eplugger.web.dto.ExerciseMonthlySummaryDto;
 import com.eplugger.web.dto.ExerciseRecordItem;
 import com.eplugger.web.dto.SportTypeDto;
+import com.eplugger.web.util.ZoneIdResolver;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -49,6 +50,7 @@ public class ExerciseCheckInService {
     private final UserPointsRepository userPointsRepository;
     private final PointsRecordRepository pointsRecordRepository;
     private final CheckInCommunitySyncService checkInCommunitySyncService;
+    private final PointsService pointsService;
 
     public ExerciseCheckInService(
             CheckInRecordRepository checkInRecordRepository,
@@ -56,7 +58,8 @@ public class ExerciseCheckInService {
             UserRepository userRepository,
             UserPointsRepository userPointsRepository,
             PointsRecordRepository pointsRecordRepository,
-            CheckInCommunitySyncService checkInCommunitySyncService
+            CheckInCommunitySyncService checkInCommunitySyncService,
+            PointsService pointsService
     ) {
         this.checkInRecordRepository = checkInRecordRepository;
         this.sportTypeRepository = sportTypeRepository;
@@ -64,6 +67,7 @@ public class ExerciseCheckInService {
         this.userPointsRepository = userPointsRepository;
         this.pointsRecordRepository = pointsRecordRepository;
         this.checkInCommunitySyncService = checkInCommunitySyncService;
+        this.pointsService = pointsService;
     }
 
     @Transactional
@@ -132,6 +136,7 @@ public class ExerciseCheckInService {
         response.setCommunitySync(wantSync
                 ? checkInCommunitySyncService.syncExerciseCheckIn(userId, record.getId())
                 : CommunitySyncResult.notAttempted());
+        response.setTodayEarnedPoints(pointsService.getTodayEarnedPoints(userId, ZoneIdResolver.resolve(request.getTimeZone())));
         return response;
     }
 

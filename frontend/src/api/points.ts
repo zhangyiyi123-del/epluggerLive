@@ -92,9 +92,14 @@ function mapProduct(d: {
   }
 }
 
-/** 当日已获得积分（与后端自然日口径一致） */
+/** 当日已获得积分：后端汇总 points_record 当日所有 amount>0（发帖奖励、打卡等均计入，扣分为负不计）；timeZone 与本地「今天」对齐。 */
 export async function getTodayEarnedPoints(): Promise<number | null> {
-  const res = await apiRequest<{ points: number }>('/api/points/today-earned')
+  const tz =
+    typeof Intl !== 'undefined'
+      ? Intl.DateTimeFormat().resolvedOptions().timeZone
+      : undefined
+  const q = tz ? `?timeZone=${encodeURIComponent(tz)}` : ''
+  const res = await apiRequest<{ points: number }>(`/api/points/today-earned${q}`)
   if (!res.ok) return null
   const n = res.data?.points
   return typeof n === 'number' ? n : 0

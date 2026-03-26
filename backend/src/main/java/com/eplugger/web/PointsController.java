@@ -5,6 +5,7 @@ import com.eplugger.web.dto.MedalDto;
 import com.eplugger.web.dto.PointsRecordDto;
 import com.eplugger.web.dto.TodayEarnedPointsDto;
 import com.eplugger.web.dto.UserPointsDto;
+import com.eplugger.web.util.ZoneIdResolver;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -49,12 +50,17 @@ public class PointsController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
+    /** 当日自然日内所有正向入账之和（含发帖奖励等）；仅 amount&gt;0，兑换扣减不计。 */
     @GetMapping("/today-earned")
-    public ResponseEntity<TodayEarnedPointsDto> todayEarned(Authentication authentication) {
+    public ResponseEntity<TodayEarnedPointsDto> todayEarned(
+            Authentication authentication,
+            @RequestParam(required = false) String timeZone
+    ) {
         Long userId = currentUserId(authentication);
         if (userId == null) return ResponseEntity.status(401).build();
+        ZoneId zoneId = ZoneIdResolver.resolve(timeZone);
         TodayEarnedPointsDto dto = new TodayEarnedPointsDto();
-        dto.setPoints(pointsService.getTodayEarnedPoints(userId, ZoneId.systemDefault()));
+        dto.setPoints(pointsService.getTodayEarnedPoints(userId, zoneId));
         return ResponseEntity.ok(dto);
     }
 

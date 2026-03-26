@@ -76,7 +76,7 @@ public class CheckInCommunitySyncService {
             req.setContentImages(collectAttachmentUrls(record.getAttachments()));
             req.setVisibilityType("company");
             PostDto dto = postService.createFromCheckInSync(userId, req, SOURCE_EXERCISE, checkInRecordId);
-            return CommunitySyncResult.success(dto.getId());
+            return CommunitySyncResult.success(dto.getId(), dto.getPointsEarnedForPublish());
         } catch (DataIntegrityViolationException e) {
             Optional<Post> again = postRepository.findBySourceTypeAndSourceId(SOURCE_EXERCISE, checkInRecordId);
             if (again.isPresent()) {
@@ -120,7 +120,7 @@ public class CheckInCommunitySyncService {
             req.setContentImages(collectEvidenceUrls(record.getEvidences()));
             req.setVisibilityType("company");
             PostDto dto = postService.createFromCheckInSync(userId, req, SOURCE_POSITIVE, positiveRecordId);
-            return CommunitySyncResult.success(dto.getId());
+            return CommunitySyncResult.success(dto.getId(), dto.getPointsEarnedForPublish());
         } catch (DataIntegrityViolationException e) {
             Optional<Post> again = postRepository.findBySourceTypeAndSourceId(SOURCE_POSITIVE, positiveRecordId);
             if (again.isPresent()) {

@@ -46,19 +46,31 @@ export async function refresh(): Promise<LoginResponse | null> {
   return result.data
 }
 
+const CURRENT_USER_STORAGE_KEY = 'currentUser'
+
 /**
  * 保存登录态到本地并返回用户信息。
  */
 export function saveLogin(res: LoginResponse): User {
   setStoredToken(res.token)
+  try {
+    localStorage.setItem(CURRENT_USER_STORAGE_KEY, JSON.stringify(res.user))
+  } catch {
+    /* ignore quota / private mode */
+  }
   return res.user
 }
 
 /**
- * 退出登录：清除本地 token。
+ * 退出登录：清除本地 token 与缓存的当前用户（供圈子等页读取 id）。
  */
 export function logout(): void {
   setStoredToken(null)
+  try {
+    localStorage.removeItem(CURRENT_USER_STORAGE_KEY)
+  } catch {
+    /* ignore */
+  }
 }
 
 /**

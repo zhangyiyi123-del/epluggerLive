@@ -53,7 +53,11 @@ export default function CheckInPage() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showSuccess, setShowSuccess] = useState(false)
   const [earnedPoints, setEarnedPoints] = useState(0)
-  const [successData, setSuccessData] = useState<{type: string; title: string} | null>(null)
+  const [successData, setSuccessData] = useState<{
+    type: string
+    title: string
+    communitySyncWarning?: string
+  } | null>(null)
   const [submitError, setSubmitError] = useState('')
 
   const loadSportTypes = async () => {
@@ -145,10 +149,15 @@ const getExerciseIcon = (sportTypeId: string) => {
         distanceUnit: data.distanceUnit,
         intensity: data.intensity,
         attachmentUrls: attachmentUrls.length > 0 ? attachmentUrls : undefined,
+        syncToCommunity: data.syncToCommunity !== false,
       })
       setEarnedPoints(res.points)
+      const syncWarn =
+        res.communitySync?.attempted && res.communitySync?.success === false
+          ? res.communitySync?.message || '未能同步到圈子，可稍后在圈子手动分享'
+          : undefined
       setShowSuccess(true)
-      setSuccessData({ type: 'exercise', title: '运动打卡成功' })
+      setSuccessData({ type: 'exercise', title: '运动打卡成功', communitySyncWarning: syncWarn })
       await loadExerciseRecords()
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : '提交失败')
@@ -204,7 +213,11 @@ const getPositiveIcon = (categoryId: string) => {
           <div className="checkin-success-points">
             +{earnedPoints} 积分
           </div>
-          
+          {successData?.communitySyncWarning && (
+            <p className="checkin-success-sync-warning" role="status">
+              {successData.communitySyncWarning}
+            </p>
+          )}
           <button className="btn btn-primary" onClick={handleSuccessClose}>
             完成
           </button>

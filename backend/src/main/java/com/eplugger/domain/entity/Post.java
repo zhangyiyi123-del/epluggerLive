@@ -42,6 +42,13 @@ public class Post {
     @Column(name = "mention_user_ids", length = 500)
     private String mentionUserIds; // comma-separated user ids
 
+    /** exercise_checkin | positive_checkin，手动发帖为 null */
+    @Column(name = "source_type", length = 32)
+    private String sourceType;
+
+    @Column(name = "source_id")
+    private Long sourceId;
+
     @Column(name = "likes_count", nullable = false)
     private int likesCount = 0;
 
@@ -108,6 +115,22 @@ public class Post {
 
     public void setMentionUserIds(String mentionUserIds) {
         this.mentionUserIds = mentionUserIds;
+    }
+
+    public String getSourceType() {
+        return sourceType;
+    }
+
+    public void setSourceType(String sourceType) {
+        this.sourceType = sourceType;
+    }
+
+    public Long getSourceId() {
+        return sourceId;
+    }
+
+    public void setSourceId(Long sourceId) {
+        this.sourceId = sourceId;
     }
 
     public int getLikesCount() {

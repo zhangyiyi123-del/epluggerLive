@@ -29,7 +29,14 @@ export default function PostCard({ post, currentUserId, onLike, onComment, onSha
     onLike(post.id)
   }
 
-  const isOwnPost = currentUserId && currentUserId === post.author.id
+  // 本人动态不展示关注：后端对作者会返回 canEdit/canDelete；本地 id 与 author.id 需统一为字符串比较
+  const viewerId =
+    currentUserId != null && String(currentUserId).trim() !== '' ? String(currentUserId) : ''
+  const authorId = String(post.author.id)
+  const isOwnPost =
+    post.canEdit === true ||
+    post.canDelete === true ||
+    (viewerId !== '' && viewerId === authorId)
   const showFollowBtn = !isOwnPost && (onFollow || onUnfollow)
 
   const handleFollowClick = async (e: MouseEvent<HTMLButtonElement>) => {

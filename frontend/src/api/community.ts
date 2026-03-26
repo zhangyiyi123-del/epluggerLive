@@ -13,12 +13,59 @@ const UPLOADS_BASE =
     ? (import.meta.env.VITE_UPLOADS_BASE_URL as string).replace(/\/$/, '')
     : null
 
-/** 将后端返回的相对路径（如 /api/uploads/xxx）转为可访问的完整 URL */
+/** 解析后的地址是否指向本机（手机访问局域网前端时，此类绝对 URL 会错误地打到手机自身） */
+function isLoopbackBase(base: string): boolean {
+  if (!base.trim()) return true
+  try {
+    const u = base.includes('://') ? new URL(base) : new URL(`http://${base.replace(/^\/+/, '')}`)
+    return u.hostname === 'localhost' || u.hostname === '127.0.0.1'
+  } catch {
+    return false
+  }
+}
+
+function isViewingFromLanInDev(): boolean {
+  return (
+    typeof window !== 'undefined' &&
+    !!import.meta.env?.DEV &&
+    window.location.hostname !== 'localhost' &&
+    window.location.hostname !== '127.0.0.1'
+  )
+}
+
+/**
+ * 将后端返回的相对路径（如 /api/uploads/xxx）转为可访问的 URL。
+ * 开发环境下若页面通过局域网 IP 打开，而配置里用了 localhost 绝对地址，则改为同源相对路径，走 Vite `/api` 代理，避免手机端无法访问。
+ */
 export function toImageUrl(url: string): string {
   if (!url) return url
-  if (url.startsWith('http://') || url.startsWith('https://')) return url
+
+  const normalizePath = (path: string) => (path.startsWith('/') ? path : `/${path}`)
+
+  // 完整 URL 已指向开发者本机 localhost，但用户从手机局域网访问前端 → 改为 pathname，同源请求
+  if (url.startsWith('http://') || url.startsWith('https://')) {
+    if (isViewingFromLanInDev()) {
+      try {
+        const u = new URL(url)
+        if (u.hostname === 'localhost' || u.hostname === '127.0.0.1') {
+          return u.pathname + u.search
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+    return url
+  }
+
+  const path = normalizePath(url)
   const base = (UPLOADS_BASE ?? getApiBaseUrl()).replace(/\/$/, '')
-  return url.startsWith('/') ? base + url : base + '/' + url
+
+  if (isViewingFromLanInDev() && isLoopbackBase(base)) {
+    return path
+  }
+
+  if (!base) return path
+  return path.startsWith('/') ? `${base}${path}` : `${base}/${path}`
 }
 
 export interface PagedResult<T> {

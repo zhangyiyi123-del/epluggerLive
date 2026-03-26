@@ -22,6 +22,8 @@ public class ExerciseCheckInResponse {
     private Instant checkedInAt;
     private List<AttachmentDto> attachments;
 
+    private CommunitySyncResult communitySync;
+
     public Long getId() {
         return id;
     }
@@ -124,6 +126,14 @@ public class ExerciseCheckInResponse {
 
     public void setAttachments(List<AttachmentDto> attachments) {
         this.attachments = attachments;
+    }
+
+    public CommunitySyncResult getCommunitySync() {
+        return communitySync;
+    }
+
+    public void setCommunitySync(CommunitySyncResult communitySync) {
+        this.communitySync = communitySync;
     }
 
     public static class AttachmentDto {

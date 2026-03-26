@@ -29,6 +29,9 @@ public class PositiveCheckInRequest {
     @Size(max = 9)
     private List<String> evidenceUrls;
 
+    /** 是否同步到圈子；null 视为 true */
+    private Boolean syncToCommunity;
+
     public String getCategoryId() {
         return categoryId;
     }
@@ -75,5 +78,13 @@ public class PositiveCheckInRequest {
 
     public void setEvidenceUrls(List<String> evidenceUrls) {
         this.evidenceUrls = evidenceUrls;
+    }
+
+    public Boolean getSyncToCommunity() {
+        return syncToCommunity;
+    }
+
+    public void setSyncToCommunity(Boolean syncToCommunity) {
+        this.syncToCommunity = syncToCommunity;
     }
 }

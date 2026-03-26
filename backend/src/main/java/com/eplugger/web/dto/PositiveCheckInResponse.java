@@ -21,6 +21,8 @@ public class PositiveCheckInResponse {
     private Instant createdAt;
     private List<EvidenceDto> evidences;
 
+    private CommunitySyncResult communitySync;
+
     public Long getId() {
         return id;
     }
@@ -115,6 +117,14 @@ public class PositiveCheckInResponse {
 
     public void setEvidences(List<EvidenceDto> evidences) {
         this.evidences = evidences;
+    }
+
+    public CommunitySyncResult getCommunitySync() {
+        return communitySync;
+    }
+
+    public void setCommunitySync(CommunitySyncResult communitySync) {
+        this.communitySync = communitySync;
     }
 
     public static class EvidenceDto {

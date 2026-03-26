@@ -12,6 +12,7 @@ import com.eplugger.repository.SportTypeRepository;
 import com.eplugger.repository.UserPointsRepository;
 import com.eplugger.repository.UserRepository;
 import com.eplugger.web.dto.CycleProgressDto;
+import com.eplugger.web.dto.CommunitySyncResult;
 import com.eplugger.web.dto.ExerciseCheckInRequest;
 import com.eplugger.web.dto.ExerciseCheckInResponse;
 import com.eplugger.web.dto.ExerciseMonthlySummaryDto;
@@ -47,19 +48,22 @@ public class ExerciseCheckInService {
     private final UserRepository userRepository;
     private final UserPointsRepository userPointsRepository;
     private final PointsRecordRepository pointsRecordRepository;
+    private final CheckInCommunitySyncService checkInCommunitySyncService;
 
     public ExerciseCheckInService(
             CheckInRecordRepository checkInRecordRepository,
             SportTypeRepository sportTypeRepository,
             UserRepository userRepository,
             UserPointsRepository userPointsRepository,
-            PointsRecordRepository pointsRecordRepository
+            PointsRecordRepository pointsRecordRepository,
+            CheckInCommunitySyncService checkInCommunitySyncService
     ) {
         this.checkInRecordRepository = checkInRecordRepository;
         this.sportTypeRepository = sportTypeRepository;
         this.userRepository = userRepository;
         this.userPointsRepository = userPointsRepository;
         this.pointsRecordRepository = pointsRecordRepository;
+        this.checkInCommunitySyncService = checkInCommunitySyncService;
     }
 
     @Transactional
@@ -123,7 +127,12 @@ public class ExerciseCheckInService {
         pr.setCreatedAt(Instant.now());
         pointsRecordRepository.save(pr);
 
-        return toResponse(record);
+        ExerciseCheckInResponse response = toResponse(record);
+        boolean wantSync = request.getSyncToCommunity() == null || Boolean.TRUE.equals(request.getSyncToCommunity());
+        response.setCommunitySync(wantSync
+                ? checkInCommunitySyncService.syncExerciseCheckIn(userId, record.getId())
+                : CommunitySyncResult.notAttempted());
+        return response;
     }
 
     public Page<ExerciseRecordItem> findRecordsByUserId(Long userId, Pageable pageable) {

@@ -157,4 +157,28 @@ public class PointsService {
         dto.setExpiresAt(r.getExpiresAt() != null ? r.getExpiresAt().toString() : null);
         return dto;
     }
+
+    /** 发布圈子动态积分：与手动发帖、打卡同步发帖共用（FR-009）。 */
+    @Transactional
+    public void earnForPostPublish(long userId, long postId) {
+        final int amount = 15;
+        if (amount <= 0) return;
+        UserPoints up = getOrCreateUserPoints(userId);
+        int newTotalEarned = up.getTotalEarned() + amount;
+        int newAvailable = up.getAvailable() + amount;
+        up.setTotalEarned(newTotalEarned);
+        up.setAvailable(newAvailable);
+        up.setUpdatedAt(Instant.now());
+        userPointsRepository.save(up);
+
+        PointsRecord pr = new PointsRecord();
+        pr.setUser(userRepository.getReferenceById(userId));
+        pr.setType("post_publish");
+        pr.setAmount(amount);
+        pr.setBalanceAfter(newAvailable);
+        pr.setDescription("发布动态");
+        pr.setSourceId("post:" + postId);
+        pr.setCreatedAt(Instant.now());
+        pointsRecordRepository.save(pr);
+    }
 }

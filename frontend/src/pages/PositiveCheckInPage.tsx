@@ -59,6 +59,8 @@ export default function PositiveCheckInPage() {
   const [colleagueSearchText, setColleagueSearchText] = useState('')
   const [submitError, setSubmitError] = useState('')
   const [pointsPreview, setPointsPreview] = useState<checkInApi.PointsPreviewDto | null>(null)
+  const [syncToCommunity, setSyncToCommunity] = useState(true)
+  const [communitySyncWarning, setCommunitySyncWarning] = useState<string | undefined>(undefined)
   const evidenceImageInputRef = useRef<HTMLInputElement>(null)
 
   const tags = DEFAULT_POSITIVE_TAGS
@@ -105,8 +107,14 @@ export default function PositiveCheckInPage() {
         description: description.trim(),
         relatedColleagueIds: relatedColleagueIds.length > 0 ? relatedColleagueIds : undefined,
         evidenceUrls: evidenceUrls.length > 0 ? evidenceUrls : undefined,
+        syncToCommunity,
       })
       setEarnedPoints(res.points)
+      setCommunitySyncWarning(
+        res.communitySync?.attempted && res.communitySync?.success === false
+          ? res.communitySync?.message || '未能同步到圈子，可稍后在圈子手动分享'
+          : undefined
+      )
       setShowSuccess(true)
     } catch (e) {
       console.error(e)
@@ -127,6 +135,7 @@ export default function PositiveCheckInPage() {
     setRelatedCustomer('')
     setSelectedColleagues([])
     setEvidences([])
+    setSyncToCommunity(true)
   }
 
   const handleEvidenceImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -153,6 +162,11 @@ export default function PositiveCheckInPage() {
           </div>
           <h2 className="checkin-success-title">正向打卡成功！</h2>
           <div className="checkin-success-points">+{earnedPoints} 积分</div>
+          {communitySyncWarning && (
+            <p className="checkin-success-sync-warning" role="status">
+              {communitySyncWarning}
+            </p>
+          )}
           <div className="checkin-success-breakdown">
             <div className="breakdown-item">
               <span>基础奖励</span>
@@ -495,6 +509,14 @@ export default function PositiveCheckInPage() {
             {submitError}
           </div>
         )}
+        <label className="checkin-sync-to-community-row">
+          <input
+            type="checkbox"
+            checked={syncToCommunity}
+            onChange={(e) => setSyncToCommunity(e.target.checked)}
+          />
+          <span>同步到圈子</span>
+        </label>
         <div className="form-actions">
           <button type="button" className="btn btn-secondary" onClick={handleReset}>
             重置

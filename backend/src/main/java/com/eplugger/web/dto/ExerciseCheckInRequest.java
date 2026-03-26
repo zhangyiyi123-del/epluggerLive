@@ -37,6 +37,9 @@ public class ExerciseCheckInRequest {
     @Size(max = 3)
     private List<String> attachmentUrls;
 
+    /** 是否同步到圈子；null 视为 true */
+    private Boolean syncToCommunity;
+
     public String getSportTypeId() {
         return sportTypeId;
     }
@@ -91,5 +94,13 @@ public class ExerciseCheckInRequest {
 
     public void setAttachmentUrls(List<String> attachmentUrls) {
         this.attachmentUrls = attachmentUrls;
+    }
+
+    public Boolean getSyncToCommunity() {
+        return syncToCommunity;
+    }
+
+    public void setSyncToCommunity(Boolean syncToCommunity) {
+        this.syncToCommunity = syncToCommunity;
     }
 }

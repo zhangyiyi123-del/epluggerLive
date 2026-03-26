@@ -42,6 +42,7 @@ export default function CheckInForm({
   const [fieldValues, setFieldValues] = useState<Record<string, string>>({ ...INITIAL_FIELD_VALUES })
 
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [syncToCommunity, setSyncToCommunity] = useState(true)
 
   const updateFieldValue = (key: string, value: string) => {
     setFieldValues(prev => ({ ...prev, [key]: value }))
@@ -52,6 +53,7 @@ export default function CheckInForm({
     setErrors({})
     setDurationUnit('minute')
     setDistanceUnit('km')
+    setSyncToCommunity(true)
     onReset()
   }
 
@@ -195,6 +197,7 @@ export default function CheckInForm({
       intensity,
       attachments,
       metrics,
+      syncToCommunity,
     })
   }
 
@@ -275,6 +278,15 @@ export default function CheckInForm({
           hideLabel
         />
       </div>
+
+      <label className="checkin-sync-to-community-row">
+        <input
+          type="checkbox"
+          checked={syncToCommunity}
+          onChange={(e) => setSyncToCommunity(e.target.checked)}
+        />
+        <span>同步到圈子</span>
+      </label>
 
       <div className="form-actions">
         <button type="button" className="btn btn-secondary" onClick={handleReset}>

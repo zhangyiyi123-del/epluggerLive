@@ -21,7 +21,9 @@ C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\domain\entity\UserFollo
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\repository\SportTypeRepository.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\PointsController.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\NotificationController.java
+C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\dto\CommunitySyncResult.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\UserController.java
+C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\service\CheckInCommunitySyncService.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\dto\MedalDto.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\ExerciseCheckInController.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\EpluggerApplication.java

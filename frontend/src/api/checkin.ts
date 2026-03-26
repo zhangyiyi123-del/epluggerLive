@@ -19,6 +19,14 @@ export interface ExerciseRecordItem {
   attachments?: { id: number; url: string; type: string; uploadedAt: string }[]
 }
 
+/** 打卡同步到圈子结果，与后端 CommunitySyncResult 对齐 */
+export interface CommunitySyncDto {
+  attempted: boolean
+  success: boolean
+  postId?: number | null
+  message?: string | null
+}
+
 export interface ExerciseCheckInResponse {
   id: number
   sportTypeId: string
@@ -33,6 +41,7 @@ export interface ExerciseCheckInResponse {
   status: string
   checkedInAt: string
   attachments?: { id: number; url: string; type: string; uploadedAt: string }[]
+  communitySync?: CommunitySyncDto | null
 }
 
 export interface CycleProgressDto {
@@ -55,6 +64,8 @@ export interface ExerciseCheckInRequest {
   distanceUnit?: 'km' | 'm'
   intensity: 'low' | 'medium' | 'high'
   attachmentUrls?: string[]
+  /** 默认 true */
+  syncToCommunity?: boolean
 }
 
 export interface PagedResult<T> {
@@ -176,6 +187,8 @@ export interface PositiveCheckInRequest {
   description: string
   relatedColleagueIds?: number[]
   evidenceUrls?: string[]
+  /** 默认 true */
+  syncToCommunity?: boolean
 }
 
 export interface PositiveEvidenceDto {
@@ -199,6 +212,7 @@ export interface PositiveCheckInResponse {
   status: string
   createdAt: string
   evidences: PositiveEvidenceDto[]
+  communitySync?: CommunitySyncDto | null
 }
 
 export interface PositiveRecordItem {

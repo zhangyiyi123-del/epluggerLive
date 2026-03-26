@@ -13,6 +13,7 @@ import com.eplugger.repository.UserPointsRepository;
 import com.eplugger.repository.UserRepository;
 
 import java.time.Instant;
+import com.eplugger.web.dto.CommunitySyncResult;
 import com.eplugger.web.dto.PointsPreviewDto;
 import com.eplugger.web.dto.PositiveCategoryDto;
 import com.eplugger.web.dto.PositiveCheckInRequest;
@@ -46,6 +47,7 @@ public class PositiveCheckInService {
     private final UserPointsRepository userPointsRepository;
     private final PointsRecordRepository pointsRecordRepository;
     private final NotificationService notificationService;
+    private final CheckInCommunitySyncService checkInCommunitySyncService;
 
     public PositiveCheckInService(
             PositiveRecordRepository positiveRecordRepository,
@@ -53,7 +55,8 @@ public class PositiveCheckInService {
             UserRepository userRepository,
             UserPointsRepository userPointsRepository,
             PointsRecordRepository pointsRecordRepository,
-            NotificationService notificationService
+            NotificationService notificationService,
+            CheckInCommunitySyncService checkInCommunitySyncService
     ) {
         this.positiveRecordRepository = positiveRecordRepository;
         this.positiveCategoryRepository = positiveCategoryRepository;
@@ -61,6 +64,7 @@ public class PositiveCheckInService {
         this.userPointsRepository = userPointsRepository;
         this.pointsRecordRepository = pointsRecordRepository;
         this.notificationService = notificationService;
+        this.checkInCommunitySyncService = checkInCommunitySyncService;
     }
 
     @Transactional
@@ -137,7 +141,12 @@ public class PositiveCheckInService {
         pr.setCreatedAt(Instant.now());
         pointsRecordRepository.save(pr);
 
-        return toResponse(record);
+        PositiveCheckInResponse response = toResponse(record);
+        boolean wantSync = request.getSyncToCommunity() == null || Boolean.TRUE.equals(request.getSyncToCommunity());
+        response.setCommunitySync(wantSync
+                ? checkInCommunitySyncService.syncPositiveCheckIn(userId, record.getId())
+                : CommunitySyncResult.notAttempted());
+        return response;
     }
 
     public Page<PositiveRecordItem> findRecordsByUserId(Long userId, Pageable pageable) {

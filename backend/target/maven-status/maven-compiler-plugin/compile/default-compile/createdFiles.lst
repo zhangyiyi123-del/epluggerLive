@@ -4,6 +4,7 @@ com\eplugger\web\dto\FollowedUserDto.class
 com\eplugger\repository\SportTypeRepository.class
 com\eplugger\domain\entity\Topic.class
 com\eplugger\repository\PositiveRecordRepository.class
+com\eplugger\web\dto\CommunitySyncResult.class
 com\eplugger\repository\UserMedalRepository.class
 com\eplugger\web\dto\PositiveCheckInRequest.class
 com\eplugger\web\dto\UserDto.class
@@ -83,6 +84,7 @@ com\eplugger\web\HealthController.class
 com\eplugger\service\MallService.class
 com\eplugger\domain\entity\PositiveCategory.class
 com\eplugger\domain\entity\Notification.class
+com\eplugger\service\CheckInCommunitySyncService.class
 com\eplugger\web\dto\ExerciseCheckInResponse$AttachmentDto.class
 com\eplugger\web\PointsController.class
 com\eplugger\domain\entity\PostFavorite.class

@@ -15,6 +15,8 @@ import com.eplugger.web.dto.TopicDto;
 import com.eplugger.web.dto.UserDto;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -36,6 +38,8 @@ import java.util.stream.Collectors;
 @Service
 public class PostService {
 
+    private static final Logger log = LoggerFactory.getLogger(PostService.class);
+
     private final PostRepository postRepository;
     private final PostLikeRepository postLikeRepository;
     private final PostFavoriteRepository postFavoriteRepository;
@@ -43,6 +47,7 @@ public class PostService {
     private final UserRepository userRepository;
     private final UserFollowRepository userFollowRepository;
     private final NotificationService notificationService;
+    private final PointsService pointsService;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public PostService(
@@ -52,7 +57,8 @@ public class PostService {
             TopicRepository topicRepository,
             UserRepository userRepository,
             UserFollowRepository userFollowRepository,
-            NotificationService notificationService
+            NotificationService notificationService,
+            PointsService pointsService
     ) {
         this.postRepository = postRepository;
         this.postLikeRepository = postLikeRepository;
@@ -61,10 +67,23 @@ public class PostService {
         this.userRepository = userRepository;
         this.userFollowRepository = userFollowRepository;
         this.notificationService = notificationService;
+        this.pointsService = pointsService;
     }
 
     @Transactional
     public PostDto create(Long userId, PostCreateRequest request) {
+        return createInternal(userId, request, null, null);
+    }
+
+    /**
+     * 打卡同步到圈子：写入来源字段，其余与 {@link #create} 一致（含发圈积分）。
+     */
+    @Transactional
+    public PostDto createFromCheckInSync(Long userId, PostCreateRequest request, String sourceType, long sourceId) {
+        return createInternal(userId, request, sourceType, sourceId);
+    }
+
+    private PostDto createInternal(Long userId, PostCreateRequest request, String sourceType, Long sourceId) {
         User author = userRepository.findById(userId)
                 .orElseThrow(() -> new IllegalArgumentException("用户不存在"));
         Post post = new Post();
@@ -74,6 +93,10 @@ public class PostService {
         post.setVisibilityType(request.getVisibilityType() != null ? request.getVisibilityType() : "company");
         post.setTopicIds(joinIds(request.getTopicIds()));
         post.setMentionUserIds(joinLongIds(request.getMentionUserIds()));
+        if (sourceType != null && sourceId != null) {
+            post.setSourceType(sourceType);
+            post.setSourceId(sourceId);
+        }
         post = postRepository.save(post);
         if (request.getMentionUserIds() != null && !request.getMentionUserIds().isEmpty()) {
             for (Long mentionId : request.getMentionUserIds()) {
@@ -84,6 +107,11 @@ public class PostService {
                         mentionId, userId, post.getId(), null,
                         author.getName() != null ? author.getName() : null);
             }
+        }
+        try {
+            pointsService.earnForPostPublish(userId, post.getId());
+        } catch (Exception ex) {
+            log.warn("earnForPostPublish failed for user {} post {}: {}", userId, post.getId(), ex.getMessage());
         }
         return toPostDto(post, userId);
     }

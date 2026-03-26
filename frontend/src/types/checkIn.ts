@@ -1,4 +1,4 @@
-﻿// 运动类型
+// 运动类型
 export interface SportType {
   id: string
   name: string
@@ -99,6 +99,8 @@ export interface CheckInFormData {
   intensity: ExerciseIntensity
   attachments: File[]
   metrics?: Record<string, string | number>
+  /** 同步到圈子，默认 true */
+  syncToCommunity?: boolean
 }
 
 // 默认运动类型

@@ -16,4 +16,11 @@ public interface PointsRecordRepository extends JpaRepository<PointsRecord, Long
 
     @Query("SELECT r.user.id, COALESCE(SUM(r.amount), 0) FROM PointsRecord r WHERE r.amount > 0 AND r.createdAt >= :start AND r.createdAt < :end GROUP BY r.user.id ORDER BY COALESCE(SUM(r.amount), 0) DESC")
     List<Object[]> sumEarnedByUserBetween(@Param("start") Instant start, @Param("end") Instant end);
+
+    @Query("SELECT COALESCE(SUM(r.amount), 0) FROM PointsRecord r WHERE r.user.id = :userId AND r.amount > 0 AND r.createdAt >= :start AND r.createdAt < :end")
+    Long sumEarnedAmountForUserBetween(
+            @Param("userId") Long userId,
+            @Param("start") Instant start,
+            @Param("end") Instant end
+    );
 }

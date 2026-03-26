@@ -89,6 +89,7 @@ com\eplugger\web\dto\ExerciseCheckInResponse$AttachmentDto.class
 com\eplugger\web\PointsController.class
 com\eplugger\domain\entity\PostFavorite.class
 com\eplugger\web\dto\NotificationDto.class
+com\eplugger\web\dto\TodayEarnedPointsDto.class
 com\eplugger\repository\PositiveCategoryRepository.class
 com\eplugger\web\dto\PositiveCheckInResponse$EvidenceDto.class
 com\eplugger\config\DevDataLoader.class

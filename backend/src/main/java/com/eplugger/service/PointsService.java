@@ -17,6 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -103,6 +105,20 @@ public class PointsService {
     public Page<PointsRecordDto> getRecords(Long userId, Pageable pageable) {
         return pointsRecordRepository.findByUser_IdOrderByCreatedAtDesc(userId, pageable)
                 .map(this::toRecordDto);
+    }
+
+    /**
+     * 当前用户在当地自然日内已获得积分总和（仅统计 amount &gt; 0 的入账流水）。
+     */
+    public int getTodayEarnedPoints(Long userId, ZoneId zoneId) {
+        if (zoneId == null) {
+            zoneId = ZoneId.systemDefault();
+        }
+        LocalDate today = LocalDate.now(zoneId);
+        Instant start = today.atStartOfDay(zoneId).toInstant();
+        Instant end = today.plusDays(1).atStartOfDay(zoneId).toInstant();
+        Long sum = pointsRecordRepository.sumEarnedAmountForUserBetween(userId, start, end);
+        return sum != null ? sum.intValue() : 0;
     }
 
     public List<MedalDto> getMedals(Long userId) {

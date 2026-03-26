@@ -91,6 +91,7 @@ C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\dto\TopicDto.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\repository\CommentRepository.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\config\SecurityConfig.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\PostController.java
+C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\dto\TodayEarnedPointsDto.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\security\JwtUtil.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\web\dto\UserPointsDto.java
 C:\ai\ai\epluggerLive\backend\src\main\java\com\eplugger\service\LeaderboardService.java

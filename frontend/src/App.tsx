@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { BrowserRouter, Routes, Route, NavLink, useLocation, Navigate } from 'react-router-dom'
 import { Home, CheckCircle, Users, Trophy, User } from 'lucide-react'
 import * as authApi from './api/auth'
+import { BottomNavSuppressContext } from './context/BottomNavSuppressContext'
 import HomePage from './pages/HomePage'
 import CheckInPage from './pages/CheckInPage'
 import ExerciseRecordsPage from './pages/ExerciseRecordsPage'
@@ -19,6 +20,7 @@ import './App.css'
 
 function AppContent({ isLoggedIn, onLogin, onLogout }: { isLoggedIn: boolean; onLogin: () => void; onLogout: () => void }) {
   const location = useLocation()
+  const [suppressBottomNav, setSuppressBottomNav] = useState(false)
 
   const hideBottomNav =
     location.pathname === '/' ||
@@ -28,13 +30,16 @@ function AppContent({ isLoggedIn, onLogin, onLogout }: { isLoggedIn: boolean; on
     location.pathname === '/profile/messages' ||
     location.pathname === '/login'
 
+  const bottomNavVisible = isLoggedIn && !hideBottomNav && !suppressBottomNav
+
   // 未登录时仅允许访问默认页（登录页），其余重定向到 /
   if (!isLoggedIn && location.pathname !== '/' && location.pathname !== '/login') {
     return <Navigate to="/" replace />
   }
 
   return (
-    <div className="app-container">
+    <BottomNavSuppressContext.Provider value={setSuppressBottomNav}>
+      <div className={`app-container${bottomNavVisible ? '' : ' app-container--no-bottom-nav'}`}>
       <Routes>
         {/* 默认页：未登录显示登录页，已登录跳转首页 */}
         <Route path="/" element={
@@ -57,7 +62,7 @@ function AppContent({ isLoggedIn, onLogin, onLogout }: { isLoggedIn: boolean; on
         <Route path="/profile/messages" element={<MyMessagesPage onBack={() => window.history.back()} />} />
       </Routes>
 
-      {!hideBottomNav && isLoggedIn && (
+      {bottomNavVisible && (
         <nav className="bottom-nav">
           <NavLink to="/home" className={({ isActive }) => isActive ? 'nav-item active' : 'nav-item'}>
             <Home size={22} />
@@ -81,7 +86,8 @@ function AppContent({ isLoggedIn, onLogin, onLogout }: { isLoggedIn: boolean; on
           </NavLink>
         </nav>
       )}
-    </div>
+      </div>
+    </BottomNavSuppressContext.Provider>
   )
 }
 

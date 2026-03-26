@@ -5,7 +5,6 @@ import {
   Heart,
   ChevronLeft,
   ChevronRight,
-  Check,
   Users,
   Sparkles,
   TrendingUp,
@@ -23,7 +22,9 @@ import type { SportType, CheckInFormData, CheckInMode } from '../types/checkIn'
 import { DEFAULT_SPORT_TYPES } from '../types/checkIn'
 import { DEFAULT_POSITIVE_CATEGORIES } from '../types/positive'
 import CheckInForm from '../components/checkIn/CheckInForm'
+import { useBottomNavSuppressSetter } from '../context/BottomNavSuppressContext'
 import * as checkInApi from '../api/checkin'
+import { getTodayEarnedPoints } from '../api/points'
 import type {
   ExerciseRecordItem,
   PositiveRecordItem,
@@ -41,6 +42,7 @@ const formatDate = (iso: string) => {
 
 export default function CheckInPage() {
   const navigate = useNavigate()
+  const setSuppressBottomNav = useBottomNavSuppressSetter()
   const [activeTab, setActiveTab] = useState<CheckInType>('exercise')
   const touchStartX = useRef<number | null>(null)
 
@@ -82,6 +84,13 @@ export default function CheckInPage() {
     loadPositiveRecords()
   }, [])
 
+  useEffect(() => {
+    if (!setSuppressBottomNav) return
+    const hideBottom =
+      showSuccess || (checkInMode === 'single' && activeTab === 'exercise')
+    setSuppressBottomNav(hideBottom)
+    return () => setSuppressBottomNav(false)
+  }, [showSuccess, checkInMode, activeTab, setSuppressBottomNav])
 
   const getSportName = (id: string) => {
     const s = sportTypes.find(st => st.id === id)
@@ -202,25 +211,159 @@ const getPositiveIcon = (categoryId: string) => {
     return category?.name ?? categoryId
   }
 
+  const [displayPoints, setDisplayPoints] = useState(0)
+  const [showConfetti, setShowConfetti] = useState(false)
+  const [todayEarnedPoints, setTodayEarnedPoints] = useState<number | null>(null)
+
+  useEffect(() => {
+    if (!showSuccess) return
+    setDisplayPoints(0)
+    setShowConfetti(true)
+    const duration = 1200
+    const steps = 30
+    const increment = earnedPoints / steps
+    const interval = duration / steps
+    let current = 0
+    const timer = setInterval(() => {
+      current += increment
+      if (current >= earnedPoints) {
+        setDisplayPoints(earnedPoints)
+        clearInterval(timer)
+      } else {
+        setDisplayPoints(Math.floor(current))
+      }
+    }, interval)
+    return () => {
+      clearInterval(timer)
+      setShowConfetti(false)
+    }
+  }, [showSuccess, earnedPoints])
+
+  useEffect(() => {
+    if (!showSuccess) {
+      setTodayEarnedPoints(null)
+      return
+    }
+    let cancelled = false
+    getTodayEarnedPoints().then((n) => {
+      if (!cancelled) setTodayEarnedPoints(n ?? 0)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [showSuccess])
+
   if (showSuccess) {
+    const successKind = successData?.type ?? 'exercise'
     return (
-      <div className="page">
-        <div className="checkin-success">
-          <div className="checkin-success-icon">
-            <Check size={40} />
-          </div>
-          <h2 className="checkin-success-title">{successData?.title}！</h2>
-          <div className="checkin-success-points">
-            +{earnedPoints} 积分
-          </div>
-          {successData?.communitySyncWarning && (
-            <p className="checkin-success-sync-warning" role="status">
-              {successData.communitySyncWarning}
-            </p>
+      <div className="page checkin-success-page" style={{ padding: 0 }}>
+        <div className={`success-page-wrapper success-page-wrapper--${successKind}`}>
+          {showConfetti && (
+            <div className="confetti-container" aria-hidden>
+              {[...Array(30)].map((_, i) => (
+                <div key={i} className={`confetti confetti--${i % 5}`} style={{ 
+                  '--delay': `${Math.random() * 2.8}s`,
+                  '--x': `${4 + Math.random() * 92}%`,
+                  '--rotation': `${Math.random() * 360}deg`,
+                } as React.CSSProperties} />
+              ))}
+            </div>
           )}
-          <button className="btn btn-primary" onClick={handleSuccessClose}>
-            完成
-          </button>
+          <div className="success-bg-particles" aria-hidden>
+            {[...Array(52)].map((_, i) => {
+              const left = ((i * 37 + 11) % 92) + 4
+              const top = ((i * 19 + 23) % 88) + 6
+              const size = 2 + (i % 6) * 0.65
+              const dur = 11 + (i % 10) * 1.1
+              const delay = ((i * 0.21) % 5) + (i % 3) * 0.4
+              const tx = -14 + (i % 9) * 3.5
+              const ty = -22 + (i % 7) * 5.5
+              const opacity = 0.32 + (i % 8) * 0.06
+              return (
+                <span
+                  key={`bg-particle-${i}`}
+                  className={`success-bg-particle success-bg-particle--${i % 4}`}
+                  style={{
+                    '--p-left': `${left}%`,
+                    '--p-top': `${top}%`,
+                    '--p-size': `${size}px`,
+                    '--p-dur': `${dur}s`,
+                    '--p-delay': `${delay}s`,
+                    '--p-tx': `${tx}px`,
+                    '--p-ty': `${ty}px`,
+                    '--p-opacity': opacity,
+                  } as React.CSSProperties}
+                />
+              )
+            })}
+          </div>
+          <div className="success-page-top-bar">
+            <button
+              type="button"
+              className="success-page-back"
+              onClick={handleSuccessClose}
+              aria-label="返回"
+            >
+              <ChevronLeft size={28} strokeWidth={2.25} />
+            </button>
+            <p className="success-page-type-label">{successData?.title ?? '打卡已完成'}</p>
+          </div>
+          <div className="success-page-main">
+            <div className="success-card" role="status" aria-live="polite" aria-atomic="true">
+              <img
+                src="/下载.png"
+                alt=""
+                className="success-mascot"
+                width={200}
+                height={200}
+                decoding="async"
+              />
+
+              <div className="success-card-header">
+                <div className="success-title-with-stamp">
+                  <h1 className="success-title">恭喜！挑战成功</h1>
+                  <img
+                    src="/今日已完成.png"
+                    alt=""
+                    className="success-done-stamp"
+                    decoding="async"
+                  />
+                </div>
+              </div>
+
+              <div className="success-card-body">
+                <div
+                  className="reward-card"
+                  aria-label={`本次获得 ${displayPoints} 积分，今日已获得 ${todayEarnedPoints === null ? '加载中' : todayEarnedPoints} 积分`}
+                >
+                  <div className="reward-inline-row">
+                    <div className="reward-segment">
+                      <span className="reward-inline-value">{displayPoints}</span>
+                      <span className="reward-caption">本次获得积分</span>
+                    </div>
+                    <span className="reward-meta-divider" aria-hidden />
+                    <div className="reward-segment reward-segment--today">
+                      <div className="reward-today-badge-wrap">
+                        <span className="reward-inline-value">
+                          {todayEarnedPoints === null ? '…' : todayEarnedPoints}
+                        </span>
+                        <span className="reward-today-label">今日获得积分</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="success-card-footer">
+                {successData?.communitySyncWarning ? (
+                  <p className="checkin-success-sync-warning" role="alert">
+                    {successData.communitySyncWarning}
+                  </p>
+                ) : null}
+                <p className="encourage-text">每一次运动都是进步，继续保持！</p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     )

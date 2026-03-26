@@ -92,6 +92,14 @@ function mapProduct(d: {
   }
 }
 
+/** 当日已获得积分（与后端自然日口径一致） */
+export async function getTodayEarnedPoints(): Promise<number | null> {
+  const res = await apiRequest<{ points: number }>('/api/points/today-earned')
+  if (!res.ok) return null
+  const n = res.data?.points
+  return typeof n === 'number' ? n : 0
+}
+
 export async function getPointsMe(): Promise<UserPoints | null> {
   const res = await apiRequest<{
     userId: string

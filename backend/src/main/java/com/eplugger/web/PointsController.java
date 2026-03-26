@@ -3,6 +3,7 @@ package com.eplugger.web;
 import com.eplugger.service.PointsService;
 import com.eplugger.web.dto.MedalDto;
 import com.eplugger.web.dto.PointsRecordDto;
+import com.eplugger.web.dto.TodayEarnedPointsDto;
 import com.eplugger.web.dto.UserPointsDto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -14,10 +15,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.ZoneId;
 import java.util.List;
 
 /**
- * 积分：GET /api/points/me、GET /api/points/records、GET /api/medals。
+ * 积分：GET /api/points/me、GET /api/points/today-earned、GET /api/points/records、GET /api/medals。
  */
 @RestController
 @RequestMapping("/api/points")
@@ -45,6 +47,15 @@ public class PointsController {
         return pointsService.getMe(userId)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    @GetMapping("/today-earned")
+    public ResponseEntity<TodayEarnedPointsDto> todayEarned(Authentication authentication) {
+        Long userId = currentUserId(authentication);
+        if (userId == null) return ResponseEntity.status(401).build();
+        TodayEarnedPointsDto dto = new TodayEarnedPointsDto();
+        dto.setPoints(pointsService.getTodayEarnedPoints(userId, ZoneId.systemDefault()));
+        return ResponseEntity.ok(dto);
     }
 
     @GetMapping("/records")

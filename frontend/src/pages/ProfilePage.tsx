@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { 
   MessageCircle, LogOut, ChevronRight, ChevronLeft,
@@ -9,6 +9,7 @@ import type { UserPoints as UserPointsType } from '../types/points'
 import MedalWall from '../components/points/MedalWall'
 import { getProfile, type UserProfile } from '../api/auth'
 import { getPointsMe, getUnreadCount } from '../api/points'
+import { useBottomNavSuppressSetter } from '../context/BottomNavSuppressContext'
 
 const menuItems = [
   { icon: FileText, label: '我的动态', badge: '', color: '#8B5CF6' },
@@ -23,6 +24,7 @@ interface ProfilePageProps {
 
 export default function ProfilePage({ onLogout }: ProfilePageProps) {
   const navigate = useNavigate()
+  const setSuppressBottomNav = useBottomNavSuppressSetter()
   const [showMedalWall, setShowMedalWall] = useState(false)
   const [darkMode, setDarkMode] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
@@ -37,6 +39,12 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
     getUnreadCount().then(setUnreadCount).catch(() => {})
     getPointsMe().then((p) => { if (p) setUserPoints(p) })
   }, [])
+
+  useEffect(() => {
+    if (!setSuppressBottomNav) return
+    setSuppressBottomNav(showMedalWall)
+    return () => setSuppressBottomNav(false)
+  }, [showMedalWall, setSuppressBottomNav])
 
   const displayUserPoints: UserPointsType = userPoints ?? {
     userId: profile?.id ?? '',
@@ -112,9 +120,9 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
           {/* 已获得最多3枚 + 补齐未获得占位，共显示3个 */}
           <div className="profile-medal-row">
             {(() => {
-              const medals = displayUserPoints.medals.slice(0, 3)
+              const medals = displayUserPoints.medals.filter(m => m.obtainedAt).slice(0, 3)
               const configs = medals.map(m => MEDAL_CONFIGS.find(c => c.type === m.type)).filter(Boolean)
-              const lockedConfigs = MEDAL_CONFIGS.filter(c => !displayUserPoints.medals.find(m => m.type === c.type))
+              const lockedConfigs = MEDAL_CONFIGS.filter(c => !displayUserPoints.medals.find(m => m.type === c.type && m.obtainedAt))
               const displayCount = 3
               const items: { config: typeof MEDAL_CONFIGS[0]; obtained: boolean }[] = [
                 ...configs.map(c => ({ config: c!, obtained: true })),

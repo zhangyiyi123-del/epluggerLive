@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Lock, Calendar, Star } from 'lucide-react'
 import type { Medal, UserPoints } from '../../types/points'
 import { MEDAL_CONFIGS } from '../../types/points'
@@ -10,11 +10,11 @@ interface MedalWallProps {
 
 export default function MedalWall({ userPoints }: MedalWallProps) {
   const [selectedMedal, setSelectedMedal] = useState<Medal | null>(null)
+  const [newAwardQueue, setNewAwardQueue] = useState<Medal[]>([])
 
-  // 获取已获得的勋章信息
-  const getObtainedMedal = (type: string) => {
-    return userPoints.medals.find(m => m.type === type)
-  }
+  const medalMap = new Map(userPoints.medals.map(m => [m.type, m]))
+  const getMedal = (type: string) => medalMap.get(type)
+  const isObtained = (type: string) => Boolean(getMedal(type)?.obtainedAt)
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('zh-CN', {
@@ -24,8 +24,54 @@ export default function MedalWall({ userPoints }: MedalWallProps) {
     })
   }
 
-  const obtainedCount = userPoints.medals.length
+  const obtainedCount = userPoints.medals.filter(m => m.obtainedAt).length
   const totalCount = MEDAL_CONFIGS.length
+  const overallProgressText = `${obtainedCount}/${totalCount}`
+  const pendingAward = newAwardQueue[0]
+
+  useEffect(() => {
+    if (!userPoints.userId) return
+    const storageKey = `medal_award_seen:${userPoints.userId}`
+    let seenMap: Record<string, string> = {}
+    try {
+      const raw = localStorage.getItem(storageKey)
+      seenMap = raw ? JSON.parse(raw) : {}
+    } catch {
+      seenMap = {}
+    }
+
+    const unseenAwards = userPoints.medals
+      .filter((m) => m.obtainedAt)
+      .filter((m) => {
+        const seenAt = seenMap[m.type]
+        return seenAt !== m.obtainedAt
+      })
+      .sort((a, b) => {
+        const ta = a.obtainedAt ? new Date(a.obtainedAt).getTime() : 0
+        const tb = b.obtainedAt ? new Date(b.obtainedAt).getTime() : 0
+        return tb - ta
+      })
+
+    setNewAwardQueue(unseenAwards)
+  }, [userPoints.userId, userPoints.medals])
+
+  const closeAwardPopup = () => {
+    if (!pendingAward || !userPoints.userId || !pendingAward.obtainedAt) {
+      setNewAwardQueue((prev) => prev.slice(1))
+      return
+    }
+    const storageKey = `medal_award_seen:${userPoints.userId}`
+    let seenMap: Record<string, string> = {}
+    try {
+      const raw = localStorage.getItem(storageKey)
+      seenMap = raw ? JSON.parse(raw) : {}
+    } catch {
+      seenMap = {}
+    }
+    seenMap[pendingAward.type] = pendingAward.obtainedAt
+    localStorage.setItem(storageKey, JSON.stringify(seenMap))
+    setNewAwardQueue((prev) => prev.slice(1))
+  }
 
   return (
     <div className="medal-wall">
@@ -42,8 +88,8 @@ export default function MedalWall({ userPoints }: MedalWallProps) {
         </div>
         <div className="medal-wall-overview-divider" />
         <div className="medal-wall-overview-item">
-          <span className="medal-overview-num">{Math.round(obtainedCount / totalCount * 100)}%</span>
-          <span className="medal-overview-label">完成度</span>
+          <span className="medal-overview-num">{overallProgressText}</span>
+          <span className="medal-overview-label">已完成/全部</span>
         </div>
       </div>
 
@@ -55,19 +101,22 @@ export default function MedalWall({ userPoints }: MedalWallProps) {
             已获得（{obtainedCount}）
           </div>
           <div className="medal-wall-grid">
-            {MEDAL_CONFIGS.filter(c => getObtainedMedal(c.type)).map(config => {
-              const obtained = getObtainedMedal(config.type)!
+            {MEDAL_CONFIGS.filter(c => isObtained(c.type)).map(config => {
+              const obtained = getMedal(config.type)!
               return (
                 <div
                   key={config.type}
                   className="medal-card obtained"
-                  onClick={() => setSelectedMedal(obtained)}
+                  onClick={() => setSelectedMedal({ ...config, ...obtained })}
                 >
                   <div className="medal-card-badge">
                     <span className="medal-card-emoji">{config.icon}</span>
                     <span className="medal-card-points">+{config.pointsReward}</span>
                   </div>
                   <div className="medal-card-name">{config.name}</div>
+                  <div className="medal-card-condition">
+                    当前进度 {config.requiredCount}/{config.requiredCount}
+                  </div>
                   <div className="medal-card-date">
                     <Calendar size={9} />
                     {formatDate(obtained.obtainedAt!)}
@@ -86,19 +135,25 @@ export default function MedalWall({ userPoints }: MedalWallProps) {
           待解锁（{totalCount - obtainedCount}）
         </div>
         <div className="medal-wall-grid">
-          {MEDAL_CONFIGS.filter(c => !getObtainedMedal(c.type)).map(config => (
-            <div
-              key={config.type}
-              className="medal-card locked"
-              onClick={() => setSelectedMedal(config as any)}
-            >
-              <div className="medal-card-badge locked-badge">
-                <span className="medal-card-emoji locked-emoji">{config.icon}</span>
-                <Lock size={12} className="medal-card-lock" />
-              </div>
-              <div className="medal-card-name locked-name">{config.name}</div>
-              <div className="medal-card-condition">{config.condition}</div>
-            </div>
+          {MEDAL_CONFIGS.filter(c => !isObtained(c.type)).map(config => (
+            (() => {
+              const medal = getMedal(config.type)
+              const progress = Math.min(medal?.progress ?? 0, config.requiredCount)
+              return (
+                <div
+                  key={config.type}
+                  className="medal-card locked"
+                  onClick={() => setSelectedMedal({ ...config, ...(medal ?? {}) } as Medal)}
+                >
+                  <div className="medal-card-badge locked-badge">
+                    <span className="medal-card-emoji locked-emoji">{config.icon}</span>
+                    <Lock size={12} className="medal-card-lock" />
+                  </div>
+                  <div className="medal-card-name locked-name">{config.name}</div>
+                  <div className="medal-card-condition">当前进度 {progress}/{config.requiredCount}</div>
+                </div>
+              )
+            })()
           ))}
         </div>
       </div>
@@ -129,7 +184,12 @@ export default function MedalWall({ userPoints }: MedalWallProps) {
               ) : (
                 <div className="medal-detail-condition">
                   <Lock size={14} />
-                  <span>获取条件：{selectedMedal.condition}</span>
+                  <span>
+                    获取条件：{selectedMedal.condition}
+                    {typeof selectedMedal.progress === 'number' && selectedMedal.requiredCount > 0
+                      ? `（当前进度 ${Math.min(selectedMedal.progress, selectedMedal.requiredCount)}/${selectedMedal.requiredCount}）`
+                      : ''}
+                  </span>
                 </div>
               )}
               <div className="medal-detail-reward">
@@ -138,6 +198,35 @@ export default function MedalWall({ userPoints }: MedalWallProps) {
             </div>
             <button className="medal-detail-close" onClick={() => setSelectedMedal(null)}>
               知道了
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 新获得勋章动效弹窗 */}
+      {pendingAward && (
+        <div className="medal-award-overlay" onClick={closeAwardPopup}>
+          <div className="medal-award-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="medal-award-confetti" aria-hidden="true">
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+            </div>
+            <div className="medal-award-glow" aria-hidden="true" />
+            <div className="medal-award-title">恭喜解锁新勋章</div>
+            <div className="medal-award-badge" aria-hidden="true">
+              {pendingAward.icon}
+            </div>
+            <div className="medal-award-name">{pendingAward.name}</div>
+            <div className="medal-award-desc">{pendingAward.description}</div>
+            <div className="medal-award-reward">+{pendingAward.pointsReward} 积分已到账</div>
+            <button className="medal-award-confirm" onClick={closeAwardPopup}>
+              太棒了
             </button>
           </div>
         </div>

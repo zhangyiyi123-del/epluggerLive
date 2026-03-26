@@ -22,6 +22,10 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     Page<Post> findByAuthor_IdOrderByCreatedAtDesc(Long authorId, Pageable pageable);
 
+    List<Post> findByAuthor_Id(Long authorId);
+
+    long countByAuthor_Id(Long authorId);
+
     /** 关键词匹配正文或作者名，按时间倒序（与 filter=latest 组合） */
     @Query("SELECT p FROM Post p JOIN p.author u WHERE (LOWER(p.contentText) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(u.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) ORDER BY p.createdAt DESC")
     Page<Post> findByKeywordOrderByCreatedAtDesc(@Param("keyword") String keyword, Pageable pageable);

@@ -18,8 +18,11 @@ export type MedalType =
   | 'sports-master'       // 运动达人
   | 'sports-champion'    // 运动健将
   | 'positive-messenger' // 正向使者
+  | 'community-star'     // 正向标杆
   | 'team-star'          // 团队之星
-  | 'community-star'     // 社区达人
+  | 'post-rookie'        // 发圈新秀
+  | 'content-creator'    // 内容创作者
+  | 'hot-author'         // 高热作者
   | 'interaction-star'   // 互动之星
   | 'full-attendance'    // 全勤标兵
 
@@ -77,7 +80,7 @@ export interface UserPoints {
   level: number                // 当前等级（建议按累计获取或等级进度算，不随可用积分减少而降级）
   currentLevelPoints: number   // 当前等级积分（本等级内进度或用于进度条）
   nextLevelPoints: number      // 下一等级所需积分
-  medals: Medal[]              // 已获得勋章
+  medals: Medal[]              // 勋章列表（含已获得与待解锁，obtainedAt 区分）
 }
 
 // 积分获取规则配置
@@ -154,8 +157,11 @@ export const MEDAL_CONFIGS: Omit<Medal, 'obtainedAt' | 'progress'>[] = [
   { type: 'sports-master', name: '运动达人', description: '累计运动达标30天', icon: '🏅', condition: '累计运动30天', requiredCount: 30, pointsReward: 50 },
   { type: 'sports-champion', name: '运动健将', description: '累计运动达标100天', icon: '🏆', condition: '累计运动100天', requiredCount: 100, pointsReward: 50 },
   { type: 'positive-messenger', name: '正向使者', description: '累计正向打卡20次', icon: '✨', condition: '累计正向打卡20次', requiredCount: 20, pointsReward: 50 },
-  { type: 'team-star', name: '团队之星', description: '累计邀请10人参与', icon: '👥', condition: '累计邀请10人参与', requiredCount: 10, pointsReward: 50 },
-  { type: 'community-star', name: '社区达人', description: '累计发布10条优质动态', icon: '📱', condition: '累计发布10条优质动态', requiredCount: 10, pointsReward: 50 },
+  { type: 'community-star', name: '正向标杆', description: '累计发布10条优质正向打卡', icon: '📱', condition: '累计发布10条优质正向打卡', requiredCount: 10, pointsReward: 50 },
+  { type: 'team-star', name: '团队之星', description: '累计邀请20人参与', icon: '👥', condition: '累计邀请20人参与', requiredCount: 20, pointsReward: 50 },
+  { type: 'post-rookie', name: '发圈新秀', description: '累计发布动态10条', icon: '📝', condition: '累计发布动态10条', requiredCount: 10, pointsReward: 50 },
+  { type: 'content-creator', name: '内容创作者', description: '累计发布动态50条', icon: '🧠', condition: '累计发布动态50条', requiredCount: 50, pointsReward: 50 },
+  { type: 'hot-author', name: '高热作者', description: '累计5条动态互动数达到20', icon: '🔥', condition: '累计5条动态互动数达到20', requiredCount: 5, pointsReward: 50 },
   { type: 'interaction-star', name: '互动之星', description: '累计点赞200次', icon: '❤️', condition: '累计点赞200次', requiredCount: 200, pointsReward: 50 },
   { type: 'full-attendance', name: '全勤标兵', description: '自然月打卡全达标', icon: '📅', condition: '自然月全勤', requiredCount: 1, pointsReward: 50 },
 ]

@@ -8,6 +8,7 @@ import com.eplugger.domain.entity.Post;
 import com.eplugger.repository.CheckInRecordRepository;
 import com.eplugger.repository.PositiveRecordRepository;
 import com.eplugger.repository.PostRepository;
+import com.eplugger.repository.UserRepository;
 import com.eplugger.web.dto.CommunitySyncResult;
 import com.eplugger.web.dto.PostCreateRequest;
 import com.eplugger.web.dto.PostDto;
@@ -38,17 +39,20 @@ public class CheckInCommunitySyncService {
     private final PostService postService;
     private final CheckInRecordRepository checkInRecordRepository;
     private final PositiveRecordRepository positiveRecordRepository;
+    private final UserRepository userRepository;
 
     public CheckInCommunitySyncService(
             PostRepository postRepository,
             PostService postService,
             CheckInRecordRepository checkInRecordRepository,
-            PositiveRecordRepository positiveRecordRepository
+            PositiveRecordRepository positiveRecordRepository,
+            UserRepository userRepository
     ) {
         this.postRepository = postRepository;
         this.postService = postService;
         this.checkInRecordRepository = checkInRecordRepository;
         this.positiveRecordRepository = positiveRecordRepository;
+        this.userRepository = userRepository;
     }
 
     public CommunitySyncResult syncExerciseCheckIn(Long userId, Long checkInRecordId) {
@@ -114,11 +118,17 @@ public class CheckInCommunitySyncService {
             } else if (hasDesc) {
                 text.append(" ").append(desc);
             }
+            List<Long> mentionIds = splitLongIds(record.getRelatedColleagueIds());
+            String mentionText = buildMentionText(mentionIds);
+            if (!mentionText.isEmpty()) {
+                text.append(" ").append(mentionText);
+            }
             text.append(" #来自打卡同步");
             PostCreateRequest req = new PostCreateRequest();
             req.setContentText(truncate(text.toString()));
             req.setContentImages(collectEvidenceUrls(record.getEvidences()));
             req.setVisibilityType("company");
+            req.setMentionUserIds(mentionIds);
             PostDto dto = postService.createFromCheckInSync(userId, req, SOURCE_POSITIVE, positiveRecordId);
             return CommunitySyncResult.success(dto.getId(), dto.getPointsEarnedForPublish());
         } catch (DataIntegrityViolationException e) {
@@ -160,5 +170,36 @@ public class CheckInCommunitySyncService {
             }
         }
         return urls.size() > 9 ? urls.subList(0, 9) : urls;
+    }
+
+    private static List<Long> splitLongIds(String s) {
+        if (s == null || s.isBlank()) return null;
+        List<Long> ids = new ArrayList<>();
+        for (String part : s.split(",")) {
+            String t = part.trim();
+            if (t.isEmpty()) continue;
+            try {
+                ids.add(Long.parseLong(t));
+            } catch (NumberFormatException ignored) {
+                // ignore malformed id
+            }
+        }
+        return ids.isEmpty() ? null : ids;
+    }
+
+    private String buildMentionText(List<Long> mentionIds) {
+        if (mentionIds == null || mentionIds.isEmpty()) return "";
+        List<String> names = userRepository.findAllById(mentionIds).stream()
+                .map(u -> u.getName() != null ? u.getName().trim() : "")
+                .filter(n -> !n.isEmpty())
+                .distinct()
+                .toList();
+        if (names.isEmpty()) return "";
+        StringBuilder sb = new StringBuilder();
+        for (String name : names) {
+            if (sb.length() > 0) sb.append(" ");
+            sb.append("@").append(name);
+        }
+        return sb.toString();
     }
 }

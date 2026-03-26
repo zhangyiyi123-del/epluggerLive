@@ -16,6 +16,7 @@ com\eplugger\domain\entity\UserFollow.class
 com\eplugger\web\dto\PostDto.class
 com\eplugger\web\dto\TopicDto.class
 com\eplugger\web\GlobalExceptionHandler$ErrorBody.class
+com\eplugger\service\PointsService$1.class
 com\eplugger\web\AuthController.class
 com\eplugger\web\util\ZoneIdResolver.class
 com\eplugger\service\PointsService$MedalMeta.class

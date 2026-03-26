@@ -27,4 +27,8 @@ public interface PositiveRecordRepository extends JpaRepository<PositiveRecord, 
     /** 按用户统计时间范围内的正向打卡次数（用于正向榜） */
     @Query("SELECT r.user.id, COUNT(r) FROM PositiveRecord r WHERE r.createdAt >= :start AND r.createdAt < :end GROUP BY r.user.id ORDER BY COUNT(r) DESC")
     List<Object[]> countByUserBetween(@Param("start") Instant start, @Param("end") Instant end);
+
+    long countByUser_Id(Long userId);
+
+    List<PositiveRecord> findByUser_Id(Long userId);
 }

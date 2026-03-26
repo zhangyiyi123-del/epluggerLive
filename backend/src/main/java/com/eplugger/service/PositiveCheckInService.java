@@ -148,6 +148,7 @@ public class PositiveCheckInService {
         pr.setSourceId(String.valueOf(record.getId()));
         pr.setCreatedAt(Instant.now());
         pointsRecordRepository.save(pr);
+        pointsService.grantPositiveMedalsIfEligible(userId);
 
         PositiveCheckInResponse response = toResponse(record);
         boolean wantSync = request.getSyncToCommunity() == null || Boolean.TRUE.equals(request.getSyncToCommunity());

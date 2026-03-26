@@ -112,6 +112,7 @@ public class PostService {
         if (publishPoints == 0 && PointsService.postPublishRewardAmount() > 0) {
             log.warn("earnForPostPublish credited 0 for user {} post {}", userId, post.getId());
         }
+        pointsService.grantPostMedalsIfEligible(userId);
         PostDto dto = toPostDto(post, userId);
         dto.setPointsEarnedForPublish(publishPoints);
         return dto;
@@ -278,6 +279,8 @@ public class PostService {
             postLikeRepository.save(like);
             post.setLikesCount(post.getLikesCount() + 1);
             postRepository.save(post);
+            pointsService.grantInteractionMedalIfEligible(userId);
+            pointsService.grantPostMedalsIfEligible(post.getAuthor().getId());
             User liker = userRepository.findById(userId).orElse(null);
             notificationService.createPostLikeNotification(
                     post.getAuthor().getId(), userId, post.getId(),

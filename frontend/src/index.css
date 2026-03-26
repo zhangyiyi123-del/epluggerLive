@@ -6542,6 +6542,163 @@ body {
   cursor: pointer;
 }
 
+/* 新获得勋章动效弹窗 */
+.medal-award-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1100;
+  padding: 24px;
+}
+
+.medal-award-modal {
+  width: 100%;
+  max-width: 320px;
+  border-radius: 20px;
+  padding: 28px 20px 20px;
+  background: linear-gradient(180deg, #FFFBEB 0%, #FFFFFF 48%);
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  animation: medal-award-pop 260ms ease-out;
+}
+
+.medal-award-confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.medal-award-confetti span {
+  position: absolute;
+  top: -18px;
+  width: 7px;
+  height: 18px;
+  border-radius: 2px;
+  opacity: 0.9;
+  animation: medal-confetti-fall 1400ms ease-out forwards;
+}
+
+.medal-award-confetti span:nth-child(1) { left: 10%; background: #F43F5E; animation-delay: 0ms; }
+.medal-award-confetti span:nth-child(2) { left: 18%; background: #F59E0B; animation-delay: 90ms; }
+.medal-award-confetti span:nth-child(3) { left: 28%; background: #10B981; animation-delay: 150ms; }
+.medal-award-confetti span:nth-child(4) { left: 38%; background: #3B82F6; animation-delay: 60ms; }
+.medal-award-confetti span:nth-child(5) { left: 62%; background: #8B5CF6; animation-delay: 30ms; }
+.medal-award-confetti span:nth-child(6) { left: 72%; background: #EC4899; animation-delay: 120ms; }
+.medal-award-confetti span:nth-child(7) { left: 82%; background: #F97316; animation-delay: 180ms; }
+.medal-award-confetti span:nth-child(8) { left: 90%; background: #06B6D4; animation-delay: 70ms; }
+
+.medal-award-glow {
+  position: absolute;
+  width: 200px;
+  height: 200px;
+  left: 50%;
+  top: -120px;
+  transform: translateX(-50%);
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.35) 0%, rgba(245, 158, 11, 0) 70%);
+  pointer-events: none;
+}
+
+.medal-award-title {
+  font-size: 13px;
+  color: #92400E;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.medal-award-badge {
+  width: 88px;
+  height: 88px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 44px;
+  line-height: 1;
+  background: linear-gradient(135deg, #FDE68A 0%, #F59E0B 60%, #D97706 100%);
+  box-shadow: 0 10px 24px rgba(245, 158, 11, 0.35);
+  animation: medal-award-bounce 420ms ease-out;
+}
+
+.medal-award-name {
+  font-size: 20px;
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 6px;
+}
+
+.medal-award-desc {
+  font-size: 13px;
+  line-height: 1.6;
+  color: #6B7280;
+  margin-bottom: 12px;
+}
+
+.medal-award-reward {
+  display: inline-block;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: #DBEAFE;
+  color: #1D4ED8;
+  font-weight: 700;
+  font-size: 13px;
+  margin-bottom: 14px;
+}
+
+.medal-award-confirm {
+  width: 100%;
+  border: none;
+  border-radius: 12px;
+  background: #2563EB;
+  color: #fff;
+  padding: 11px 0;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@keyframes medal-award-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes medal-award-bounce {
+  0% {
+    transform: scale(0.86);
+  }
+  70% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes medal-confetti-fall {
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 0;
+  }
+  15% {
+    opacity: 0.95;
+  }
+  100% {
+    transform: translateY(185px) rotate(340deg);
+    opacity: 0;
+  }
+}
+
 /* ==================== Product Card ==================== */
 .product-card {
   background: var(--bg-white);

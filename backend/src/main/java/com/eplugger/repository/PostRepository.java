@@ -18,6 +18,29 @@ public interface PostRepository extends JpaRepository<Post, Long> {
 
     Page<Post> findAllByOrderByLikesCountDescCreatedAtDesc(Pageable pageable);
 
+    /** 热门流：互动得分（点赞+评论）叠加时间衰减，按热度分倒序。 */
+    @Query(
+            value = """
+                    SELECT p.*
+                    FROM post p
+                    ORDER BY
+                      (
+                        LN(1 + (p.likes_count * 1.0 + p.comments_count * 2.2))
+                        / POW(
+                            GREATEST(
+                              TIMESTAMPDIFF(HOUR, p.created_at, NOW()),
+                              0
+                            ) + 2,
+                            1.25
+                          )
+                      ) DESC,
+                      p.created_at DESC
+                    """,
+            countQuery = "SELECT COUNT(*) FROM post",
+            nativeQuery = true
+    )
+    Page<Post> findAllOrderByHotScoreDesc(Pageable pageable);
+
     Page<Post> findByAuthor_DepartmentOrderByCreatedAtDesc(String department, Pageable pageable);
 
     Page<Post> findByAuthor_IdOrderByCreatedAtDesc(Long authorId, Pageable pageable);
@@ -33,6 +56,42 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     /** 关键词匹配，按点赞数、时间倒序（与 filter=popular 组合） */
     @Query("SELECT p FROM Post p JOIN p.author u WHERE (LOWER(p.contentText) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(u.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) ORDER BY p.likesCount DESC, p.createdAt DESC")
     Page<Post> findByKeywordOrderByLikesCountDescCreatedAtDesc(@Param("keyword") String keyword, Pageable pageable);
+
+    /** 关键词匹配（正文/作者），按热门分倒序（与 filter=popular 组合）。 */
+    @Query(
+            value = """
+                    SELECT p.*
+                    FROM post p
+                    JOIN user u ON p.author_id = u.id
+                    WHERE (
+                      LOWER(p.content_text) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                      OR LOWER(u.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                    )
+                    ORDER BY
+                      (
+                        LN(1 + (p.likes_count * 1.0 + p.comments_count * 2.2))
+                        / POW(
+                            GREATEST(
+                              TIMESTAMPDIFF(HOUR, p.created_at, NOW()),
+                              0
+                            ) + 2,
+                            1.25
+                          )
+                      ) DESC,
+                      p.created_at DESC
+                    """,
+            countQuery = """
+                    SELECT COUNT(*)
+                    FROM post p
+                    JOIN user u ON p.author_id = u.id
+                    WHERE (
+                      LOWER(p.content_text) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                      OR LOWER(u.name) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                    )
+                    """,
+            nativeQuery = true
+    )
+    Page<Post> findByKeywordOrderByHotScoreDesc(@Param("keyword") String keyword, Pageable pageable);
 
     /** 关键词 + 部门，按时间倒序（与 filter=department 组合） */
     @Query("SELECT p FROM Post p JOIN p.author u WHERE u.department = :department AND (LOWER(p.contentText) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(u.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) ORDER BY p.createdAt DESC")

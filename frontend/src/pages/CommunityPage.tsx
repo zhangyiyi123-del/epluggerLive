@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, X, Trash2, Plus } from 'lucide-react'
 import type { Post, FeedFilter, FollowedUser } from '../types/community'
@@ -10,6 +10,11 @@ import { followUser, unfollowUser, getFollowingUsers } from '../api/follow'
 import { getUnreadCount } from '../api/points'
 
 export default function CommunityPage() {
+  const PULL_REFRESH_THRESHOLD = 72
+  const PULL_REFRESH_MAX = 120
+  const PULL_REFRESH_MIN_DURATION = 600
+  const PULL_REFRESH_SUCCESS_DURATION = 850
+
   const navigate = useNavigate()
   const initialFilterIndex = FEED_FILTERS.findIndex(f => f.value === 'latest')
   const [activeFilter, setActiveFilter] = useState<FeedFilter>('latest')
@@ -22,6 +27,8 @@ export default function CommunityPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [searchKeyword, setSearchKeyword] = useState<string>('')
   const [touchStartX, setTouchStartX] = useState<number | null>(null)
+  const [pullDistance, setPullDistance] = useState(0)
+  const [refreshStatus, setRefreshStatus] = useState<'idle' | 'refreshing' | 'success'>('idle')
   const [currentFilterIndex, setCurrentFilterIndex] = useState(
     initialFilterIndex === -1 ? 0 : initialFilterIndex
   )
@@ -29,6 +36,11 @@ export default function CommunityPage() {
   
   const [unreadCount, setUnreadCount] = useState(0)
   const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null)
+  const touchStartYRef = useRef<number | null>(null)
+  const isHorizontalSwipeRef = useRef(false)
+  const isPullGestureRef = useRef(false)
+  const pullDistanceRef = useRef(0)
+  const pullArmedRef = useRef(false)
 
   // 已关注用户列表
   const [followingUsers, setFollowingUsers] = useState<FollowedUser[]>([])
@@ -61,13 +73,8 @@ export default function CommunityPage() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const pageSize = 5
 
-  // 筛选或检索关键词变化时重新加载
-  useEffect(() => {
-    loadPosts(true)
-  }, [activeFilter, searchKeyword])
-
-  const loadPosts = async (refresh = false, nextPage?: number) => {
-    const pageToUse = nextPage ?? page
+  const loadPosts = useCallback(async (refresh = false, nextPage?: number) => {
+    const pageToUse = nextPage ?? 1
     const apiPage = refresh ? 0 : pageToUse - 1
     setIsLoadingMore(true)
     setLoadError(null)
@@ -88,12 +95,37 @@ export default function CommunityPage() {
     } finally {
       setIsLoadingMore(false)
     }
-  }
+  }, [activeFilter, pageSize, searchKeyword])
+
+  // 筛选或检索关键词变化时重新加载
+  useEffect(() => {
+    loadPosts(true)
+  }, [activeFilter, searchKeyword, loadPosts])
 
   const handleLoadMore = () => {
     if (isLoadingMore || !hasMore) return
     loadPosts(false, page + 1)
   }
+
+  const triggerRefresh = useCallback(async () => {
+    if (refreshStatus === 'refreshing') return
+    setRefreshStatus('refreshing')
+    const startedAt = Date.now()
+    try {
+      await loadPosts(true)
+      const elapsed = Date.now() - startedAt
+      if (elapsed < PULL_REFRESH_MIN_DURATION) {
+        await new Promise((resolve) => setTimeout(resolve, PULL_REFRESH_MIN_DURATION - elapsed))
+      }
+      setRefreshStatus('success')
+      await new Promise((resolve) => setTimeout(resolve, PULL_REFRESH_SUCCESS_DURATION))
+    } finally {
+      setRefreshStatus('idle')
+      setPullDistance(0)
+      pullDistanceRef.current = 0
+      pullArmedRef.current = false
+    }
+  }, [loadPosts, refreshStatus, PULL_REFRESH_MIN_DURATION, PULL_REFRESH_SUCCESS_DURATION])
 
   // 上滑到列表底部自动加载下一页（保留按钮作为兜底）
   useEffect(() => {
@@ -253,40 +285,104 @@ export default function CommunityPage() {
 
   // 左右滑动切换标签
   const handleTouchStart = (e: any) => {
-    if (e.touches && e.touches.length > 0) {
-      setTouchStartX(e.touches[0].clientX)
+    if (!e.touches || e.touches.length === 0) return
+    const touch = e.touches[0]
+    setTouchStartX(touch.clientX)
+    touchStartYRef.current = touch.clientY
+    isHorizontalSwipeRef.current = false
+    isPullGestureRef.current = false
+    pullArmedRef.current = false
+  }
+
+  const handleTouchMove = (e: any) => {
+    if (!e.touches || e.touches.length === 0) return
+    if (refreshStatus !== 'idle') return
+    if (touchStartX === null || touchStartYRef.current === null) return
+
+    const touch = e.touches[0]
+    const diffX = touch.clientX - touchStartX
+    const diffY = touch.clientY - touchStartYRef.current
+
+    if (!isHorizontalSwipeRef.current && !isPullGestureRef.current) {
+      if (Math.abs(diffX) > Math.abs(diffY) && Math.abs(diffX) > 8) {
+        isHorizontalSwipeRef.current = true
+      } else if (diffY > 0 && Math.abs(diffY) > 8 && window.scrollY <= 0) {
+        isPullGestureRef.current = true
+      }
+    }
+
+    if (!isPullGestureRef.current || isHorizontalSwipeRef.current || window.scrollY > 0 || diffY <= 0) {
+      return
+    }
+
+    e.preventDefault()
+    const damped = Math.min(PULL_REFRESH_MAX, diffY * 0.45)
+    pullDistanceRef.current = damped
+    setPullDistance(damped)
+    if (damped >= PULL_REFRESH_THRESHOLD) {
+      pullArmedRef.current = true
     }
   }
 
   const handleTouchEnd = (e: any) => {
-    if (touchStartX === null || !e.changedTouches || e.changedTouches.length === 0) return
+    if (touchStartX === null || !e.changedTouches || e.changedTouches.length === 0) {
+      setTouchStartX(null)
+      touchStartYRef.current = null
+      return
+    }
     
     const endX = e.changedTouches[0].clientX
     const diffX = endX - touchStartX
     const threshold = 50
 
-    // 忽略小幅度滑动
-    if (Math.abs(diffX) < threshold) {
+    const shouldRefresh = isPullGestureRef.current &&
+      (pullArmedRef.current || pullDistanceRef.current >= PULL_REFRESH_THRESHOLD) &&
+      refreshStatus === 'idle'
+
+    if (shouldRefresh) {
       setTouchStartX(null)
+      touchStartYRef.current = null
+      isHorizontalSwipeRef.current = false
+      isPullGestureRef.current = false
+      void triggerRefresh()
       return
     }
 
-    if (diffX < 0 && currentFilterIndex < FEED_FILTERS.length - 1) {
+    // 忽略小幅度滑动
+    if (Math.abs(diffX) < threshold) {
+      setTouchStartX(null)
+      touchStartYRef.current = null
+      if (refreshStatus === 'idle') {
+        setPullDistance(0)
+      }
+      pullDistanceRef.current = 0
+      pullArmedRef.current = false
+      return
+    }
+
+    if (isHorizontalSwipeRef.current && diffX < 0 && currentFilterIndex < FEED_FILTERS.length - 1) {
       // 向左滑动，切到右侧下一个标签
       changeFilter(FEED_FILTERS[currentFilterIndex + 1].value)
-    } else if (diffX > 0 && currentFilterIndex > 0) {
+    } else if (isHorizontalSwipeRef.current && diffX > 0 && currentFilterIndex > 0) {
       // 向右滑动，切到左侧上一个标签
       changeFilter(FEED_FILTERS[currentFilterIndex - 1].value)
     }
 
     setTouchStartX(null)
+    touchStartYRef.current = null
+    setPullDistance(0)
+    pullDistanceRef.current = 0
+    pullArmedRef.current = false
   }
+
+  const pullReady = pullDistance >= PULL_REFRESH_THRESHOLD
 
   return (
     <div
       className="page community-page"
       style={{ padding: 0 }}
       onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
     >
       {/* 顶栏：搜索 + 筛选 */}
@@ -340,6 +436,35 @@ export default function CommunityPage() {
       </header>
 
       <div className="community-body-frame">
+        <div
+          className={
+            'pull-refresh-indicator' +
+            (pullReady ? ' ready' : '') +
+            (refreshStatus === 'refreshing' ? ' refreshing' : '') +
+            (refreshStatus === 'success' ? ' success' : '')
+          }
+          style={{ height: refreshStatus === 'idle' ? pullDistance : PULL_REFRESH_THRESHOLD }}
+          role="status"
+          aria-live="polite"
+        >
+          {refreshStatus === 'refreshing' ? (
+            <span className="pull-refresh-spinner" aria-hidden="true" />
+          ) : refreshStatus === 'success' ? (
+            <span className="pull-refresh-success-icon" aria-hidden="true" />
+          ) : (
+            <span className={'pull-refresh-arrow' + (pullReady ? ' ready' : '')} aria-hidden="true" />
+          )}
+          <span>
+            {refreshStatus === 'refreshing'
+              ? '刷新中...'
+              : refreshStatus === 'success'
+                ? '已为你更新最新动态'
+                : pullReady
+                  ? '松手立即刷新'
+                  : '下拉刷新动态'}
+          </span>
+        </div>
+
         {/* 关注标签下：已关注用户横向列表 */}
         {activeFilter === 'following' && (
           <FollowingUserRow
@@ -398,14 +523,15 @@ export default function CommunityPage() {
           {/* 加载更多 */}
           {hasMore && posts.length > 0 && (
             <div className="loading-more">
-              <div ref={loadMoreTriggerRef} style={{ height: 1 }} aria-hidden />
-              <button
-                className="load-more-btn"
-                onClick={handleLoadMore}
-                disabled={isLoadingMore}
-              >
-                {isLoadingMore ? '加载中...' : '继续上滑自动加载'}
-              </button>
+              <div className="load-more-trigger" ref={loadMoreTriggerRef} aria-hidden />
+              {isLoadingMore ? (
+                <span className="loading-inline">
+                  <span className="loading-spinner" aria-hidden="true" />
+                  加载中...
+                </span>
+              ) : (
+                <span className="load-more-hint">继续上滑自动加载</span>
+              )}
             </div>
           )}
 

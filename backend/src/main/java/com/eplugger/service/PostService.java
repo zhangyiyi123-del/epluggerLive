@@ -133,7 +133,7 @@ public class PostService {
         if (hasKeyword) {
             switch (f) {
                 case "popular":
-                    page = postRepository.findByKeywordOrderByLikesCountDescCreatedAtDesc(keyword.trim(), pageable);
+                    page = postRepository.findByKeywordOrderByHotScoreDesc(keyword.trim(), pageable);
                     break;
                 case "department":
                     page = currentUserDepartment != null && !currentUserDepartment.isBlank()
@@ -157,7 +157,7 @@ public class PostService {
         } else {
             switch (f) {
                 case "popular":
-                    page = postRepository.findAllByOrderByLikesCountDescCreatedAtDesc(pageable);
+                    page = postRepository.findAllOrderByHotScoreDesc(pageable);
                     break;
                 case "department":
                     page = currentUserDepartment != null && !currentUserDepartment.isBlank()

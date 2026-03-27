@@ -21,6 +21,8 @@ const RECORD_ICONS: Record<string, string> = {
   'post-publish': '📝',
   'post-quality': '💫',
   'like-given': '👍',
+  'post_like': '👍',
+  'post_comment': '💬',
   'medal-reward': '🏆',
   'medal_reward': '🏆',
   'exchange': '🛒',

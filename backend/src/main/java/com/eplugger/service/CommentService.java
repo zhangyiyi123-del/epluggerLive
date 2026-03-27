@@ -29,19 +29,22 @@ public class CommentService {
     private final PostRepository postRepository;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final PointsService pointsService;
 
     public CommentService(
             CommentRepository commentRepository,
             CommentLikeRepository commentLikeRepository,
             PostRepository postRepository,
             UserRepository userRepository,
-            NotificationService notificationService
+            NotificationService notificationService,
+            PointsService pointsService
     ) {
         this.commentRepository = commentRepository;
         this.commentLikeRepository = commentLikeRepository;
         this.postRepository = postRepository;
         this.userRepository = userRepository;
         this.notificationService = notificationService;
+        this.pointsService = pointsService;
     }
 
     public Page<CommentDto> getCommentsByPostId(Long postId, Long currentUserId, Pageable pageable) {
@@ -69,6 +72,7 @@ public class CommentService {
         comment = commentRepository.save(comment);
         post.setCommentsCount(post.getCommentsCount() + 1);
         postRepository.save(post);
+        pointsService.earnForPostComment(userId, postId, comment.getId(), comment.getContent());
         notificationService.createCommentNotification(
                 post.getAuthor().getId(), userId, postId, comment.getId(),
                 author.getName());

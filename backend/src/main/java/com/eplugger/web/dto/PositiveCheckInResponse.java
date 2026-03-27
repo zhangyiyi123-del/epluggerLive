@@ -25,6 +25,8 @@ public class PositiveCheckInResponse {
 
     /** 当日累计获得积分：与 GET /today-earned 一致，含当日所有正向入账（发帖奖励等也算） */
     private int todayEarnedPoints;
+    /** 本次打卡不发分时的提示语（例如：今日正向积分已达上限） */
+    private String pointsHint;
 
     public Long getId() {
         return id;
@@ -136,6 +138,14 @@ public class PositiveCheckInResponse {
 
     public void setTodayEarnedPoints(int todayEarnedPoints) {
         this.todayEarnedPoints = todayEarnedPoints;
+    }
+
+    public String getPointsHint() {
+        return pointsHint;
+    }
+
+    public void setPointsHint(String pointsHint) {
+        this.pointsHint = pointsHint;
     }
 
     public static class EvidenceDto {

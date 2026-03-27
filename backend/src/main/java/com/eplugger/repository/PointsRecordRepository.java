@@ -24,4 +24,19 @@ public interface PointsRecordRepository extends JpaRepository<PointsRecord, Long
             @Param("start") Instant start,
             @Param("end") Instant end
     );
+
+    @Query("SELECT COUNT(r) FROM PointsRecord r WHERE r.user.id = :userId AND r.type = :recordType AND r.amount > 0 AND r.createdAt >= :start AND r.createdAt < :end")
+    long countEarnedByUserAndTypeBetween(
+            @Param("userId") Long userId,
+            @Param("recordType") String recordType,
+            @Param("start") Instant start,
+            @Param("end") Instant end
+    );
+
+    @Query("SELECT (COUNT(r) > 0) FROM PointsRecord r WHERE r.user.id = :userId AND r.type = :recordType AND r.sourceId = :sourceId AND r.amount > 0")
+    boolean existsEarnedByUserAndTypeAndSourceId(
+            @Param("userId") Long userId,
+            @Param("recordType") String recordType,
+            @Param("sourceId") String sourceId
+    );
 }

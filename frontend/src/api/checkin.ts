@@ -46,6 +46,8 @@ export interface ExerciseCheckInResponse {
   communitySync?: CommunitySyncDto | null
   /** 与 GET /today-earned 同口径：当日所有正向入账之和（含发帖奖励等），提交事务内汇总 */
   todayEarnedPoints?: number
+  /** 本次未发放运动分时的提示语 */
+  pointsHint?: string
 }
 
 export interface CycleProgressDto {
@@ -239,6 +241,8 @@ export interface PositiveCheckInResponse {
   communitySync?: CommunitySyncDto | null
   /** 与 GET /today-earned 同口径：当日所有正向入账（含发帖奖励等） */
   todayEarnedPoints?: number
+  /** 本次未发放正向分时的提示语 */
+  pointsHint?: string
 }
 
 export interface PositiveRecordItem {

@@ -3525,6 +3525,16 @@ body {
   white-space: nowrap;
 }
 
+.reward-sub-caption {
+  margin-top: 4px;
+  font-size: 11px;
+  font-weight: 400;
+  color: rgba(15, 23, 42, 0.64);
+  line-height: 1.35;
+  text-align: center;
+  white-space: normal;
+}
+
 /* 仅包裹文案宽度，图标绝对定位在右侧，避免大号数字与文案的居中被拉偏 */
 .reward-caption-with-hint {
   position: relative;

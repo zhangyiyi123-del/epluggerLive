@@ -43,6 +43,8 @@ public class ExerciseCheckInService {
 
     private static final int DEFAULT_DAILY_TARGET_MINUTES = 30;
     private static final int DEFAULT_WEEKLY_TARGET_MINUTES = 150;
+    private static final int FIXED_CHECKIN_POINTS = 20;
+    private static final int DAILY_SCORING_LIMIT = 2;
 
     private final CheckInRecordRepository checkInRecordRepository;
     private final SportTypeRepository sportTypeRepository;
@@ -78,8 +80,33 @@ public class ExerciseCheckInService {
                 .orElseThrow(() -> new IllegalArgumentException("运动类型不存在"));
 
         int durationMinutes = toMinutes(request.getDuration(), request.getDurationUnit());
-        BigDecimal distanceKm = toKm(request.getDistance(), request.getDistanceUnit());
-        int points = calculatePoints(durationMinutes, distanceKm, request.getIntensity());
+        BigDecimal distanceKm = normalizeDistance(toKm(request.getDistance(), request.getDistanceUnit()));
+        String intensity = normalizeIntensity(request.getIntensity());
+        ZoneId zoneId = ZoneIdResolver.resolve(request.getTimeZone());
+        LocalDate today = LocalDate.now(zoneId);
+        Instant dayStart = today.atStartOfDay(zoneId).toInstant();
+        Instant dayEnd = today.plusDays(1).atStartOfDay(zoneId).toInstant();
+
+        boolean duplicateOnDay = checkInRecordRepository.existsDuplicateOnDay(
+                userId,
+                dayStart,
+                dayEnd,
+                sportType.getId(),
+                durationMinutes,
+                "minute",
+                intensity,
+                distanceKm
+        );
+        String pointsHint = null;
+        long todayScoredCount = checkInRecordRepository.countScoredByUserBetween(userId, dayStart, dayEnd);
+        int points = FIXED_CHECKIN_POINTS;
+        if (duplicateOnDay) {
+            points = 0;
+            pointsHint = "当天重复提交不计分";
+        } else if (todayScoredCount >= DAILY_SCORING_LIMIT) {
+            points = 0;
+            pointsHint = "今日运动积分已达上限";
+        }
 
         CheckInRecord record = new CheckInRecord();
         record.setUser(user);
@@ -88,7 +115,7 @@ public class ExerciseCheckInService {
         record.setDurationUnit("minute");
         record.setDistance(distanceKm);
         record.setDistanceUnit(distanceKm != null ? "km" : null);
-        record.setIntensity(request.getIntensity());
+        record.setIntensity(intensity);
         record.setPoints(points);
         record.setStatus("normal");
         record.setCheckedInAt(Instant.now());
@@ -106,30 +133,32 @@ public class ExerciseCheckInService {
 
         record = checkInRecordRepository.save(record);
 
-        // 入账积分：更新 user_points 并写入 points_record
-        UserPoints up = userPointsRepository.findById(userId)
-                .orElseGet(() -> {
-                    UserPoints newUp = new UserPoints();
-                    newUp.setUserId(userId);
-                    newUp.setUser(userRepository.getReferenceById(userId));
-                    return userPointsRepository.save(newUp);
-                });
-        int newTotalEarned = up.getTotalEarned() + points;
-        int newAvailable = up.getAvailable() + points;
-        up.setTotalEarned(newTotalEarned);
-        up.setAvailable(newAvailable);
-        up.setUpdatedAt(Instant.now());
-        userPointsRepository.save(up);
+        if (points > 0) {
+            // 入账积分：更新 user_points 并写入 points_record
+            UserPoints up = userPointsRepository.findById(userId)
+                    .orElseGet(() -> {
+                        UserPoints newUp = new UserPoints();
+                        newUp.setUserId(userId);
+                        newUp.setUser(userRepository.getReferenceById(userId));
+                        return userPointsRepository.save(newUp);
+                    });
+            int newTotalEarned = up.getTotalEarned() + points;
+            int newAvailable = up.getAvailable() + points;
+            up.setTotalEarned(newTotalEarned);
+            up.setAvailable(newAvailable);
+            up.setUpdatedAt(Instant.now());
+            userPointsRepository.save(up);
 
-        PointsRecord pr = new PointsRecord();
-        pr.setUser(user);
-        pr.setType("exercise_checkin");
-        pr.setAmount(points);
-        pr.setBalanceAfter(newAvailable);
-        pr.setDescription("运动打卡");
-        pr.setSourceId(String.valueOf(record.getId()));
-        pr.setCreatedAt(Instant.now());
-        pointsRecordRepository.save(pr);
+            PointsRecord pr = new PointsRecord();
+            pr.setUser(user);
+            pr.setType("exercise_checkin");
+            pr.setAmount(points);
+            pr.setBalanceAfter(newAvailable);
+            pr.setDescription("运动打卡");
+            pr.setSourceId(String.valueOf(record.getId()));
+            pr.setCreatedAt(Instant.now());
+            pointsRecordRepository.save(pr);
+        }
         pointsService.grantExerciseMedalsIfEligible(userId);
 
         ExerciseCheckInResponse response = toResponse(record);
@@ -137,7 +166,8 @@ public class ExerciseCheckInService {
         response.setCommunitySync(wantSync
                 ? checkInCommunitySyncService.syncExerciseCheckIn(userId, record.getId())
                 : CommunitySyncResult.notAttempted());
-        response.setTodayEarnedPoints(pointsService.getTodayEarnedPoints(userId, ZoneIdResolver.resolve(request.getTimeZone())));
+        response.setTodayEarnedPoints(pointsService.getTodayEarnedPoints(userId, zoneId));
+        response.setPointsHint(pointsHint);
         return response;
     }
 
@@ -281,11 +311,14 @@ public class ExerciseCheckInService {
         return value;
     }
 
-    private int calculatePoints(int durationMinutes, BigDecimal distanceKm, String intensity) {
-        double durationPoints = durationMinutes * 0.5;
-        double distancePoints = distanceKm != null ? distanceKm.doubleValue() * 10 : 0;
-        double mult = "high".equalsIgnoreCase(intensity) ? 1.5 : "medium".equalsIgnoreCase(intensity) ? 1.2 : 1.0;
-        return Math.max(1, (int) Math.floor((durationPoints + distancePoints) * mult));
+    private BigDecimal normalizeDistance(BigDecimal value) {
+        if (value == null) return null;
+        return value.setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private String normalizeIntensity(String intensity) {
+        if (intensity == null || intensity.isBlank()) return "medium";
+        return intensity.trim().toLowerCase(java.util.Locale.ROOT);
     }
 
     private SportTypeDto toSportTypeDto(SportType st) {

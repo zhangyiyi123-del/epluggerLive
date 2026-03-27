@@ -28,6 +28,33 @@ public interface PositiveRecordRepository extends JpaRepository<PositiveRecord, 
     @Query("SELECT r.user.id, COUNT(r) FROM PositiveRecord r WHERE r.createdAt >= :start AND r.createdAt < :end GROUP BY r.user.id ORDER BY COUNT(r) DESC")
     List<Object[]> countByUserBetween(@Param("start") Instant start, @Param("end") Instant end);
 
+    @Query("SELECT COUNT(r) FROM PositiveRecord r WHERE r.user.id = :userId AND r.createdAt >= :start AND r.createdAt < :end AND r.points > 0")
+    long countScoredByUserBetween(
+            @Param("userId") Long userId,
+            @Param("start") Instant start,
+            @Param("end") Instant end
+    );
+
+    @Query("""
+            SELECT (COUNT(r) > 0) FROM PositiveRecord r
+            WHERE r.user.id = :userId
+              AND r.createdAt >= :start
+              AND r.createdAt < :end
+              AND r.category.id = :categoryId
+              AND r.description = :description
+              AND ((:tagIds IS NULL AND r.tagIds IS NULL) OR r.tagIds = :tagIds)
+              AND ((:relatedColleagueIds IS NULL AND r.relatedColleagueIds IS NULL) OR r.relatedColleagueIds = :relatedColleagueIds)
+            """)
+    boolean existsDuplicateOnDay(
+            @Param("userId") Long userId,
+            @Param("start") Instant start,
+            @Param("end") Instant end,
+            @Param("categoryId") String categoryId,
+            @Param("description") String description,
+            @Param("tagIds") String tagIds,
+            @Param("relatedColleagueIds") String relatedColleagueIds
+    );
+
     long countByUser_Id(Long userId);
 
     List<PositiveRecord> findByUser_Id(Long userId);

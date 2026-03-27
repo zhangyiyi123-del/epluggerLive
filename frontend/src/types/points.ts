@@ -51,6 +51,8 @@ export type PointsChangeType =
   | 'post-publish'           // 发布动态
   | 'post-quality'           // 优质动态奖励
   | 'like-given'             // 点赞获得
+  | 'post_like'             // 点赞动态奖励（后端流水类型）
+  | 'post_comment'          // 评论动态奖励（后端流水类型）
   | 'medal-reward'           // 勋章奖励
   | 'exchange'               // 兑换消费
   | 'expired'                // 积分过期
@@ -170,15 +172,15 @@ export const MEDAL_CONFIGS: Omit<Medal, 'obtainedAt' | 'progress'>[] = [
 // 积分获取规则
 export const POINTS_RULES: PointsRule[] = [
   // 行为加分
-  { type: 'exercise-checkin', name: '运动打卡', basePoints: 0, dailyLimit: 2, conditions: '1分钟=0.5分，单次5-30分' },
+  { type: 'exercise-checkin', name: '运动打卡', basePoints: 20, dailyLimit: 2, conditions: '单次有效运动打卡固定20分，当日最多2次得分，重复提交不计分' },
   { type: 'exercise-cycle-bonus', name: '周期达标奖励', basePoints: 50, conditions: '周达标50分，月达标200分' },
-  { type: 'positive-checkin', name: '正向打卡', basePoints: 30, dailyLimit: 2, conditions: '审核通过30分，优质+10分' },
+  { type: 'positive-checkin', name: '正向打卡', basePoints: 10, dailyLimit: 3, conditions: '每次10分，优质+5分；当日最多3次得分，重复提交不计分' },
   { type: 'positive-participant', name: '参与人奖励', basePoints: 5, conditions: '每次5分，无上限' },
   { type: 'activity-join', name: '参与活动', basePoints: 50, conditions: '完成活动任务50分' },
   // 互动加分
-  { type: 'post-publish', name: '发布动态', basePoints: 15, dailyLimit: 3, conditions: '每次15分' },
+  { type: 'post-publish', name: '发布动态', basePoints: 5, dailyLimit: 5, conditions: '每次5分，当日最多5次得分，重复提交不计分' },
   { type: 'post-quality', name: '优质动态', basePoints: 15, dailyLimit: 1, conditions: '24小时内≥8次互动加15分' },
-  { type: 'like-given', name: '点赞他人', basePoints: 2, dailyLimit: 8, conditions: '每日前8次点赞，每次2分' },
+  { type: 'like-given', name: '点赞他人', basePoints: 1, dailyLimit: 10, conditions: '每日前10次点赞，每次1分' },
   { type: 'medal-reward', name: '勋章奖励', basePoints: 50, conditions: '获得勋章奖励50分' },
 ]
 

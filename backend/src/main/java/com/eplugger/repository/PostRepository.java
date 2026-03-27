@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -48,6 +49,36 @@ public interface PostRepository extends JpaRepository<Post, Long> {
     List<Post> findByAuthor_Id(Long authorId);
 
     long countByAuthor_Id(Long authorId);
+
+    @Query("SELECT COUNT(p) FROM Post p WHERE p.author.id = :authorId AND p.sourceType IS NULL AND p.createdAt >= :start AND p.createdAt < :end")
+    long countManualPostsByAuthorAndCreatedAtBetween(
+            @Param("authorId") Long authorId,
+            @Param("start") Instant start,
+            @Param("end") Instant end
+    );
+
+    @Query("""
+            SELECT (COUNT(p) > 0) FROM Post p
+            WHERE p.author.id = :authorId
+              AND p.sourceType IS NULL
+              AND p.id <> :excludePostId
+              AND p.createdAt >= :start
+              AND p.createdAt < :end
+              AND p.contentText = :contentText
+              AND ((:contentImages IS NULL AND p.contentImages IS NULL) OR p.contentImages = :contentImages)
+              AND ((:topicIds IS NULL AND p.topicIds IS NULL) OR p.topicIds = :topicIds)
+              AND ((:mentionUserIds IS NULL AND p.mentionUserIds IS NULL) OR p.mentionUserIds = :mentionUserIds)
+            """)
+    boolean existsDuplicateManualPostOnDay(
+            @Param("authorId") Long authorId,
+            @Param("excludePostId") Long excludePostId,
+            @Param("start") Instant start,
+            @Param("end") Instant end,
+            @Param("contentText") String contentText,
+            @Param("contentImages") String contentImages,
+            @Param("topicIds") String topicIds,
+            @Param("mentionUserIds") String mentionUserIds
+    );
 
     /** 关键词匹配正文或作者名，按时间倒序（与 filter=latest 组合） */
     @Query("SELECT p FROM Post p JOIN p.author u WHERE (LOWER(p.contentText) LIKE LOWER(CONCAT('%', :keyword, '%')) OR LOWER(u.name) LIKE LOWER(CONCAT('%', :keyword, '%'))) ORDER BY p.createdAt DESC")

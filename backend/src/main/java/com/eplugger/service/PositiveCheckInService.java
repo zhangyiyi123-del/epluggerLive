@@ -38,11 +38,11 @@ import java.util.stream.Collectors;
 @Service
 public class PositiveCheckInService {
 
-    private static final int BASE_POINTS = 30;
-    private static final int QUALITY_BONUS = 10;
+    private static final int BASE_POINTS = 10;
+    private static final int QUALITY_BONUS = 5;
     private static final int QUALITY_DESC_MIN_LENGTH = 100;
-    private static final int EVIDENCE_BONUS = 10;
     private static final int COLLEAGUE_POINTS_PER = 5;
+    private static final int DAILY_SCORING_LIMIT = 3;
 
     private final PositiveRecordRepository positiveRecordRepository;
     private final PositiveCategoryRepository positiveCategoryRepository;
@@ -80,26 +80,46 @@ public class PositiveCheckInService {
         PositiveCategory category = positiveCategoryRepository.findById(request.getCategoryId())
                 .orElseThrow(() -> new IllegalArgumentException("行为分类不存在"));
 
-        int colleagueCount = request.getRelatedColleagueIds() != null ? request.getRelatedColleagueIds().size() : 0;
-        int evidenceCount = request.getEvidenceUrls() != null ? request.getEvidenceUrls().size() : 0;
+        List<Long> normalizedRelatedColleagueIds = normalizeLongIds(request.getRelatedColleagueIds());
+        String normalizedTagIds = joinIds(request.getTagIds());
+        String normalizedRelatedColleagueIdsText = joinLongIds(normalizedRelatedColleagueIds);
+        int colleagueCount = normalizedRelatedColleagueIds.size();
         String description = request.getDescription() != null ? request.getDescription().trim() : "";
         int nonWhitespaceDescriptionLength = description.replaceAll("\\s+", "").length();
         if (description.length() > 2000) {
             throw new IllegalArgumentException("描述最多 2000 字");
         }
-        int points = calculatePoints(
-                nonWhitespaceDescriptionLength,
-                evidenceCount,
-                colleagueCount
+        java.time.ZoneId zoneId = ZoneIdResolver.resolve(request.getTimeZone());
+        java.time.LocalDate today = java.time.LocalDate.now(zoneId);
+        java.time.Instant dayStart = today.atStartOfDay(zoneId).toInstant();
+        java.time.Instant dayEnd = today.plusDays(1).atStartOfDay(zoneId).toInstant();
+        boolean duplicateOnDay = positiveRecordRepository.existsDuplicateOnDay(
+                userId,
+                dayStart,
+                dayEnd,
+                category.getId(),
+                description,
+                normalizedTagIds,
+                normalizedRelatedColleagueIdsText
         );
+        long todayScoredCount = positiveRecordRepository.countScoredByUserBetween(userId, dayStart, dayEnd);
+        String pointsHint = null;
+        int points = calculatePoints(nonWhitespaceDescriptionLength, colleagueCount);
+        if (duplicateOnDay) {
+            points = 0;
+            pointsHint = "当天重复提交不计分";
+        } else if (todayScoredCount >= DAILY_SCORING_LIMIT) {
+            points = 0;
+            pointsHint = "今日正向积分已达上限";
+        }
 
         PositiveRecord record = new PositiveRecord();
         record.setUser(user);
         record.setCategory(category);
         record.setTitle(trimToNull(request.getTitle()));
         record.setDescription(description);
-        record.setTagIds(joinIds(request.getTagIds()));
-        record.setRelatedColleagueIds(joinLongIds(request.getRelatedColleagueIds()));
+        record.setTagIds(normalizedTagIds);
+        record.setRelatedColleagueIds(normalizedRelatedColleagueIdsText);
         record.setPoints(points);
         record.setStatus("pending");
 
@@ -116,12 +136,9 @@ public class PositiveCheckInService {
 
         record = positiveRecordRepository.save(record);
 
-        if (request.getRelatedColleagueIds() != null && !request.getRelatedColleagueIds().isEmpty()) {
+        if (points > 0 && !normalizedRelatedColleagueIds.isEmpty()) {
             String authorName = user.getName() != null ? user.getName() : null;
-            Set<Long> uniqueColleagueIds = request.getRelatedColleagueIds().stream()
-                    .filter(id -> id != null)
-                    .collect(Collectors.toCollection(LinkedHashSet::new));
-            for (Long colleagueId : uniqueColleagueIds) {
+            for (Long colleagueId : normalizedRelatedColleagueIds) {
                 if (colleagueId == null || colleagueId.equals(userId)) continue;
                 if (!userRepository.existsById(colleagueId))
                     throw new IllegalArgumentException("被 @ 用户不存在或已失效");
@@ -131,30 +148,32 @@ public class PositiveCheckInService {
             }
         }
 
-        // 入账积分：更新 user_points 并写入 points_record
-        UserPoints up = userPointsRepository.findById(userId)
-                .orElseGet(() -> {
-                    UserPoints newUp = new UserPoints();
-                    newUp.setUserId(userId);
-                    newUp.setUser(userRepository.getReferenceById(userId));
-                    return userPointsRepository.save(newUp);
-                });
-        int newTotalEarned = up.getTotalEarned() + points;
-        int newAvailable = up.getAvailable() + points;
-        up.setTotalEarned(newTotalEarned);
-        up.setAvailable(newAvailable);
-        up.setUpdatedAt(Instant.now());
-        userPointsRepository.save(up);
+        if (points > 0) {
+            // 入账积分：更新 user_points 并写入 points_record
+            UserPoints up = userPointsRepository.findById(userId)
+                    .orElseGet(() -> {
+                        UserPoints newUp = new UserPoints();
+                        newUp.setUserId(userId);
+                        newUp.setUser(userRepository.getReferenceById(userId));
+                        return userPointsRepository.save(newUp);
+                    });
+            int newTotalEarned = up.getTotalEarned() + points;
+            int newAvailable = up.getAvailable() + points;
+            up.setTotalEarned(newTotalEarned);
+            up.setAvailable(newAvailable);
+            up.setUpdatedAt(Instant.now());
+            userPointsRepository.save(up);
 
-        PointsRecord pr = new PointsRecord();
-        pr.setUser(user);
-        pr.setType("positive_checkin");
-        pr.setAmount(points);
-        pr.setBalanceAfter(newAvailable);
-        pr.setDescription("正向打卡");
-        pr.setSourceId(String.valueOf(record.getId()));
-        pr.setCreatedAt(Instant.now());
-        pointsRecordRepository.save(pr);
+            PointsRecord pr = new PointsRecord();
+            pr.setUser(user);
+            pr.setType("positive_checkin");
+            pr.setAmount(points);
+            pr.setBalanceAfter(newAvailable);
+            pr.setDescription("正向打卡");
+            pr.setSourceId(String.valueOf(record.getId()));
+            pr.setCreatedAt(Instant.now());
+            pointsRecordRepository.save(pr);
+        }
         pointsService.grantPositiveMedalsIfEligible(userId);
 
         PositiveCheckInResponse response = toResponse(record);
@@ -162,7 +181,8 @@ public class PositiveCheckInService {
         response.setCommunitySync(wantSync
                 ? checkInCommunitySyncService.syncPositiveCheckIn(userId, record.getId())
                 : CommunitySyncResult.notAttempted());
-        response.setTodayEarnedPoints(pointsService.getTodayEarnedPoints(userId, ZoneIdResolver.resolve(request.getTimeZone())));
+        response.setTodayEarnedPoints(pointsService.getTodayEarnedPoints(userId, zoneId));
+        response.setPointsHint(pointsHint);
         return response;
     }
 
@@ -183,23 +203,22 @@ public class PositiveCheckInService {
     public PointsPreviewDto getPointsPreview(int descriptionLength, int evidenceCount, int colleagueCount) {
         PointsPreviewDto dto = new PointsPreviewDto();
         dto.setBasePoints(BASE_POINTS);
-        int quality = isQualityQualified(descriptionLength, evidenceCount, colleagueCount) ? QUALITY_BONUS : 0;
+        int quality = isQualityQualified(descriptionLength) ? QUALITY_BONUS : 0;
         dto.setQualityBonus(quality);
-        dto.setEvidenceBonus(evidenceCount > 0 ? EVIDENCE_BONUS : 0);
+        dto.setEvidenceBonus(0);
         dto.setColleagueBonus(colleagueCount * COLLEAGUE_POINTS_PER);
-        dto.setTotalPoints(BASE_POINTS + quality + (evidenceCount > 0 ? EVIDENCE_BONUS : 0));
+        dto.setTotalPoints(BASE_POINTS + quality);
         return dto;
     }
 
-    private int calculatePoints(int descriptionLength, int evidenceCount, int colleagueCount) {
+    private int calculatePoints(int descriptionLength, int colleagueCount) {
         // @同事不再给发起人加分；改为参与人各自奖励（见 grantParticipantPoints）。
-        int quality = isQualityQualified(descriptionLength, evidenceCount, colleagueCount) ? QUALITY_BONUS : 0;
-        int evidence = evidenceCount > 0 ? EVIDENCE_BONUS : 0;
-        return Math.max(1, BASE_POINTS + quality + evidence);
+        int quality = isQualityQualified(descriptionLength) ? QUALITY_BONUS : 0;
+        return Math.max(1, BASE_POINTS + quality);
     }
 
-    private boolean isQualityQualified(int descriptionLength, int evidenceCount, int colleagueCount) {
-        return descriptionLength >= QUALITY_DESC_MIN_LENGTH && colleagueCount > 0 && evidenceCount > 0;
+    private boolean isQualityQualified(int descriptionLength) {
+        return descriptionLength >= QUALITY_DESC_MIN_LENGTH;
     }
 
     private void grantParticipantPoints(Long participantUserId, Long actorUserId, Long positiveRecordId) {
@@ -244,6 +263,15 @@ public class PositiveCheckInService {
     private String joinLongIds(List<Long> list) {
         if (list == null || list.isEmpty()) return null;
         return list.stream().map(String::valueOf).collect(Collectors.joining(","));
+    }
+
+    private List<Long> normalizeLongIds(List<Long> list) {
+        if (list == null || list.isEmpty()) return List.of();
+        return list.stream()
+                .filter(id -> id != null)
+                .distinct()
+                .sorted()
+                .collect(Collectors.toList());
     }
 
     private List<String> splitIds(String s) {

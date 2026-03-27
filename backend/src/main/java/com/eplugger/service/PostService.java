@@ -108,8 +108,10 @@ public class PostService {
                         author.getName() != null ? author.getName() : null);
             }
         }
-        int publishPoints = pointsService.earnForPostPublish(userId, post.getId());
-        if (publishPoints == 0 && PointsService.postPublishRewardAmount() > 0) {
+        boolean isCheckInSyncPost = CheckInCommunitySyncService.SOURCE_EXERCISE.equals(sourceType)
+                || CheckInCommunitySyncService.SOURCE_POSITIVE.equals(sourceType);
+        int publishPoints = isCheckInSyncPost ? 0 : pointsService.earnForPostPublish(userId, post.getId());
+        if (!isCheckInSyncPost && publishPoints == 0 && PointsService.postPublishRewardAmount() > 0) {
             log.warn("earnForPostPublish credited 0 for user {} post {}", userId, post.getId());
         }
         pointsService.grantPostMedalsIfEligible(userId);
@@ -279,6 +281,7 @@ public class PostService {
             postLikeRepository.save(like);
             post.setLikesCount(post.getLikesCount() + 1);
             postRepository.save(post);
+            pointsService.earnForPostLike(userId, postId);
             pointsService.grantInteractionMedalIfEligible(userId);
             pointsService.grantPostMedalsIfEligible(post.getAuthor().getId());
             User liker = userRepository.findById(userId).orElse(null);

@@ -63,13 +63,10 @@ export default function PositiveCheckInPage() {
   const [displayPoints, setDisplayPoints] = useState(0)
   const [showConfetti, setShowConfetti] = useState(false)
   const [todayEarnedPoints, setTodayEarnedPoints] = useState<number | null>(null)
-  const [successRewardSplit, setSuccessRewardSplit] = useState<{
-    checkIn: number
-    sync: number
-  } | null>(null)
+  const [sessionPointsHint, setSessionPointsHint] = useState<string | null>(null)
   const [sessionPointsHintOpen, setSessionPointsHintOpen] = useState(false)
   const nonWhitespaceDescriptionLength = description.replace(/\s+/g, '').length
-  const qualityQualified = nonWhitespaceDescriptionLength >= 100 && selectedColleagues.length > 0 && evidences.length > 0
+  const qualityQualified = nonWhitespaceDescriptionLength >= 100
 
   const tags = DEFAULT_POSITIVE_TAGS
   const [colleagueList, setColleagueList] = useState<{ userId: string; name: string; avatar?: string }[]>([])
@@ -106,9 +103,9 @@ export default function PositiveCheckInPage() {
 
   useEffect(() => {
     if (!showSuccess) {
-      setSessionPointsHintOpen(false)
       setTodayEarnedPoints(null)
-      setSuccessRewardSplit(null)
+      setSessionPointsHint(null)
+      setSessionPointsHintOpen(false)
       return
     }
     if (todayEarnedPoints !== null) return
@@ -121,6 +118,8 @@ export default function PositiveCheckInPage() {
     }
   }, [showSuccess, todayEarnedPoints])
 
+  const canSubmit = selectedCategory !== null
+
   useEffect(() => {
     if (!sessionPointsHintOpen) return
     const onKey = (e: KeyboardEvent) => {
@@ -129,8 +128,6 @@ export default function PositiveCheckInPage() {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [sessionPointsHintOpen])
-
-  const canSubmit = selectedCategory !== null
 
   const handleSubmit = async () => {
     if (!canSubmit || isSubmitting || !selectedCategory) return
@@ -153,10 +150,8 @@ export default function PositiveCheckInPage() {
         evidenceUrls: evidenceUrls.length > 0 ? evidenceUrls : undefined,
         syncToCommunity,
       })
-      const syncPts =
-        res.communitySync?.success === true ? (res.communitySync.pointsEarnedForSync ?? 0) : 0
-      setEarnedPoints(checkInApi.totalSessionEarnedPoints(res.points, res.communitySync))
-      setSuccessRewardSplit(syncPts > 0 ? { checkIn: res.points, sync: syncPts } : null)
+      setEarnedPoints(res.points)
+      setSessionPointsHint(res.pointsHint ?? null)
       setTodayEarnedPoints(typeof res.todayEarnedPoints === 'number' ? res.todayEarnedPoints : null)
       setCommunitySyncWarning(
         res.communitySync?.attempted && res.communitySync?.success === false
@@ -173,8 +168,6 @@ export default function PositiveCheckInPage() {
   }
 
   const handleSuccessClose = () => {
-    setSessionPointsHintOpen(false)
-    setSuccessRewardSplit(null)
     navigate('/checkin')
   }
 
@@ -203,11 +196,11 @@ export default function PositiveCheckInPage() {
   }
 
   if (showSuccess) {
-    const split = successRewardSplit
-    const sessionPointsHintText =
-      split != null && split.sync > 0
-        ? `本次积分含正向打卡 ${split.checkIn} 分、同步到圈子的发圈奖励 ${split.sync} 分，上方数字为两项合计。`
-        : '上方为正向打卡奖励。若勾选同步到圈子且发布成功，还会叠加发圈奖励；未同步或发布失败时不含发圈分。'
+    const showZeroPointHint = earnedPoints === 0 && !!sessionPointsHint
+    const showLimitHint = sessionPointsHint === '今日正向积分已达上限'
+    const sessionPointsHintText = showLimitHint
+      ? '打卡记录会保留，今日最多 3 次可得积分。'
+      : (sessionPointsHint ?? '本次打卡未获得积分。')
     return (
       <>
       <div className="page checkin-success-page" style={{ padding: 0 }}>
@@ -294,21 +287,23 @@ export default function PositiveCheckInPage() {
                 >
                   <div className="reward-inline-row">
                     <div className="reward-segment">
-                      <span className="reward-inline-value">{displayPoints}</span>
-                      <div className="reward-segment-fill" aria-hidden />
                       <div className="reward-caption-with-hint">
-                        <span className="reward-caption">本次获得积分</span>
-                        <button
-                          type="button"
-                          className="reward-points-hint-trigger"
-                          aria-haspopup="dialog"
-                          aria-expanded={sessionPointsHintOpen}
-                          aria-label="查看本次获得积分说明"
-                          onClick={() => setSessionPointsHintOpen(true)}
-                        >
-                          <Info size={13} strokeWidth={2.5} aria-hidden />
-                        </button>
+                        <span className="reward-inline-value">{showZeroPointHint ? '—' : displayPoints}</span>
+                        {showZeroPointHint ? (
+                          <button
+                            type="button"
+                            className="reward-points-hint-trigger"
+                            aria-haspopup="dialog"
+                            aria-expanded={sessionPointsHintOpen}
+                            aria-label="查看积分说明"
+                            onClick={() => setSessionPointsHintOpen(true)}
+                          >
+                            <Info size={13} strokeWidth={2.5} aria-hidden />
+                          </button>
+                        ) : null}
                       </div>
+                      <div className="reward-segment-fill" aria-hidden />
+                      <span className="reward-caption">{showZeroPointHint ? sessionPointsHint : '本次获得积分'}</span>
                     </div>
                     <span className="reward-meta-divider" aria-hidden />
                     <div className="reward-segment reward-segment--today">
@@ -357,7 +352,7 @@ export default function PositiveCheckInPage() {
               <X size={18} strokeWidth={2} aria-hidden />
             </button>
             <h2 id="positive-checkin-points-hint-title" className="checkin-points-hint-title">
-              本次获得积分说明
+              积分说明
             </h2>
             <p className="checkin-points-hint-body">{sessionPointsHintText}</p>
             <div className="checkin-points-hint-actions">

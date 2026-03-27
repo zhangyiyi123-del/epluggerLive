@@ -46,8 +46,17 @@ public class PointsService {
 
     private static final int[] LEVEL_MAX = { 200, 500, 1000, 1800, 2800, 4000, 5500, 7500, 10000, Integer.MAX_VALUE };
     private static final int HOT_AUTHOR_INTERACTION_THRESHOLD = 20;
+    private static final int POST_PUBLISH_REWARD_POINTS = 5;
+    private static final int POST_PUBLISH_DAILY_LIMIT = 5;
+    private static final int POST_LIKE_REWARD_POINTS = 1;
+    private static final int POST_LIKE_DAILY_LIMIT = 10;
+    private static final int POST_COMMENT_REWARD_POINTS = 2;
+    private static final int POST_COMMENT_DAILY_LIMIT = 10;
+    private static final int VALID_COMMENT_MIN_NON_WHITESPACE_LENGTH = 5;
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private static final String MEDAL_REWARD_RECORD_TYPE = "medal_reward";
+    private static final String POST_LIKE_RECORD_TYPE = "post_like";
+    private static final String POST_COMMENT_RECORD_TYPE = "post_comment";
 
     private static final Map<String, MedalMeta> MEDAL_META = Map.ofEntries(
             entry("sports-rookie", "运动萌新", "连续运动达标7天", "🏃", "连续运动7天", 7, 50),
@@ -232,7 +241,7 @@ public class PointsService {
     private int calculateProgressForMedal(String medalType, Long userId) {
         return switch (medalType) {
             case "sports-rookie" -> countConsecutiveExerciseDays(userId);
-            case "sports-master", "sports-champion" -> safeLongToInt(checkInRecordRepository.countByUser_Id(userId));
+            case "sports-master", "sports-champion" -> safeLongToInt(checkInRecordRepository.countByUser_IdAndPointsGreaterThan(userId, 0));
             case "positive-messenger" -> safeLongToInt(positiveRecordRepository.countByUser_Id(userId));
             case "community-star" -> countQualifiedCommunityPosts(userId);
             case "team-star" -> countInvitedParticipants(userId);
@@ -421,7 +430,7 @@ public class PointsService {
 
     /** 发布动态单次奖励分值（与 {@link #earnForPostPublish} 入账一致）。 */
     public static int postPublishRewardAmount() {
-        return 15;
+        return POST_PUBLISH_REWARD_POINTS;
     }
 
     /**
@@ -434,6 +443,31 @@ public class PointsService {
         final int amount = postPublishRewardAmount();
         if (amount <= 0) return 0;
         try {
+            Post post = postRepository.findById(postId).orElse(null);
+            if (post == null || post.getAuthor() == null || !post.getAuthor().getId().equals(userId)) {
+                return 0;
+            }
+            ZoneId zoneId = ZoneId.systemDefault();
+            LocalDate day = LocalDate.ofInstant(post.getCreatedAt() != null ? post.getCreatedAt() : Instant.now(), zoneId);
+            Instant dayStart = day.atStartOfDay(zoneId).toInstant();
+            Instant dayEnd = day.plusDays(1).atStartOfDay(zoneId).toInstant();
+            long todayManualPostCount = postRepository.countManualPostsByAuthorAndCreatedAtBetween(userId, dayStart, dayEnd);
+            if (todayManualPostCount > POST_PUBLISH_DAILY_LIMIT) {
+                return 0;
+            }
+            boolean duplicateOnDay = postRepository.existsDuplicateManualPostOnDay(
+                    userId,
+                    postId,
+                    dayStart,
+                    dayEnd,
+                    post.getContentText(),
+                    post.getContentImages(),
+                    post.getTopicIds(),
+                    post.getMentionUserIds()
+            );
+            if (duplicateOnDay) {
+                return 0;
+            }
             UserPoints up = getOrCreateUserPoints(userId);
             int newTotalEarned = up.getTotalEarned() + amount;
             int newAvailable = up.getAvailable() + amount;
@@ -455,5 +489,93 @@ public class PointsService {
         } catch (Exception e) {
             return 0;
         }
+    }
+
+    @Transactional
+    public int earnForPostLike(long userId, long postId) {
+        try {
+            Post post = postRepository.findById(postId).orElse(null);
+            if (post == null || post.getAuthor() == null) {
+                return 0;
+            }
+            if (post.getAuthor().getId().equals(userId)) {
+                // 给自己的动态点赞不积分
+                return 0;
+            }
+            ZoneId zoneId = ZoneId.systemDefault();
+            LocalDate today = LocalDate.now(zoneId);
+            Instant start = today.atStartOfDay(zoneId).toInstant();
+            Instant end = today.plusDays(1).atStartOfDay(zoneId).toInstant();
+            if (pointsRecordRepository.countEarnedByUserAndTypeBetween(userId, POST_LIKE_RECORD_TYPE, start, end) >= POST_LIKE_DAILY_LIMIT) {
+                return 0;
+            }
+            String sourceId = "post:" + postId;
+            if (pointsRecordRepository.existsEarnedByUserAndTypeAndSourceId(userId, POST_LIKE_RECORD_TYPE, sourceId)) {
+                return 0;
+            }
+            return grantSimplePoints(userId, POST_LIKE_REWARD_POINTS, POST_LIKE_RECORD_TYPE, "点赞动态", sourceId);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    @Transactional
+    public int earnForPostComment(long userId, long postId, long commentId, String content) {
+        try {
+            Post post = postRepository.findById(postId).orElse(null);
+            if (post == null || post.getAuthor() == null) {
+                return 0;
+            }
+            if (post.getAuthor().getId().equals(userId)) {
+                // 评论自己的动态不积分
+                return 0;
+            }
+            if (!isValidCommentContent(content)) {
+                return 0;
+            }
+            ZoneId zoneId = ZoneId.systemDefault();
+            LocalDate today = LocalDate.now(zoneId);
+            Instant start = today.atStartOfDay(zoneId).toInstant();
+            Instant end = today.plusDays(1).atStartOfDay(zoneId).toInstant();
+            if (pointsRecordRepository.countEarnedByUserAndTypeBetween(userId, POST_COMMENT_RECORD_TYPE, start, end) >= POST_COMMENT_DAILY_LIMIT) {
+                return 0;
+            }
+            String sourceId = "comment:" + commentId + ":post:" + postId;
+            if (pointsRecordRepository.existsEarnedByUserAndTypeAndSourceId(userId, POST_COMMENT_RECORD_TYPE, sourceId)) {
+                return 0;
+            }
+            return grantSimplePoints(userId, POST_COMMENT_REWARD_POINTS, POST_COMMENT_RECORD_TYPE, "发表评论", sourceId);
+        } catch (Exception e) {
+            return 0;
+        }
+    }
+
+    private boolean isValidCommentContent(String content) {
+        if (content == null) return false;
+        String normalized = content.replaceAll("\\s+", "");
+        if (normalized.length() < VALID_COMMENT_MIN_NON_WHITESPACE_LENGTH) return false;
+        return normalized.matches(".*[\\p{IsHan}\\p{L}\\p{N}].*");
+    }
+
+    private int grantSimplePoints(long userId, int amount, String type, String description, String sourceId) {
+        if (amount <= 0) return 0;
+        UserPoints up = getOrCreateUserPoints(userId);
+        int newTotalEarned = up.getTotalEarned() + amount;
+        int newAvailable = up.getAvailable() + amount;
+        up.setTotalEarned(newTotalEarned);
+        up.setAvailable(newAvailable);
+        up.setUpdatedAt(Instant.now());
+        userPointsRepository.save(up);
+
+        PointsRecord pr = new PointsRecord();
+        pr.setUser(userRepository.getReferenceById(userId));
+        pr.setType(type);
+        pr.setAmount(amount);
+        pr.setBalanceAfter(newAvailable);
+        pr.setDescription(description);
+        pr.setSourceId(sourceId);
+        pr.setCreatedAt(Instant.now());
+        pointsRecordRepository.save(pr);
+        return amount;
     }
 }

@@ -46,6 +46,7 @@ export type PointsChangeType =
   | 'positive-checkin'       // 正向打卡
   | 'positive-quality-bonus' // 优质行为奖励
   | 'positive-participant'  // 参与人奖励
+  | 'positive_participant'  // 参与人奖励（后端流水类型）
   | 'activity-join'         // 参与活动
   | 'post-publish'           // 发布动态
   | 'post-quality'           // 优质动态奖励
@@ -175,7 +176,7 @@ export const POINTS_RULES: PointsRule[] = [
   { type: 'positive-participant', name: '参与人奖励', basePoints: 5, conditions: '每次5分，无上限' },
   { type: 'activity-join', name: '参与活动', basePoints: 50, conditions: '完成活动任务50分' },
   // 互动加分
-  { type: 'post-publish', name: '发布动态', basePoints: 5, dailyLimit: 3, conditions: '每次5分' },
+  { type: 'post-publish', name: '发布动态', basePoints: 15, dailyLimit: 3, conditions: '每次15分' },
   { type: 'post-quality', name: '优质动态', basePoints: 15, dailyLimit: 1, conditions: '24小时内≥8次互动加15分' },
   { type: 'like-given', name: '点赞他人', basePoints: 2, dailyLimit: 8, conditions: '每日前8次点赞，每次2分' },
   { type: 'medal-reward', name: '勋章奖励', basePoints: 50, conditions: '获得勋章奖励50分' },
@@ -210,7 +211,7 @@ export const MOCK_USER_POINTS: UserPoints = {
 // 积分变动记录
 export const MOCK_POINTS_RECORDS: PointsRecord[] = [
   { id: '1', type: 'exercise-checkin', amount: 15, balance: 2850, description: '运动打卡(30分钟)', createdAt: '2025-02-28T10:30:00' },
-  { id: '2', type: 'post-publish', amount: 5, balance: 2835, description: '发布社区动态', createdAt: '2025-02-28T09:00:00' },
+  { id: '2', type: 'post-publish', amount: 15, balance: 2835, description: '发布社区动态', createdAt: '2025-02-28T09:00:00' },
   { id: '3', type: 'positive-checkin', amount: 30, balance: 2830, description: '正向打卡审核通过', createdAt: '2025-02-27T18:00:00' },
   { id: '4', type: 'like-given', amount: 2, balance: 2800, description: '点赞同事动态', createdAt: '2025-02-27T15:30:00' },
   { id: '5', type: 'exchange', amount: -500, balance: 2798, description: '兑换咖啡券', createdAt: '2025-02-26T14:00:00' },

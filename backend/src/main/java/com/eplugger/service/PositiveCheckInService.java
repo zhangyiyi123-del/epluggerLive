@@ -28,6 +28,8 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -38,7 +40,7 @@ public class PositiveCheckInService {
 
     private static final int BASE_POINTS = 30;
     private static final int QUALITY_BONUS = 10;
-    private static final int QUALITY_DESC_MIN_LENGTH = 500;
+    private static final int QUALITY_DESC_MIN_LENGTH = 100;
     private static final int EVIDENCE_BONUS = 10;
     private static final int COLLEAGUE_POINTS_PER = 5;
 
@@ -116,12 +118,16 @@ public class PositiveCheckInService {
 
         if (request.getRelatedColleagueIds() != null && !request.getRelatedColleagueIds().isEmpty()) {
             String authorName = user.getName() != null ? user.getName() : null;
-            for (Long colleagueId : request.getRelatedColleagueIds()) {
+            Set<Long> uniqueColleagueIds = request.getRelatedColleagueIds().stream()
+                    .filter(id -> id != null)
+                    .collect(Collectors.toCollection(LinkedHashSet::new));
+            for (Long colleagueId : uniqueColleagueIds) {
                 if (colleagueId == null || colleagueId.equals(userId)) continue;
                 if (!userRepository.existsById(colleagueId))
                     throw new IllegalArgumentException("被 @ 用户不存在或已失效");
                 notificationService.createMentionNotification(
                         colleagueId, userId, null, record.getId(), authorName);
+                grantParticipantPoints(colleagueId, userId, record.getId());
             }
         }
 
@@ -181,19 +187,48 @@ public class PositiveCheckInService {
         dto.setQualityBonus(quality);
         dto.setEvidenceBonus(evidenceCount > 0 ? EVIDENCE_BONUS : 0);
         dto.setColleagueBonus(colleagueCount * COLLEAGUE_POINTS_PER);
-        dto.setTotalPoints(BASE_POINTS + quality + (evidenceCount > 0 ? EVIDENCE_BONUS : 0) + colleagueCount * COLLEAGUE_POINTS_PER);
+        dto.setTotalPoints(BASE_POINTS + quality + (evidenceCount > 0 ? EVIDENCE_BONUS : 0));
         return dto;
     }
 
     private int calculatePoints(int descriptionLength, int evidenceCount, int colleagueCount) {
+        // @同事不再给发起人加分；改为参与人各自奖励（见 grantParticipantPoints）。
         int quality = isQualityQualified(descriptionLength, evidenceCount, colleagueCount) ? QUALITY_BONUS : 0;
         int evidence = evidenceCount > 0 ? EVIDENCE_BONUS : 0;
-        int colleague = colleagueCount * COLLEAGUE_POINTS_PER;
-        return Math.max(1, BASE_POINTS + quality + evidence + colleague);
+        return Math.max(1, BASE_POINTS + quality + evidence);
     }
 
     private boolean isQualityQualified(int descriptionLength, int evidenceCount, int colleagueCount) {
         return descriptionLength >= QUALITY_DESC_MIN_LENGTH && colleagueCount > 0 && evidenceCount > 0;
+    }
+
+    private void grantParticipantPoints(Long participantUserId, Long actorUserId, Long positiveRecordId) {
+        User participant = userRepository.getReferenceById(participantUserId);
+        UserPoints participantPoints = userPointsRepository.findById(participantUserId)
+                .orElseGet(() -> {
+                    UserPoints newUp = new UserPoints();
+                    newUp.setUserId(participantUserId);
+                    newUp.setUser(participant);
+                    return userPointsRepository.save(newUp);
+                });
+
+        int reward = COLLEAGUE_POINTS_PER;
+        int newTotalEarned = participantPoints.getTotalEarned() + reward;
+        int newAvailable = participantPoints.getAvailable() + reward;
+        participantPoints.setTotalEarned(newTotalEarned);
+        participantPoints.setAvailable(newAvailable);
+        participantPoints.setUpdatedAt(Instant.now());
+        userPointsRepository.save(participantPoints);
+
+        PointsRecord participantRecord = new PointsRecord();
+        participantRecord.setUser(participant);
+        participantRecord.setType("positive_participant");
+        participantRecord.setAmount(reward);
+        participantRecord.setBalanceAfter(newAvailable);
+        participantRecord.setDescription("参与正向打卡奖励");
+        participantRecord.setSourceId("positive:" + positiveRecordId + ":actor:" + actorUserId);
+        participantRecord.setCreatedAt(Instant.now());
+        pointsRecordRepository.save(participantRecord);
     }
 
     private String trimToNull(String s) {

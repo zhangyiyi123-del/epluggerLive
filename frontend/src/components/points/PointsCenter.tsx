@@ -16,6 +16,7 @@ const RECORD_ICONS: Record<string, string> = {
   'positive_checkin': '✨',
   'positive-quality-bonus': '🌟',
   'positive-participant': '👥',
+  'positive_participant': '👥',
   'activity-join': '🎯',
   'post-publish': '📝',
   'post-quality': '💫',

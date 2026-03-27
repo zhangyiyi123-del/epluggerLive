@@ -28,6 +28,7 @@ export default function CommunityPage() {
   const [slideDirection, setSlideDirection] = useState<'left' | 'right' | null>(null)
   
   const [unreadCount, setUnreadCount] = useState(0)
+  const loadMoreTriggerRef = useRef<HTMLDivElement | null>(null)
 
   // 已关注用户列表
   const [followingUsers, setFollowingUsers] = useState<FollowedUser[]>([])
@@ -93,6 +94,25 @@ export default function CommunityPage() {
     if (isLoadingMore || !hasMore) return
     loadPosts(false, page + 1)
   }
+
+  // 上滑到列表底部自动加载下一页（保留按钮作为兜底）
+  useEffect(() => {
+    const trigger = loadMoreTriggerRef.current
+    if (!trigger) return
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries
+        if (!entry?.isIntersecting) return
+        if (isLoadingMore || !hasMore || posts.length === 0) return
+        handleLoadMore()
+      },
+      { root: null, rootMargin: '180px 0px', threshold: 0.01 }
+    )
+
+    observer.observe(trigger)
+    return () => observer.disconnect()
+  }, [isLoadingMore, hasMore, posts.length, page, activeFilter, searchKeyword])
 
   const handleLike = async (postId: string) => {
     try {
@@ -378,12 +398,13 @@ export default function CommunityPage() {
           {/* 加载更多 */}
           {hasMore && posts.length > 0 && (
             <div className="loading-more">
+              <div ref={loadMoreTriggerRef} style={{ height: 1 }} aria-hidden />
               <button
                 className="load-more-btn"
                 onClick={handleLoadMore}
                 disabled={isLoadingMore}
               >
-                {isLoadingMore ? '加载中...' : '加载更多'}
+                {isLoadingMore ? '加载中...' : '继续上滑自动加载'}
               </button>
             </div>
           )}

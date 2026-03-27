@@ -68,6 +68,8 @@ export default function PositiveCheckInPage() {
     sync: number
   } | null>(null)
   const [sessionPointsHintOpen, setSessionPointsHintOpen] = useState(false)
+  const nonWhitespaceDescriptionLength = description.replace(/\s+/g, '').length
+  const qualityQualified = nonWhitespaceDescriptionLength >= 100 && selectedColleagues.length > 0 && evidences.length > 0
 
   const tags = DEFAULT_POSITIVE_TAGS
   const [colleagueList, setColleagueList] = useState<{ userId: string; name: string; avatar?: string }[]>([])
@@ -569,7 +571,7 @@ export default function PositiveCheckInPage() {
               <span className="positive-char-count">
                 <span className={description.length > 2000 ? 'text-danger' : ''}>{description.length}</span>/2000
               </span>
-              {description.trim().length >= 50 && selectedColleagues.length > 0 && (
+              {qualityQualified && (
                 <span className="quality-hint">已满足优质加分条件</span>
               )}
             </div>

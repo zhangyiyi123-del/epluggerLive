@@ -38,7 +38,7 @@ public class PositiveCheckInService {
 
     private static final int BASE_POINTS = 30;
     private static final int QUALITY_BONUS = 10;
-    private static final int QUALITY_DESC_MIN_LENGTH = 50;
+    private static final int QUALITY_DESC_MIN_LENGTH = 500;
     private static final int EVIDENCE_BONUS = 10;
     private static final int COLLEAGUE_POINTS_PER = 5;
 
@@ -81,11 +81,12 @@ public class PositiveCheckInService {
         int colleagueCount = request.getRelatedColleagueIds() != null ? request.getRelatedColleagueIds().size() : 0;
         int evidenceCount = request.getEvidenceUrls() != null ? request.getEvidenceUrls().size() : 0;
         String description = request.getDescription() != null ? request.getDescription().trim() : "";
+        int nonWhitespaceDescriptionLength = description.replaceAll("\\s+", "").length();
         if (description.length() > 2000) {
             throw new IllegalArgumentException("描述最多 2000 字");
         }
         int points = calculatePoints(
-                description.length(),
+                nonWhitespaceDescriptionLength,
                 evidenceCount,
                 colleagueCount
         );
@@ -176,7 +177,7 @@ public class PositiveCheckInService {
     public PointsPreviewDto getPointsPreview(int descriptionLength, int evidenceCount, int colleagueCount) {
         PointsPreviewDto dto = new PointsPreviewDto();
         dto.setBasePoints(BASE_POINTS);
-        int quality = (descriptionLength >= QUALITY_DESC_MIN_LENGTH && colleagueCount > 0) ? QUALITY_BONUS : 0;
+        int quality = isQualityQualified(descriptionLength, evidenceCount, colleagueCount) ? QUALITY_BONUS : 0;
         dto.setQualityBonus(quality);
         dto.setEvidenceBonus(evidenceCount > 0 ? EVIDENCE_BONUS : 0);
         dto.setColleagueBonus(colleagueCount * COLLEAGUE_POINTS_PER);
@@ -185,10 +186,14 @@ public class PositiveCheckInService {
     }
 
     private int calculatePoints(int descriptionLength, int evidenceCount, int colleagueCount) {
-        int quality = (descriptionLength >= QUALITY_DESC_MIN_LENGTH && colleagueCount > 0) ? QUALITY_BONUS : 0;
+        int quality = isQualityQualified(descriptionLength, evidenceCount, colleagueCount) ? QUALITY_BONUS : 0;
         int evidence = evidenceCount > 0 ? EVIDENCE_BONUS : 0;
         int colleague = colleagueCount * COLLEAGUE_POINTS_PER;
         return Math.max(1, BASE_POINTS + quality + evidence + colleague);
+    }
+
+    private boolean isQualityQualified(int descriptionLength, int evidenceCount, int colleagueCount) {
+        return descriptionLength >= QUALITY_DESC_MIN_LENGTH && colleagueCount > 0 && evidenceCount > 0;
     }
 
     private String trimToNull(String s) {

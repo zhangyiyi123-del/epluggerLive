@@ -5,10 +5,11 @@ import { me } from '../api/auth'
 import type { User } from '../types/community'
 import { getExerciseCheckedDays } from '../api/checkin'
 
-/** 按当前时段返回问候语 */
+/** 按当前时段返回问候语（本地时间） */
 function getGreeting(): string {
   const h = new Date().getHours()
-  if (h < 12) return '早上好'
+  if (h < 11) return '早上好'
+  if (h < 14) return '中午好'
   if (h < 18) return '下午好'
   return '晚上好'
 }

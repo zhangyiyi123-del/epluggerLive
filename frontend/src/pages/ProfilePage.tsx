@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { 
+import {
   MessageCircle, LogOut, ChevronRight, ChevronLeft,
-  Bell, HelpCircle, FileText, Moon
+  FileText, ClipboardPenLine,
 } from 'lucide-react'
 import { MEDAL_CONFIGS } from '../types/points'
 import type { UserPoints as UserPointsType } from '../types/points'
@@ -14,8 +14,7 @@ import { useBottomNavSuppressSetter } from '../context/BottomNavSuppressContext'
 const menuItems = [
   { icon: FileText, label: '我的动态', badge: '', color: '#8B5CF6' },
   { icon: MessageCircle, label: '我的消息', badgeKey: 'messages', color: '#3B82F6', badgeType: 'danger' as const },
-  { icon: Bell, label: '通知设置', badge: '', color: '#3B82F6' },
-  { icon: HelpCircle, label: '帮助与反馈', badge: '', color: '#6B7280' },
+  { icon: ClipboardPenLine, label: '问题反馈', badge: '', color: '#6B7280' },
 ]
 
 interface ProfilePageProps {
@@ -26,7 +25,6 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
   const navigate = useNavigate()
   const setSuppressBottomNav = useBottomNavSuppressSetter()
   const [showMedalWall, setShowMedalWall] = useState(false)
-  const [darkMode, setDarkMode] = useState(false)
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [userPoints, setUserPoints] = useState<UserPointsType | null>(null)
@@ -150,8 +148,14 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
                 onClick={() => {
                   if (item.label === '我的动态') navigate('/profile/posts')
                   else if (item.label === '我的消息') navigate('/profile/messages')
+                  else if (item.label === '问题反馈') navigate('/profile/feedback')
                 }}
-                style={{ cursor: item.label === '我的动态' || item.label === '我的消息' ? 'pointer' : undefined }}
+                style={{
+                  cursor:
+                    item.label === '我的动态' || item.label === '我的消息' || item.label === '问题反馈'
+                      ? 'pointer'
+                      : undefined,
+                }}
               >
                 <div className="menu-icon" style={{ background: `${item.color}15`, color: item.color }}>
                   <item.icon size={18} />
@@ -170,44 +174,6 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
                 <ChevronRight size={18} className="menu-arrow" />
               </div>
             ))}
-          </div>
-        </div>
-
-        {/* 深色模式 */}
-        <div className="section">
-          <div className="menu-list">
-            <div className="menu-item">
-              <div className="menu-icon" style={{ background: '#1F293715', color: '#1F2937' }}>
-                <Moon size={18} />
-              </div>
-              <span className="menu-label">深色模式</span>
-              <button
-                onClick={() => setDarkMode(!darkMode)}
-                style={{
-                  width: 44,
-                  height: 24,
-                  borderRadius: 12,
-                  background: darkMode ? '#3B82F6' : '#E5E7EB',
-                  border: 'none',
-                  cursor: 'pointer',
-                  position: 'relative',
-                  transition: 'background 0.2s',
-                  flexShrink: 0,
-                }}
-              >
-                <div style={{
-                  width: 20,
-                  height: 20,
-                  borderRadius: '50%',
-                  background: 'white',
-                  position: 'absolute',
-                  top: 2,
-                  left: darkMode ? 22 : 2,
-                  transition: 'left 0.2s',
-                  boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
-                }} />
-              </button>
-            </div>
           </div>
         </div>
 

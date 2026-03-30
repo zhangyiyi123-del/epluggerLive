@@ -78,8 +78,6 @@ public class MallService {
         if (up == null) return Optional.empty();
         int cost = product.getPointsCost();
         if (up.getAvailable() < cost) return Optional.empty();
-        int userLevel = levelFromTotalEarned(up.getTotalEarned());
-        if (userLevel < product.getMinLevel()) return Optional.empty();
 
         up.setAvailable(up.getAvailable() - cost);
         up.setTotalUsed(up.getTotalUsed() + cost);
@@ -111,14 +109,6 @@ public class MallService {
         order = mallOrderRepository.save(order);
 
         return Optional.of(toOrderDto(order));
-    }
-
-    private static final int[] LEVEL_MAX = { 200, 500, 1000, 1800, 2800, 4000, 5500, 7500, 10000, Integer.MAX_VALUE };
-    private int levelFromTotalEarned(int totalEarned) {
-        for (int i = 0; i < LEVEL_MAX.length; i++) {
-            if (totalEarned <= LEVEL_MAX[i]) return i + 1;
-        }
-        return 10;
     }
 
     private ProductDto toProductDto(Product p) {

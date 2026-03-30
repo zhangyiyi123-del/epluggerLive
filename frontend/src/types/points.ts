@@ -8,8 +8,6 @@ export interface LevelConfig {
   name: string
   minPoints: number
   maxPoints: number
-  minExchangeValue: number  // 可兑换商品最低积分
-  maxExchangeValue: number  // 可兑换商品最高积分
 }
 
 // 勋章类型
@@ -113,10 +111,27 @@ export interface Product {
   warningStock: number     // 预警库存
   image: string
   status: ProductStatus
-  minLevel: number         // 最低可兑换等级
+  minLevel: number         // 后端字段，兑换门槛已取消，仅兼容接口
   redeemCode?: string      // 兑换码(虚拟商品)
   usageGuide?: string     // 使用说明
 }
+
+/** 商城正式商品未定时，列表仅展示此占位条目（id 固定，便于识别） */
+export const MALL_PLACEHOLDER_PRODUCT: Product = {
+  id: '__mall_placeholder__',
+  name: '商品待上架',
+  description: '',
+  type: 'physical',
+  points: 0,
+  stock: 0,
+  warningStock: 0,
+  image: '',
+  status: 'offline',
+  minLevel: 1,
+}
+
+/** 为 true 时商城页不请求真实商品列表，只展示占位 */
+export const MALL_COMING_SOON = true
 
 // 订单状态
 export type OrderStatus = 'pending' | 'delivered' | 'completed' | 'cancelled'
@@ -142,16 +157,16 @@ export interface Order {
 
 // 等级配置
 export const LEVEL_CONFIGS: LevelConfig[] = [
-  { level: 1, name: 'Lv1', minPoints: 0, maxPoints: 200, minExchangeValue: 50, maxExchangeValue: 200 },
-  { level: 2, name: 'Lv2', minPoints: 201, maxPoints: 500, minExchangeValue: 50, maxExchangeValue: 200 },
-  { level: 3, name: 'Lv3', minPoints: 501, maxPoints: 1000, minExchangeValue: 50, maxExchangeValue: 200 },
-  { level: 4, name: 'Lv4', minPoints: 1001, maxPoints: 1800, minExchangeValue: 201, maxExchangeValue: 1000 },
-  { level: 5, name: 'Lv5', minPoints: 1801, maxPoints: 2800, minExchangeValue: 201, maxExchangeValue: 1000 },
-  { level: 6, name: 'Lv6', minPoints: 2801, maxPoints: 4000, minExchangeValue: 201, maxExchangeValue: 1000 },
-  { level: 7, name: 'Lv7', minPoints: 4001, maxPoints: 5500, minExchangeValue: 1001, maxExchangeValue: 3000 },
-  { level: 8, name: 'Lv8', minPoints: 5501, maxPoints: 7500, minExchangeValue: 1001, maxExchangeValue: 3000 },
-  { level: 9, name: 'Lv9', minPoints: 7501, maxPoints: 10000, minExchangeValue: 1001, maxExchangeValue: 3000 },
-  { level: 10, name: 'Lv10', minPoints: 10001, maxPoints: Infinity, minExchangeValue: 3000, maxExchangeValue: Infinity },
+  { level: 1, name: 'Lv1', minPoints: 0, maxPoints: 200 },
+  { level: 2, name: 'Lv2', minPoints: 201, maxPoints: 500 },
+  { level: 3, name: 'Lv3', minPoints: 501, maxPoints: 1000 },
+  { level: 4, name: 'Lv4', minPoints: 1001, maxPoints: 1800 },
+  { level: 5, name: 'Lv5', minPoints: 1801, maxPoints: 2800 },
+  { level: 6, name: 'Lv6', minPoints: 2801, maxPoints: 4000 },
+  { level: 7, name: 'Lv7', minPoints: 4001, maxPoints: 5500 },
+  { level: 8, name: 'Lv8', minPoints: 5501, maxPoints: 7500 },
+  { level: 9, name: 'Lv9', minPoints: 7501, maxPoints: 10000 },
+  { level: 10, name: 'Lv10', minPoints: 10001, maxPoints: Infinity },
 ]
 
 // 勋章配置

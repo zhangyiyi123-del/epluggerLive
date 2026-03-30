@@ -31,6 +31,25 @@
   margin: 0;
   padding: 0;
   box-sizing: border-box;
+  /* 全局隐藏滚动条（仍可触摸 / 滚轮 / 键盘滚动） */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+*::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-track,
+*::-webkit-scrollbar-corner {
+  display: none;
+  width: 0;
+  height: 0;
+  background: transparent;
 }
 
 body {
@@ -1406,21 +1425,22 @@ body {
   color: var(--text-primary);
 }
 
+/* 无外链图：顶部轻蓝晕 + 与全局 --bg-primary 过渡，避免缺失 png 与厚重白色遮罩 */
 .page-leaderboard {
+  min-height: 100vh;
+  background-color: var(--bg-primary);
   background-image:
+    radial-gradient(ellipse 130% 85% at 50% -35%, rgba(59, 130, 246, 0.12) 0%, transparent 58%),
+    radial-gradient(ellipse 85% 55% at 100% 5%, rgba(96, 165, 250, 0.07) 0%, transparent 48%),
+    radial-gradient(ellipse 75% 45% at 0% 25%, rgba(147, 197, 253, 0.08) 0%, transparent 45%),
     linear-gradient(
-      to bottom,
-      rgba(255, 255, 255, 0.25) 0%,
-      rgba(255, 255, 255, 0.6) 40%,
-      rgba(255, 255, 255, 0.88) 70%,
-      rgba(255, 255, 255, 0.97) 100%
-    ),
-    url('/bg-leaderboard-page.png');
-  background-size: cover, contain;
-  background-position: center top, center top;
+      180deg,
+      #eef4ff 0%,
+      var(--bg-primary) 32%,
+      var(--bg-primary) 100%
+    );
   background-repeat: no-repeat;
   background-attachment: local;
-  min-height: 100vh;
 }
 
 
@@ -5564,7 +5584,7 @@ body {
 .points-center {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 8px;
 }
 
 .points-header-card {
@@ -5742,7 +5762,7 @@ body {
 .points-records-section {
   background: var(--bg-white);
   border-radius: var(--radius-md);
-  padding: 16px;
+  padding: 10px 16px 14px;
 }
 
 .section-header {
@@ -5772,6 +5792,17 @@ body {
   outline: 2px solid var(--primary-color);
   outline-offset: 2px;
   border-radius: 4px;
+}
+
+/* 积分中心：查看全部与箭头用中性色，不用主题蓝 */
+.points-records-section .view-all-btn {
+  color: var(--text-secondary);
+}
+.points-records-section .view-all-btn svg {
+  color: currentColor;
+}
+.points-records-section .view-all-btn:focus-visible {
+  outline-color: var(--text-secondary);
 }
 
 .filter-tabs {
@@ -5864,10 +5895,22 @@ body {
 }
 
 .level-card {
-  background: linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%);
+  position: relative;
+  overflow: hidden;
   border-radius: var(--radius-lg);
   padding: 20px;
   color: white;
+  /* 饱和度适中；单层渐变 + 一角极淡高光，避免多层晕影与蓝紫光晕 */
+  background-color: #3b82f6;
+  background-image:
+    radial-gradient(
+      ellipse 75% 55% at 92% -5%,
+      rgba(255, 255, 255, 0.18) 0%,
+      transparent 52%
+    ),
+    linear-gradient(135deg, #4f8de9 0%, #3b82f6 42%, #2563eb 100%);
+  background-repeat: no-repeat;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.09);
 }
 
 .level-card-header {
@@ -5881,7 +5924,7 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.28);
   padding: 8px 16px;
   border-radius: var(--radius-full);
   font-weight: 600;
@@ -5891,7 +5934,7 @@ body {
   display: flex;
   align-items: center;
   gap: 4px;
-  background: rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.28);
   border: none;
   padding: 8px 14px;
   border-radius: var(--radius-full);
@@ -5927,7 +5970,7 @@ body {
 
 .progress-bar-wrapper {
   height: 8px;
-  background: rgba(255,255,255,0.2);
+  background: rgba(255, 255, 255, 0.32);
   border-radius: var(--radius-full);
   overflow: hidden;
   margin-bottom: 8px;
@@ -5950,10 +5993,10 @@ body {
   align-items: center;
   gap: 6px;
   font-size: 13px;
-  opacity: 0.9;
+  opacity: 0.92;
   margin-top: 16px;
   padding-top: 16px;
-  border-top: 1px solid rgba(255,255,255,0.2);
+  border-top: 1px solid rgba(255, 255, 255, 0.28);
 }
 
 .level-benefit-help {
@@ -6029,8 +6072,7 @@ body {
   color: var(--text-secondary);
 }
 
-.level-item.locked .level-item-range,
-.level-item.locked .level-item-benefit {
+.level-item.locked .level-item-range {
   color: var(--text-light);
 }
 
@@ -6057,12 +6099,6 @@ body {
   flex: 1;
   font-size: 13px;
   color: var(--text-secondary);
-}
-
-.level-item-benefit {
-  font-size: 12px;
-  color: var(--primary-color);
-  font-weight: 500;
 }
 
 .level-up-hint {
@@ -6794,6 +6830,10 @@ body {
   opacity: 0.6;
 }
 
+.product-card--placeholder {
+  opacity: 1;
+}
+
 .product-image {
   position: relative;
   height: 120px;
@@ -6801,6 +6841,17 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.product-image--placeholder {
+  background: linear-gradient(145deg, #eef2ff 0%, #e2e8f0 100%);
+}
+
+.product-placeholder-caption {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.02em;
 }
 
 .product-emoji {
@@ -6877,6 +6928,21 @@ body {
   border-top: 1px solid var(--border-color);
 }
 
+.product-points-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.product-points-dash {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-light);
+  line-height: 1;
+}
+
 .product-points {
   display: flex;
   align-items: baseline;
@@ -6919,6 +6985,18 @@ body {
 
 .exchange-btn:disabled {
   background: var(--text-light);
+}
+
+.exchange-btn--placeholder,
+.exchange-btn--placeholder:disabled {
+  background: #e5e7eb;
+  color: #9ca3af;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.exchange-btn--placeholder:active {
+  transform: none;
 }
 
 /* ==================== Points Mall Page ==================== */
@@ -7477,13 +7555,109 @@ body {
   color: #EF4444;
 }
 
+/* 积分明细页：收入 / 支出双卡片，中间留白（随页面白底） */
+.detail-stats.detail-stats--cards {
+  display: flex;
+  gap: 10px;
+  padding: 6px 0 10px;
+  background: transparent;
+}
+
+.detail-stat-card {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 10px;
+  background: var(--bg-primary);
+  border-radius: var(--radius-md);
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06);
+}
+
+.detail-stat-card .stat-label {
+  font-size: 11px;
+  color: var(--text-light);
+  margin-bottom: 0;
+}
+
+/* 抵消全局 .stat-value 渐变字与 -webkit-text-fill-color: transparent，与明细 .record-amount 同色 */
+.detail-stat-card .stat-value {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.2;
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  -webkit-text-fill-color: currentColor;
+}
+
+.detail-stat-card--income .stat-value {
+  color: #3b82f6;
+}
+
+.detail-stat-card--expense .stat-value {
+  color: #ef4444;
+}
+
+/* 积分明细全页 / 弹窗：筛选条（与积分中心 .filter-tab 一致；仅外层横向滚动且隐藏滚动条） */
+.points-records-filter-strip {
+  padding: 4px 0 6px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.points-records-filter-strip::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+  background: transparent;
+}
+
+.points-records-filter-strip::-webkit-scrollbar-thumb,
+.points-records-filter-strip::-webkit-scrollbar-track {
+  background: transparent;
+  border: none;
+}
+
+.points-records-filter-tabs.filter-tabs {
+  margin-bottom: 0;
+  gap: 8px;
+  padding: 0 22px 2px 0;
+  width: max-content;
+  min-width: unset;
+  max-width: none;
+  box-sizing: border-box;
+  -webkit-overflow-scrolling: touch;
+  overflow-x: visible;
+  overflow-y: visible;
+}
+
+.points-records-filter-tabs .filter-tab {
+  flex-shrink: 0;
+}
+
+.points-records-filter-tabs--modal.filter-tabs {
+  padding-right: 24px;
+}
+
 .filter-section {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px 20px;
+  gap: 0;
+  padding: 12px 0;
   border-bottom: 1px solid var(--border-color);
   overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.filter-section::-webkit-scrollbar {
+  display: none;
 }
 
 .filter-section svg {
@@ -7493,11 +7667,17 @@ body {
 
 .filter-buttons {
   display: flex;
-  gap: 8px;
+  flex-wrap: nowrap;
+  gap: 12px;
+  padding: 0 22px 0 0;
+  width: max-content;
+  min-width: 100%;
+  box-sizing: border-box;
 }
 
 .filter-btn {
-  padding: 6px 12px;
+  flex-shrink: 0;
+  padding: 6px 14px;
   background: var(--bg-primary);
   border: none;
   border-radius: var(--radius-sm);
@@ -7534,7 +7714,8 @@ body {
 
 .detail-record .record-header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
+  align-items: center;
   margin-bottom: 4px;
 }
 
@@ -7543,9 +7724,26 @@ body {
   font-weight: 500;
 }
 
-.detail-record .record-balance {
-  font-size: 12px;
+.detail-record .record-amount-stack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  text-align: right;
+  gap: 2px;
+  flex-shrink: 0;
+  min-width: 6.5rem;
+}
+
+.detail-record .record-amount-stack .record-amount {
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.detail-record .record-amount-stack .record-balance {
+  font-size: 11px;
   color: var(--text-light);
+  line-height: 1.25;
 }
 
 .detail-record .record-desc {
@@ -7559,20 +7757,115 @@ body {
   color: var(--text-light);
 }
 
-.detail-record .record-amount {
-  font-size: 18px;
-  font-weight: 700;
+.no-records {
+  padding: 40px;
+  text-align: center;
+  color: var(--text-light);
+}
+.no-records {
+  padding: 40px;
+  text-align: center;
+  color: var(--text-light);
 }
 
-.no-records {
-  padding: 40px;
-  text-align: center;
-  color: var(--text-light);
+/* 积分明细全页：与积分中心其它子页一致，随文档滚动；不锁 body/#root，避免移动端宽度被裁切 */
+.points-records-full-page.page-points-center {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
-.no-records {
-  padding: 40px;
-  text-align: center;
-  color: var(--text-light);
+
+.points-records-full-page .publish-content.points-records-full-page__body {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow-x: hidden;
+  padding-left: 24px;
+  padding-right: 24px;
+  padding-top: 8px;
+}
+
+/* 列表行 flex：允许中间文案收缩，避免右侧金额被挤出视口 */
+.points-records-full-page .detail-record .record-content {
+  min-width: 0;
+}
+
+.points-records-full-page .publish-header {
+  padding-bottom: 8px;
+}
+
+/* 横向筛选条仍隐藏滚动条（仅此条可横向滚动） */
+@media (pointer: coarse) {
+  .points-records-full-page .points-records-filter-strip::-webkit-scrollbar,
+  .points-records-full-page .points-records-filter-strip::-webkit-scrollbar-thumb,
+  .points-records-full-page .points-records-filter-strip::-webkit-scrollbar-track {
+    width: 0 !important;
+    height: 0 !important;
+    display: none !important;
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    background: transparent !important;
+  }
+}
+
+.points-records-full-page__body .points-records-filter-strip {
+  border-bottom: none;
+}
+
+.points-records-full-page__body .detail-stats.detail-stats--cards {
+  padding-left: 0;
+  padding-right: 0;
+  border-top: none;
+  border-bottom: none;
+}
+
+.points-detail-modal .points-records-filter-strip {
+  border-bottom: none;
+  padding-top: 0;
+}
+
+.points-detail-modal .modal-header {
+  padding: 16px 16px 10px;
+}
+
+.points-detail-modal .detail-stats.detail-stats--cards {
+  padding-left: 24px;
+  padding-right: 24px;
+  border-top: none;
+  border-bottom: none;
+}
+
+/* 列表随主内容区滚动，不再单独 overflow（避免双层滚动条） */
+.points-records-full-page__body .detail-records {
+  flex: none;
+  overflow: visible;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* 积分明细弹窗：与全页一致的左右边距；纵向滚动条隐藏（仍可滑动） */
+.points-detail-modal .detail-records {
+  padding-left: 24px;
+  padding-right: 24px;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scrollbar-color: transparent transparent;
+}
+
+.points-detail-modal .detail-records::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+  background: transparent;
+}
+
+.points-detail-modal .detail-records::-webkit-scrollbar-thumb,
+.points-detail-modal .detail-records::-webkit-scrollbar-track {
+  background: transparent;
+  border: none;
 }
 
 /* ==================== Leaderboard Points Section ==================== */
@@ -7760,6 +8053,93 @@ body {
   max-width: 100%;
 }
 
+/* 问题反馈（我的页进入） */
+.page-feedback {
+  padding: 0;
+  min-height: 100vh;
+  background: var(--bg-primary);
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  box-sizing: border-box;
+}
+
+.page-feedback .publish-header {
+  flex-shrink: 0;
+}
+
+.feedback-page-body {
+  padding: 16px 20px 32px;
+  flex: 1;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.feedback-page-hint {
+  font-size: 14px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+  margin-bottom: 20px;
+}
+
+.feedback-page-label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.feedback-required {
+  color: var(--danger-color);
+}
+
+.feedback-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 14px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-family: inherit;
+  line-height: 1.45;
+  resize: vertical;
+  min-height: 160px;
+  background: var(--bg-white);
+}
+
+.feedback-textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+}
+
+.feedback-char-count {
+  font-size: 12px;
+  color: var(--text-light);
+  text-align: right;
+  margin-top: 4px;
+  margin-bottom: 8px;
+}
+
+.feedback-submit-btn {
+  width: 100%;
+  margin-top: 16px;
+}
+
+.feedback-submit-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.feedback-inline-error {
+  font-size: 13px;
+  color: var(--danger-color);
+  margin: 0 0 12px;
+  line-height: 1.45;
+}
+
 .points-center-section {
   display: flex;
   flex-direction: column;
@@ -7805,14 +8185,6 @@ body {
   flex: 1;
   overflow-y: auto;
   min-width: 0;
-}
-
-/* 等级权益说明�?- 仅保留说明文案，列表复用 level-rank-section / level-list / level-item */
-.level-benefits-intro {
-  font-size: 14px;
-  color: var(--text-secondary);
-  margin-bottom: 16px;
-  line-height: 1.5;
 }
 
 .mall-preview-section {
@@ -10111,6 +10483,33 @@ MT
 }
 
 .confirm-dialog-btn.confirm:active {
+  opacity: 0.92;
+}
+
+/* 成功态（问题反馈等单按钮确认） */
+.confirm-dialog-icon--success {
+  background: #d1fae5;
+}
+
+.confirm-dialog-icon--success svg {
+  color: #059669;
+}
+
+.confirm-dialog-actions--single {
+  flex-direction: column;
+  gap: 0;
+  margin-top: 24px;
+}
+
+.confirm-dialog-actions--single .confirm-dialog-btn--success-ok {
+  flex: none;
+  width: 100%;
+  border: none;
+  background: var(--primary-color);
+  color: #fff;
+}
+
+.confirm-dialog-actions--single .confirm-dialog-btn--success-ok:active {
   opacity: 0.92;
 }
 

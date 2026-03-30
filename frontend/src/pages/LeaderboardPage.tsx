@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
-import { Medal, Flame, Heart, ChevronRight, ChevronLeft, Star, Lock, Filter, ChevronDown } from 'lucide-react'
+import { useNavigate, useLocation } from 'react-router-dom'
+import { Medal, Flame, Heart, ChevronRight, ChevronLeft, Star, Lock, ChevronDown } from 'lucide-react'
 import { MOCK_USER_POINTS, LEVEL_CONFIGS } from '../types/points'
 import type { UserPoints as UserPointsType } from '../types/points'
 import PointsCenter from '../components/points/PointsCenter'
@@ -7,6 +8,7 @@ import LevelProgress from '../components/points/LevelProgress'
 import MedalWall from '../components/points/MedalWall'
 import PointsMallPage from './PointsMallPage'
 import { getPointsMe, getLeaderboard, type LeaderboardEntry } from '../api/points'
+import { useBottomNavSuppressSetter } from '../context/BottomNavSuppressContext'
 
 type LeaderboardType = 'points' | 'exercise' | 'positive'
 
@@ -28,6 +30,9 @@ const periodLabels: Record<LeaderboardPeriod, string> = {
 }
 
 export default function LeaderboardPage() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const setSuppressBottomNav = useBottomNavSuppressSetter()
   const [activeType, setActiveType] = useState<LeaderboardType>('points')
   const [activePeriod, setActivePeriod] = useState<LeaderboardPeriod>('all')
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false)
@@ -46,6 +51,21 @@ export default function LeaderboardPage() {
       if (data) setUserPoints(data)
     })
   }, [])
+
+  useEffect(() => {
+    const s = location.state as { openPointsCenter?: boolean } | undefined
+    if (s?.openPointsCenter) {
+      setShowPointsCenter(true)
+      navigate('/leaderboard', { replace: true, state: {} })
+    }
+  }, [location.state, navigate])
+
+  useEffect(() => {
+    if (!setSuppressBottomNav) return
+    const overlay = showPointsCenter || showFullMall
+    setSuppressBottomNav(overlay)
+    return () => setSuppressBottomNav(false)
+  }, [showPointsCenter, showFullMall, setSuppressBottomNav])
 
   useEffect(() => {
     setLeaderboardLoading(true)
@@ -99,10 +119,9 @@ export default function LeaderboardPage() {
           <div style={{ width: 44 }} />
         </div>
         <div className="publish-content points-center-section">
-          <p className="level-benefits-intro">积分等级对应可兑换的积分区间，等级越高可兑换商品价值越高。</p>
           <div className="level-rank-section">
             <div className="level-rank-header level-rank-header-static">
-              <span>等级权益</span>
+              <span>等级与累计获得积分</span>
             </div>
             <div className="level-list">
               {LEVEL_CONFIGS.map(config => {
@@ -123,9 +142,6 @@ export default function LeaderboardPage() {
                     </div>
                     <div className="level-item-range">
                       {config.minPoints === 0 ? '0' : config.minPoints} - {config.maxPoints === Infinity ? '∞' : config.maxPoints}
-                    </div>
-                    <div className="level-item-benefit">
-                      {config.minExchangeValue}-{config.maxExchangeValue === Infinity ? '∞' : config.maxExchangeValue}分
                     </div>
                   </div>
                 )
@@ -174,7 +190,7 @@ export default function LeaderboardPage() {
           />
           <PointsCenter 
             userPoints={userPoints}
-            onViewHistory={() => {}}
+            onViewHistory={() => navigate('/points/records')}
           />
         </div>
       </div>
@@ -243,7 +259,6 @@ export default function LeaderboardPage() {
                   className="leaderboard-filter-btn"
                   onClick={() => setShowPeriodDropdown(!showPeriodDropdown)}
                 >
-                  <Filter size={16} />
                   <span className="leaderboard-filter-label">{periodLabels[activePeriod]}</span>
                   <ChevronDown 
                     size={14} 

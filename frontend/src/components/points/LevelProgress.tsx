@@ -18,14 +18,6 @@ export default function LevelProgress({ userPoints, onViewMall, onViewLevelBenef
     return Math.min((pointsInLevel / pointsNeeded) * 100, 100)
   }
 
-  // 获取等级权益描述（用于卡片上的当前权益 + 问号进入说明页）
-  const getLevelBenefit = (level: number) => {
-    if (level <= 3) return '兑换低价值商品 (50-200分)'
-    if (level <= 6) return '兑换中价值商品 (201-1000分)'
-    if (level <= 9) return '兑换高价值商品 (1001-3000分)'
-    return '兑换专属荣誉商品 (3000+分)'
-  }
-
   return (
     <div className="level-progress">
       {/* 当前等级卡片 */}
@@ -35,8 +27,8 @@ export default function LevelProgress({ userPoints, onViewMall, onViewLevelBenef
             <Shield size={18} />
             <span className="level-name">Lv{userPoints.level}</span>
           </div>
-          <button className="view-mall-btn" onClick={onViewMall}>
-            去兑换 <ChevronRight size={14} />
+          <button type="button" className="view-mall-btn" onClick={onViewMall}>
+            积分商城 <ChevronRight size={14} />
           </button>
         </div>
         
@@ -62,9 +54,9 @@ export default function LevelProgress({ userPoints, onViewMall, onViewLevelBenef
 
         <div className="level-benefit">
           <Zap size={14} />
-          <span>当前权益: {getLevelBenefit(userPoints.level)}</span>
+          <span>等级档位由累计获得积分划分</span>
           {onViewLevelBenefits && (
-            <button type="button" className="level-benefit-help" onClick={onViewLevelBenefits} title="等级权益说明">?</button>
+            <button type="button" className="level-benefit-help" onClick={onViewLevelBenefits} title="等级档位说明">?</button>
           )}
         </div>
       </div>

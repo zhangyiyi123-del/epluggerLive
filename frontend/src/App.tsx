@@ -15,6 +15,8 @@ import ProfilePage from './pages/ProfilePage'
 import PublishPage from './pages/PublishPage'
 import MyPostsPage from './pages/MyPostsPage'
 import MyMessagesPage from './pages/MyMessagesPage'
+import PointsRecordsPage from './pages/PointsRecordsPage'
+import FeedbackPage from './pages/FeedbackPage'
 import LoginPage from './pages/LoginPage'
 import './App.css'
 
@@ -31,6 +33,8 @@ function AppContent({ isLoggedIn, onLogin, onLogout }: { isLoggedIn: boolean; on
     location.pathname === '/checkin/exercise-records' ||
     location.pathname === '/checkin/positive-records' ||
     location.pathname === '/checkin/positive' ||
+    location.pathname === '/points/records' ||
+    location.pathname === '/profile/feedback' ||
     location.pathname === '/login'
 
   const bottomNavVisible = isLoggedIn && !hideBottomNav && !suppressBottomNav
@@ -63,6 +67,8 @@ function AppContent({ isLoggedIn, onLogin, onLogout }: { isLoggedIn: boolean; on
         <Route path="/profile" element={<ProfilePage onLogout={onLogout} />} />
         <Route path="/profile/posts" element={<MyPostsPage onBack={() => window.history.back()} />} />
         <Route path="/profile/messages" element={<MyMessagesPage onBack={() => window.history.back()} />} />
+        <Route path="/profile/feedback" element={<FeedbackPage />} />
+        <Route path="/points/records" element={<PointsRecordsPage />} />
       </Routes>
 
       {bottomNavVisible && (

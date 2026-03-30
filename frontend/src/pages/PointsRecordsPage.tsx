@@ -1,36 +1,65 @@
-import { useState, useEffect } from 'react'
-import { X, Calendar } from 'lucide-react'
-import type { PointsRecord } from '../../types/points'
-import { getPointsRecords } from '../../api/points'
-import { isInLocalNaturalMonth, isInLocalNaturalWeek, isLocalNaturalDay } from '../../utils/calendarRange'
+import { useState, useEffect, useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ChevronLeft, Calendar } from 'lucide-react'
+import type { PointsRecord } from '../types/points'
+import { getPointsRecords } from '../api/points'
 import {
   getPointsRecordIcon,
   getPointsRecordTypeLabel,
   isPointsRecordIncome,
-} from './pointsRecordMeta'
-
-interface PointsDetailModalProps {
-  onClose: () => void
-}
+} from '../components/points/pointsRecordMeta'
+import {
+  isInLocalNaturalMonth,
+  isInLocalNaturalWeek,
+  isLocalNaturalDay,
+} from '../utils/calendarRange'
 
 type FilterType = 'all' | 'today' | 'week' | 'month' | 'income' | 'expense'
 
-export default function PointsDetailModal({ onClose }: PointsDetailModalProps) {
-  const [filter, setFilter] = useState<FilterType>('all')
+const PAGE_SIZE = 50
+const MAX_PAGES = 40
+
+export default function PointsRecordsPage() {
+  const navigate = useNavigate()
   const [records, setRecords] = useState<PointsRecord[]>([])
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [filter, setFilter] = useState<FilterType>('all')
 
   useEffect(() => {
-    getPointsRecords(0, 100)
-      .then((res) => {
-        setRecords(res.content ?? [])
-      })
-      .finally(() => setLoading(false))
+    let cancelled = false
+    setLoading(true)
+    setLoadError(null)
+    ;(async () => {
+      const all: PointsRecord[] = []
+      try {
+        let page = 0
+        while (!cancelled && page < MAX_PAGES) {
+          const res = await getPointsRecords(page, PAGE_SIZE)
+          const chunk = res.content ?? []
+          all.push(...chunk)
+          const totalPages = res.totalPages ?? 0
+          if (chunk.length === 0 || page >= totalPages - 1) break
+          page += 1
+        }
+        if (!cancelled) setRecords(all)
+      } catch {
+        if (!cancelled) {
+          setLoadError('加载失败，请稍后重试')
+          setRecords([])
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
   }, [])
 
-  const filterRecords = (list: PointsRecord[]) => {
+  const filteredRecords = useMemo(() => {
     const now = new Date()
-    return list.filter((record) => {
+    return records.filter((record) => {
       const recordDate = new Date(record.createdAt)
       switch (filter) {
         case 'today':
@@ -47,17 +76,17 @@ export default function PointsDetailModal({ onClose }: PointsDetailModalProps) {
           return true
       }
     })
-  }
+  }, [records, filter])
 
-  const filteredRecords = filterRecords(records)
-
-  const totalIncome = filteredRecords
-    .filter((r) => r.amount > 0)
-    .reduce((sum, r) => sum + r.amount, 0)
-
-  const totalExpense = filteredRecords
-    .filter((r) => r.amount < 0)
-    .reduce((sum, r) => sum + Math.abs(r.amount), 0)
+  const totalIncome = useMemo(
+    () => filteredRecords.filter((r) => r.amount > 0).reduce((s, r) => s + r.amount, 0),
+    [filteredRecords]
+  )
+  const totalExpense = useMemo(
+    () =>
+      filteredRecords.filter((r) => r.amount < 0).reduce((s, r) => s + Math.abs(r.amount), 0),
+    [filteredRecords]
+  )
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr)
@@ -70,17 +99,29 @@ export default function PointsDetailModal({ onClose }: PointsDetailModalProps) {
   }
 
   return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="points-detail-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>积分明细</h3>
-          <button type="button" className="modal-close" onClick={onClose}>
-            <X size={20} />
-          </button>
-        </div>
+    <div className="page page-points-center points-records-full-page">
+      <div className="publish-header">
+        <button
+          type="button"
+          className="publish-back-btn"
+          onClick={() => navigate('/leaderboard', { state: { openPointsCenter: true } })}
+          aria-label="返回积分中心"
+        >
+          <ChevronLeft size={22} />
+        </button>
+        <div className="publish-header-title">积分明细</div>
+        <div style={{ width: 44 }} />
+      </div>
 
-        <div className="points-records-filter-strip">
-          <div className="filter-tabs points-records-filter-tabs points-records-filter-tabs--modal">
+      <div className="publish-content points-records-full-page__body">
+        {loadError && (
+          <div className="section" style={{ padding: 12, marginBottom: 8, background: 'var(--surface-warn)' }}>
+            <p style={{ margin: 0 }}>{loadError}</p>
+          </div>
+        )}
+
+        <div className="points-records-filter-strip points-records-full-page__filters">
+          <div className="filter-tabs points-records-filter-tabs">
             <button
               type="button"
               className={`filter-tab ${filter === 'all' ? 'active' : ''}`}
@@ -137,7 +178,7 @@ export default function PointsDetailModal({ onClose }: PointsDetailModalProps) {
           </div>
         </div>
 
-        <div className="detail-records">
+        <div className="detail-records points-records-full-page__list">
           {loading ? (
             <div className="no-records">
               <p>加载中...</p>

@@ -1,17 +1,17 @@
-import { AlertCircle } from 'lucide-react'
 import type { Product } from '../../types/points'
 
 interface ProductCardProps {
   product: Product
   userPoints: number
-  userLevel: number
   onExchange?: (product: Product) => void
+  /** 商城占位：敬请期待、横向积分、兑换灰钮 */
+  placeholder?: boolean
 }
 
-export default function ProductCard({ product, userPoints, userLevel, onExchange }: ProductCardProps) {
-  const canExchange = 
+export default function ProductCard({ product, userPoints, onExchange, placeholder }: ProductCardProps) {
+  const canExchange =
+    !placeholder &&
     userPoints >= product.points &&
-    userLevel >= product.minLevel &&
     product.status === 'available' &&
     product.stock > 0
 
@@ -32,13 +32,16 @@ export default function ProductCard({ product, userPoints, userLevel, onExchange
     }
   }
 
-  const statusInfo = getStatusLabel()
+  const statusInfo = placeholder ? null : getStatusLabel()
 
   return (
-    <div className={`product-card ${!canExchange ? 'disabled' : ''}`}>
-      {/* 商品图片 */}
-      <div className="product-image">
-        <span className="product-emoji">{product.image}</span>
+    <div className={`product-card ${placeholder ? 'product-card--placeholder' : ''} ${!placeholder && !canExchange ? 'disabled' : ''}`}>
+      <div className={`product-image ${placeholder ? 'product-image--placeholder' : ''}`}>
+        {placeholder ? (
+          <span className="product-placeholder-caption">敬请期待</span>
+        ) : (
+          <span className="product-emoji">{product.image}</span>
+        )}
         {statusInfo && (
           <div className={`product-status-badge ${statusInfo.class}`}>
             {statusInfo.text}
@@ -46,35 +49,36 @@ export default function ProductCard({ product, userPoints, userLevel, onExchange
         )}
       </div>
 
-      {/* 商品信息 */}
       <div className="product-info">
         <div className="product-header">
-          <span className="product-name">{product.name}</span>
-          <span className="product-type-badge">{getProductTypeLabel()}</span>
+          <span className="product-name">{placeholder ? '商品待上架' : product.name}</span>
+          {!placeholder && <span className="product-type-badge">{getProductTypeLabel()}</span>}
         </div>
-        <p className="product-desc">{product.description}</p>
-        
-        <div className="product-stock">
-          库存: {product.stock > 0 ? product.stock : '无'}
-        </div>
+        {!placeholder && (
+          <>
+            <p className="product-desc">{product.description}</p>
+            <div className="product-stock">
+              库存: {product.stock > 0 ? product.stock : '无'}
+            </div>
+          </>
+        )}
       </div>
 
-      {/* 兑换区域 */}
       <div className="product-action">
-        <div className="product-points">
-          <span className="points-value">{product.points}</span>
-          <span className="points-unit">积分</span>
-        </div>
-        
-        {!canExchange && userLevel < product.minLevel && (
-          <div className="exchange-limit-hint">
-            <AlertCircle size={12} />
-            <span>Lv{product.minLevel}可兑换</span>
+        {placeholder ? (
+          <div className="product-points-row">
+            <span className="product-points-dash">—</span>
+          </div>
+        ) : (
+          <div className="product-points">
+            <span className="points-value">{product.points}</span>
+            <span className="points-unit">积分</span>
           </div>
         )}
 
-        <button 
-          className="exchange-btn"
+        <button
+          type="button"
+          className={`exchange-btn ${placeholder ? 'exchange-btn--placeholder' : ''}`}
           disabled={!canExchange}
           onClick={() => canExchange && onExchange?.(product)}
         >

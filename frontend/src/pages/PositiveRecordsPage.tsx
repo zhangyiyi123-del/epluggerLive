@@ -3,6 +3,11 @@ import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, Users, Sparkles, TrendingUp, Star } from 'lucide-react'
 import * as checkInApi from '../api/checkin'
 import type { PositiveRecordItem } from '../api/checkin'
+import {
+  isInLocalNaturalMonth,
+  isInLocalNaturalWeek,
+  startOfLocalDay,
+} from '../utils/calendarRange'
 
 const formatDate = (iso: string | number) => {
   try {
@@ -54,18 +59,14 @@ export default function PositiveRecordsPage() {
   }, [])
 
   const now = new Date()
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const dayOfWeek = (now.getDay() + 6) % 7
-  const startOfWeek = new Date(startOfToday)
-  startOfWeek.setDate(startOfWeek.getDate() - dayOfWeek)
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  const startOfToday = startOfLocalDay(now)
 
   const filteredRecords = records.filter(record => {
     const recordDate = new Date(record.createdAt)
     if (Number.isNaN(recordDate.getTime())) return false
     if (filter === 'today') return recordDate >= startOfToday
-    if (filter === 'week') return recordDate >= startOfWeek
-    if (filter === 'month') return recordDate >= startOfMonth
+    if (filter === 'week') return isInLocalNaturalWeek(recordDate, now)
+    if (filter === 'month') return isInLocalNaturalMonth(recordDate, now)
     return true
   })
 

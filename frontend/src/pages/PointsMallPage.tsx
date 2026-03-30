@@ -1,11 +1,10 @@
 import { useState, useEffect } from 'react'
 import { Coins, Gift, ShoppingBag, History, ChevronLeft } from 'lucide-react'
 import type { Product, Order, UserPoints } from '../types/points'
-import { MOCK_USER_POINTS, LEVEL_CONFIGS } from '../types/points'
+import { MOCK_USER_POINTS, MALL_PLACEHOLDER_PRODUCT, MALL_COMING_SOON } from '../types/points'
 import ProductCard from '../components/points/ProductCard'
 import ExchangeModal from '../components/points/ExchangeModal'
 import OrderList from '../components/points/OrderList'
-import PointsDetailModal from '../components/points/PointsDetailModal'
 import { getProducts, getMyOrders, placeOrder, getPointsMe } from '../api/points'
 
 type MallTab = 'mall' | 'orders'
@@ -24,10 +23,19 @@ export default function PointsMallPage({ onBack }: PointsMallPageProps) {
   const [orders, setOrders] = useState<Order[]>([])
   const [userPoints, setUserPoints] = useState<UserPoints>(MOCK_USER_POINTS)
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
-  const [showDetailModal, setShowDetailModal] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    if (MALL_COMING_SOON) {
+      Promise.all([getMyOrders(0, 50), getPointsMe()])
+        .then(([ordsRes, points]) => {
+          setProducts([])
+          setOrders(ordsRes.content ?? [])
+          if (points) setUserPoints(points)
+        })
+        .finally(() => setLoading(false))
+      return
+    }
     Promise.all([getProducts(), getMyOrders(0, 50), getPointsMe()]).then(([prods, ordsRes, points]) => {
       setProducts(prods ?? [])
       setOrders(ordsRes.content ?? [])
@@ -35,25 +43,15 @@ export default function PointsMallPage({ onBack }: PointsMallPageProps) {
     }).finally(() => setLoading(false))
   }, [])
 
-  // 根据等级获取可兑换的积分范围
-  const getUserExchangeRange = () => {
-    const levelConfig = LEVEL_CONFIGS[userPoints.level - 1]
-    return { min: levelConfig.minExchangeValue, max: levelConfig.maxExchangeValue }
-  }
-
   // 过滤商品
   const filteredProducts = products.filter(product => {
-    // 过滤等级
-    if (userPoints.level < product.minLevel) return false
-    
-    // 过滤类型
     if (productFilter !== 'all') {
       if (productFilter === 'affordable') {
-        const range = getUserExchangeRange()
-        return product.points >= range.min && 
-               product.points <= range.max && 
-               product.stock > 0 &&
-               product.status === 'available'
+        return (
+          product.points <= userPoints.availablePoints &&
+          product.stock > 0 &&
+          product.status === 'available'
+        )
       }
       return product.type === productFilter
     }
@@ -62,11 +60,11 @@ export default function PointsMallPage({ onBack }: PointsMallPageProps) {
     return product.stock > 0 && product.status === 'available'
   })
 
-  // 按积分排序
   const sortedProducts = [...filteredProducts].sort((a, b) => a.points - b.points)
+  const mallList = MALL_COMING_SOON ? [MALL_PLACEHOLDER_PRODUCT] : sortedProducts
 
   const loadData = () => {
-    getProducts().then(setProducts)
+    if (!MALL_COMING_SOON) getProducts().then(setProducts)
     getMyOrders(0, 50).then((r) => setOrders(r.content))
     getPointsMe().then((p) => p && setUserPoints(p))
   }
@@ -125,9 +123,6 @@ export default function PointsMallPage({ onBack }: PointsMallPageProps) {
               <span className="points-value">{userPoints.availablePoints}</span>
             </div>
           </div>
-          <div className="header-right">
-            <div className="level-badge">Lv{userPoints.level}</div>
-          </div>
         </div>
       </div>
 
@@ -153,28 +148,29 @@ export default function PointsMallPage({ onBack }: PointsMallPageProps) {
       {/* 商城内容 */}
       {activeTab === 'mall' && (
         <div className="mall-content">
-          {/* 商品筛选 */}
-          <div className="product-filters">
-            {(['all', 'affordable', 'physical', 'virtual', 'honor'] as ProductFilter[]).map(filter => (
-              <button
-                key={filter}
-                className={`filter-pill ${productFilter === filter ? 'active' : ''}`}
-                onClick={() => setProductFilter(filter)}
-              >
-                {getFilterLabel(filter)}
-              </button>
-            ))}
-          </div>
+          {!MALL_COMING_SOON && (
+            <div className="product-filters">
+              {(['all', 'affordable', 'physical', 'virtual', 'honor'] as ProductFilter[]).map(filter => (
+                <button
+                  key={filter}
+                  type="button"
+                  className={`filter-pill ${productFilter === filter ? 'active' : ''}`}
+                  onClick={() => setProductFilter(filter)}
+                >
+                  {getFilterLabel(filter)}
+                </button>
+              ))}
+            </div>
+          )}
 
-          {/* 商品列表 */}
           <div className="product-grid">
-            {sortedProducts.map(product => (
+            {mallList.map(product => (
               <ProductCard
                 key={product.id}
                 product={product}
                 userPoints={userPoints.availablePoints}
-                userLevel={userPoints.level}
                 onExchange={setSelectedProduct}
+                placeholder={MALL_COMING_SOON}
               />
             ))}
           </div>
@@ -184,11 +180,11 @@ export default function PointsMallPage({ onBack }: PointsMallPageProps) {
               <p>加载中...</p>
             </div>
           )}
-          {!loading && sortedProducts.length === 0 && (
+          {!loading && !MALL_COMING_SOON && sortedProducts.length === 0 && (
             <div className="empty-mall">
               <Gift size={48} />
               <p>暂无符合条件的商品</p>
-              <p className="hint">提升等级或积累更多积分来兑换商品</p>
+              <p className="hint">积累可用积分或切换筛选条件试试</p>
             </div>
           )}
         </div>
@@ -214,10 +210,6 @@ export default function PointsMallPage({ onBack }: PointsMallPageProps) {
         />
       )}
 
-      {/* 积分明细弹窗 */}
-      {showDetailModal && (
-        <PointsDetailModal onClose={() => setShowDetailModal(false)} />
-      )}
       </div>
     </div>
   )

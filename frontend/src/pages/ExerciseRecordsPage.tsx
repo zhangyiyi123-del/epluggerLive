@@ -4,6 +4,11 @@ import { ChevronLeft, Footprints, Dumbbell, Mountain, Bike, Waves, Activity, Vol
 import { DEFAULT_SPORT_TYPES } from '../types/checkIn'
 import * as checkInApi from '../api/checkin'
 import type { ExerciseRecordItem } from '../api/checkin'
+import {
+  isInLocalNaturalMonth,
+  isInLocalNaturalWeek,
+  startOfLocalDay,
+} from '../utils/calendarRange'
 
 const formatDate = (iso: string) => {
   try {
@@ -56,18 +61,14 @@ export default function ExerciseRecordsPage() {
   }, [])
 
   const now = new Date()
-  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-  const dayOfWeek = (now.getDay() + 6) % 7
-  const startOfWeek = new Date(startOfToday)
-  startOfWeek.setDate(startOfWeek.getDate() - dayOfWeek)
-  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  const startOfToday = startOfLocalDay(now)
 
   const filteredRecords = records.filter(record => {
     const recordDate = new Date(record.checkedInAt)
     if (Number.isNaN(recordDate.getTime())) return false
     if (filter === 'today') return recordDate >= startOfToday
-    if (filter === 'week') return recordDate >= startOfWeek
-    if (filter === 'month') return recordDate >= startOfMonth
+    if (filter === 'week') return isInLocalNaturalWeek(recordDate, now)
+    if (filter === 'month') return isInLocalNaturalMonth(recordDate, now)
     return true
   })
 

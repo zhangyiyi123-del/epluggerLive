@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, X, Trash2, Plus } from 'lucide-react'
+import { Search, X, Plus } from 'lucide-react'
 import type { Post, FeedFilter, FollowedUser } from '../types/community'
 import { FEED_FILTERS } from '../types/community'
 import PostCard from '../components/community/PostCard'
@@ -8,6 +8,7 @@ import FollowingUserRow from '../components/community/FollowingUserRow'
 import { getPosts, likePost, deletePost } from '../api/community'
 import { followUser, unfollowUser, getFollowingUsers } from '../api/follow'
 import { getUnreadCount } from '../api/points'
+import DeletePostConfirmModal from '../components/DeletePostConfirmModal'
 
 export default function CommunityPage() {
   const PULL_REFRESH_THRESHOLD = 72
@@ -162,10 +163,6 @@ export default function CommunityPage() {
     if (post) {
       navigate('/community/' + postId, { state: { post } })
     }
-  }
-
-  const handleShare = (postId: string) => {
-    console.log('Share post:', postId)
   }
 
   const handleEdit = (postId: string) => {
@@ -511,7 +508,6 @@ export default function CommunityPage() {
               currentUserId={currentUserId}
               onLike={handleLike}
               onComment={handleComment}
-              onShare={handleShare}
               onEdit={handleEdit}
               onDelete={handleDelete}
               onFollow={handleFollow}
@@ -561,28 +557,11 @@ export default function CommunityPage() {
         <Plus size={24} strokeWidth={2.5} />
       </button>
 
-      {/* 删除确认弹窗 */}
-      {showDeleteConfirm && (
-        <div className="confirm-dialog-overlay" onClick={cancelDelete}>
-          <div className="confirm-dialog" onClick={e => e.stopPropagation()}>
-            <div className="confirm-dialog-content">
-              <div className="confirm-dialog-icon">
-                <Trash2 size={28} />
-              </div>
-              <div className="confirm-dialog-title">删除动态</div>
-              <div className="confirm-dialog-message">确定要删除这条动态吗？删除后将无法恢复。</div>
-            </div>
-            <div className="confirm-dialog-actions">
-              <button className="confirm-dialog-btn cancel" onClick={cancelDelete}>
-                取消
-              </button>
-              <button className="confirm-dialog-btn confirm" onClick={confirmDelete}>
-                删除
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <DeletePostConfirmModal
+        open={showDeleteConfirm}
+        onCancel={cancelDelete}
+        onConfirm={confirmDelete}
+      />
     </div>
   )
 }

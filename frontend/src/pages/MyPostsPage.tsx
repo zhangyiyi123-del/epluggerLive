@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { ChevronLeft, FileText } from 'lucide-react'
 import type { Post } from '../types/community'
 import PostCard from '../components/community/PostCard'
+import DeletePostConfirmModal from '../components/DeletePostConfirmModal'
 import { getMyPosts, likePost, deletePost } from '../api/community'
 
 interface MyPostsPageProps {
@@ -14,6 +15,8 @@ export default function MyPostsPage({ onBack }: MyPostsPageProps) {
   const [posts, setPosts] = useState<Post[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [postToDelete, setPostToDelete] = useState<string | null>(null)
 
   useEffect(() => {
     getMyPosts(0, 50)
@@ -48,13 +51,28 @@ export default function MyPostsPage({ onBack }: MyPostsPageProps) {
     }
   }
 
-  const handleDelete = async (postId: string) => {
-    if (!confirm('确定删除这条动态吗？')) return
+  const handleDelete = (postId: string) => {
+    setPostToDelete(postId)
+    setShowDeleteConfirm(true)
+  }
+
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false)
+    setPostToDelete(null)
+  }
+
+  const confirmDelete = async () => {
+    if (!postToDelete) {
+      cancelDelete()
+      return
+    }
     try {
-      const ok = await deletePost(postId)
-      if (ok) setPosts((prev) => prev.filter((p) => p.id !== postId))
+      const ok = await deletePost(postToDelete)
+      if (ok) setPosts((prev) => prev.filter((p) => p.id !== postToDelete))
     } catch {
       // ignore
+    } finally {
+      cancelDelete()
     }
   }
 
@@ -91,7 +109,6 @@ export default function MyPostsPage({ onBack }: MyPostsPageProps) {
                 post={post}
                 onLike={handleLike}
                 onComment={handleOpenDetail}
-                onShare={() => {}}
                 onDelete={handleDelete}
                 onOpenDetail={handleOpenDetail}
               />
@@ -99,6 +116,12 @@ export default function MyPostsPage({ onBack }: MyPostsPageProps) {
           </div>
         )}
       </div>
+
+      <DeletePostConfirmModal
+        open={showDeleteConfirm}
+        onCancel={cancelDelete}
+        onConfirm={confirmDelete}
+      />
     </div>
   )
 }

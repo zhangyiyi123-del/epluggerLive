@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { MouseEvent } from 'react'
-import { Heart, MessageCircle, Share2, Star, ChevronDown, ChevronUp, Trash2, Play, ClipboardList } from 'lucide-react'
+import { Heart, MessageCircle, Star, ChevronDown, ChevronUp, Trash2, Play, ClipboardList } from 'lucide-react'
 import type { Post } from '../../types/community'
 import ImageLightbox from './ImageLightbox'
 
@@ -9,7 +9,6 @@ interface PostCardProps {
   currentUserId?: string
   onLike: (postId: string) => void
   onComment: (postId: string) => void
-  onShare: (postId: string) => void
   onEdit?: (postId: string) => void
   onDelete?: (postId: string) => void
   onFollow?: (authorId: string) => Promise<void>
@@ -18,7 +17,7 @@ interface PostCardProps {
   onOpenDetail?: (postId: string) => void
 }
 
-export default function PostCard({ post, currentUserId, onLike, onComment, onShare, onEdit: _onEdit, onDelete, onFollow, onUnfollow, onOpenDetail }: PostCardProps) {
+export default function PostCard({ post, currentUserId, onLike, onComment, onEdit: _onEdit, onDelete, onFollow, onUnfollow, onOpenDetail }: PostCardProps) {
   const [isExpanded, setIsExpanded] = useState(false)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
@@ -38,6 +37,7 @@ export default function PostCard({ post, currentUserId, onLike, onComment, onSha
     post.canDelete === true ||
     (viewerId !== '' && viewerId === authorId)
   const showFollowBtn = !isOwnPost && (onFollow || onUnfollow)
+  const showHeaderDelete = isOwnPost && post.canDelete && Boolean(onDelete)
 
   const handleFollowClick = async (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation()
@@ -94,7 +94,7 @@ export default function PostCard({ post, currentUserId, onLike, onComment, onSha
   }
 
   return (
-    <div className={`post-card ${post.isFeatured ? 'featured' : ''}`}>
+    <div className={`post-card ${post.isFeatured ? 'featured' : ''} ${showHeaderDelete ? 'post-card--header-delete' : ''}`}>
       {/* 精选标识 */}
       {post.isFeatured && (
         <div className="featured-badge">
@@ -112,25 +112,40 @@ export default function PostCard({ post, currentUserId, onLike, onComment, onSha
             <span className="author-dept">{post.author.department} · {formatTime(post.createdAt)}</span>
           </div>
         </div>
-        {showFollowBtn && (
-          <button
-            type="button"
-            className={[
-              'follow-btn',
-              post.isAuthorFollowed ? 'following' : '',
-              followAnimating ? 'follow-btn--pop' : '',
-            ].filter(Boolean).join(' ')}
-            onClick={handleFollowClick}
-            disabled={followLoading}
-            aria-label={post.isAuthorFollowed ? '取消关注' : '关注'}
-            onAnimationEnd={() => setFollowAnimating(false)}
-          >
-            <span className="follow-btn__icon" aria-hidden>
-              {post.isAuthorFollowed ? '✓' : '+'}
-            </span>
-            {post.isAuthorFollowed ? '已关注' : '关注'}
-          </button>
-        )}
+        <div className="post-header-actions">
+          {showHeaderDelete && (
+            <button
+              type="button"
+              className="post-header-delete-btn"
+              onClick={(e) => {
+                e.stopPropagation()
+                onDelete?.(post.id)
+              }}
+              aria-label="删除动态"
+            >
+              <Trash2 size={18} aria-hidden />
+            </button>
+          )}
+          {showFollowBtn && (
+            <button
+              type="button"
+              className={[
+                'follow-btn',
+                post.isAuthorFollowed ? 'following' : '',
+                followAnimating ? 'follow-btn--pop' : '',
+              ].filter(Boolean).join(' ')}
+              onClick={handleFollowClick}
+              disabled={followLoading}
+              aria-label={post.isAuthorFollowed ? '取消关注' : '关注'}
+              onAnimationEnd={() => setFollowAnimating(false)}
+            >
+              <span className="follow-btn__icon" aria-hidden>
+                {post.isAuthorFollowed ? '✓' : '+'}
+              </span>
+              {post.isAuthorFollowed ? '已关注' : '关注'}
+            </button>
+          )}
+        </div>
       </div>
 
       {/* 内容 */}
@@ -213,29 +228,23 @@ export default function PostCard({ post, currentUserId, onLike, onComment, onSha
         )}
       </div>
 
-      {/* 底部操作：点赞、评论、分享、删除 */}
+      {/* 底部操作：点赞、评论均分居中（本人删除在头部右上角） */}
       <div className="post-actions">
-        <button
-          type="button"
-          className={`action-btn ${post.isLiked ? 'is-liked' : ''}`}
-          onClick={handleLike}
-          aria-pressed={post.isLiked}
-        >
-          <Heart size={18} fill={post.isLiked ? 'currentColor' : 'none'} />
-          {post.likesCount > 0 ? post.likesCount : ''}
-        </button>
-        <button type="button" className="action-btn" onClick={() => onComment(post.id)}>
-          <MessageCircle size={18} />
-          {post.commentsCount > 0 ? post.commentsCount : ''}
-        </button>
-        <button type="button" className="action-btn" onClick={() => onShare(post.id)}>
-          <Share2 size={18} />
-        </button>
-        {post.canDelete && (
-          <button type="button" className="action-btn" onClick={() => onDelete?.(post.id)} aria-label="删除">
-            <Trash2 size={18} />
+        <div className="post-actions-primary">
+          <button
+            type="button"
+            className={`action-btn ${post.isLiked ? 'is-liked' : ''}`}
+            onClick={handleLike}
+            aria-pressed={post.isLiked}
+          >
+            <Heart size={18} fill={post.isLiked ? 'currentColor' : 'none'} />
+            {post.likesCount > 0 ? post.likesCount : ''}
           </button>
-        )}
+          <button type="button" className="action-btn" onClick={() => onComment(post.id)}>
+            <MessageCircle size={18} />
+            {post.commentsCount > 0 ? post.commentsCount : ''}
+          </button>
+        </div>
       </div>
     </div>
   )

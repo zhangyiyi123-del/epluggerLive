@@ -545,25 +545,6 @@ const getPositiveIcon = (categoryId: string) => {
                     <span className="exercise-entry-stats">
                       {stats.count}次 · {stats.totalMinutes}分钟
                     </span>
-                    <span className={`exercise-entry-chart exercise-entry-chart--${sport.id}`}>
-                      <svg viewBox="0 0 120 40" aria-hidden="true" focusable="false">
-                        <defs>
-                          <linearGradient id={`exercise-chart-gradient-${sport.id}`} x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="currentColor" stopOpacity="0.35" />
-                            <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
-                          </linearGradient>
-                        </defs>
-                        <path
-                          className="exercise-entry-chart-area"
-                          d="M2 30 L18 30 L18 18 L34 18 L34 26 L50 26 L50 12 L66 12 L66 22 L82 22 L82 10 L98 10 L98 20 L118 20 L118 38 L2 38 Z"
-                          style={{ fill: `url(#exercise-chart-gradient-${sport.id})` }}
-                        />
-                        <path
-                          className="exercise-entry-chart-line"
-                          d="M2 30 L18 30 L18 18 L34 18 L34 26 L50 26 L50 12 L66 12 L66 22 L82 22 L82 10 L98 10 L98 20 L118 20"
-                        />
-                      </svg>
-                    </span>
                   </button>
                 )
               })}
@@ -635,25 +616,6 @@ const getPositiveIcon = (categoryId: string) => {
                 <span className="positive-entry-content">
                   <span className="positive-entry-name">{category.name}</span>
                   <span className="positive-entry-desc">{category.description}</span>
-                </span>
-                <span className={`positive-entry-chart positive-entry-chart--${category.id}`}>
-                  <svg viewBox="0 0 120 40" aria-hidden="true" focusable="false">
-                    <defs>
-                      <linearGradient id={`chart-gradient-${category.id}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stopColor="currentColor" stopOpacity="0.35" />
-                        <stop offset="100%" stopColor="currentColor" stopOpacity="0" />
-                      </linearGradient>
-                    </defs>
-                    <path
-                      className="positive-entry-chart-area"
-                      d="M2 32 L16 32 L16 18 L30 18 L30 26 L44 26 L44 10 L58 10 L58 24 L72 24 L72 14 L86 14 L86 8 L100 8 L100 22 L118 22 L118 38 L2 38 Z"
-                      style={{ fill: `url(#chart-gradient-${category.id})` }}
-                    />
-                    <path
-                      className="positive-entry-chart-line"
-                      d="M2 32 L16 32 L16 18 L30 18 L30 26 L44 26 L44 10 L58 10 L58 24 L72 24 L72 14 L86 14 L86 8 L100 8 L100 22 L118 22"
-                    />
-                  </svg>
                 </span>
               </button>
             ))}

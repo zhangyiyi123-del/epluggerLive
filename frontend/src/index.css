@@ -1725,13 +1725,6 @@ body {
   margin-bottom: 12px;
 }
 
-.post-actions {
-  display: flex;
-  gap: 24px;
-  padding-top: 12px;
-  border-top: 1px solid var(--border-color);
-}
-
 .post-action {
   display: flex;
   align-items: center;
@@ -4970,6 +4963,11 @@ body {
 .post-card.featured {
 }
 
+/* 头部有删除按钮时左移精选角标，避免与删除重叠 */
+.post-card.featured.post-card--header-delete .featured-badge {
+  right: 48px;
+}
+
 .featured-badge {
   position: absolute;
   top: 12px;
@@ -4991,6 +4989,43 @@ body {
   align-items: center;
   margin-bottom: 12px;
   gap: 8px;
+}
+
+.post-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+/* 本人动态：右上角删除，与底部栏旧版一致（仅图标，默认无边线无背景） */
+.post-header-delete-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  margin: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--text-light);
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+}
+
+.post-header-delete-btn:hover {
+  color: var(--danger-color);
+  background: var(--bg-primary);
+}
+
+.post-header-delete-btn:active {
+  opacity: 0.85;
+}
+
+.post-header-delete-btn svg {
+  flex-shrink: 0;
+  color: currentColor;
 }
 
 .post-author {
@@ -5249,12 +5284,26 @@ body {
   cursor: pointer;
 }
 
-/* 底部操作 */
+/* 底部操作：主区点赞/评论均分整行并居中，删除靠右 */
 .post-actions {
   display: flex;
-  gap: 24px;
+  align-items: center;
+  gap: 0;
   padding-top: 12px;
   border-top: 1px solid var(--border-color);
+}
+
+.post-actions-primary {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  min-width: 0;
+}
+
+.post-actions-primary .action-btn {
+  flex: 1;
+  justify-content: center;
+  min-width: 0;
 }
 
 .action-btn {
@@ -8907,11 +8956,29 @@ body {
   padding: 10px 14px;
   background: var(--bg-primary);
   border-radius: var(--radius-md);
+  border: 1.5px solid transparent;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+/* 聚焦在整个搜索区域最外侧（含图标、输入、清除按钮） */
+.top-search-input-container:focus-within {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.22);
+  background: var(--bg-white);
+}
+
+.community-header .top-search-input-container:focus-within {
+  background: #ffffff;
 }
 
 .top-search-icon {
   color: var(--text-light);
   flex-shrink: 0;
+}
+
+.top-search-input-container:focus-within .top-search-icon {
+  color: var(--primary-color);
 }
 
 .top-search-input {
@@ -8923,9 +8990,9 @@ body {
   outline: none;
 }
 
+.top-search-input:focus,
 .top-search-input:focus-visible {
-  outline: 2px solid var(--primary-color);
-  outline-offset: 2px;
+  outline: none;
 }
 
 .top-search-input::placeholder {
@@ -9938,26 +10005,27 @@ MT
   cursor: not-allowed;
 }
 
-/* 删除确认弹窗样式 */
+/* 删除确认弹窗（与「我的」退出登录弹窗视觉统一） */
 .confirm-dialog-overlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 1000;
+  padding: 0 32px;
+  box-sizing: border-box;
   animation: fadeIn 0.2s ease;
 }
 
 .confirm-dialog {
-  width: 280px;
-  background: var(--bg-white);
-  border-radius: var(--radius-lg);
-  overflow: hidden;
+  width: 100%;
+  max-width: 320px;
+  background: #fff;
+  border-radius: 20px;
+  padding: 28px 24px 24px;
+  box-sizing: border-box;
   animation: scaleIn 0.2s ease;
 }
 
@@ -9973,14 +10041,14 @@ MT
 }
 
 .confirm-dialog-content {
-  padding: 24px 20px;
+  padding: 0;
   text-align: center;
 }
 
 .confirm-dialog-icon {
-  width: 56px;
-  height: 56px;
-  margin: 0 auto 16px;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 12px;
   background: #FEE2E2;
   border-radius: 50%;
   display: flex;
@@ -9989,54 +10057,61 @@ MT
 }
 
 .confirm-dialog-icon svg {
-  color: var(--danger-color);
+  color: #EF4444;
+  flex-shrink: 0;
 }
 
 .confirm-dialog-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: var(--text-primary);
-  margin-bottom: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1F2937;
+  margin: 0 0 6px;
+  line-height: 1.35;
 }
 
 .confirm-dialog-message {
-  font-size: 14px;
-  color: var(--text-secondary);
+  font-size: 13px;
+  color: #6B7280;
+  margin: 0;
   line-height: 1.5;
 }
 
 .confirm-dialog-actions {
   display: flex;
-  border-top: 1px solid var(--border-color);
+  gap: 12px;
+  margin-top: 24px;
+  padding: 0;
+  border: none;
 }
 
 .confirm-dialog-btn {
   flex: 1;
-  padding: 14px;
-  border: none;
-  background: transparent;
+  padding: 12px 0;
+  border-radius: 12px;
   font-size: 15px;
-  font-weight: 500;
+  font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: background 0.2s, opacity 0.2s;
 }
 
 .confirm-dialog-btn.cancel {
-  color: var(--text-secondary);
-  border-right: 1px solid var(--border-color);
+  border: 1.5px solid #E5E7EB;
+  background: #fff;
+  color: #6B7280;
 }
 
 .confirm-dialog-btn.cancel:active {
-  background: var(--bg-primary);
+  background: #F9FAFB;
 }
 
 .confirm-dialog-btn.confirm {
-  color: var(--danger-color);
-  font-weight: 600;
+  border: none;
+  background: #EF4444;
+  color: #fff;
 }
 
 .confirm-dialog-btn.confirm:active {
-  background: #FEE2E2;
+  opacity: 0.92;
 }
 
 /* 底部操作�?- 评论按钮样式 */
@@ -12015,21 +12090,21 @@ MT
 .checkin-page .exercise-entry-list {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  margin-bottom: 16px;
+  gap: 10px;
+  margin-bottom: 14px;
 }
 
 .checkin-page .exercise-entry-card {
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 10px;
+  gap: 8px;
   width: 100%;
-  padding: 18px 16px;
-  min-height: 132px;
+  padding: 14px 14px;
+  min-height: 96px;
   background: var(--bg-white);
   border: none;
-  border-radius: 20px;
+  border-radius: 16px;
   box-shadow: 0 10px 24px rgba(15, 23, 42, 0.06);
   text-align: left;
   cursor: pointer;
@@ -12043,9 +12118,9 @@ MT
 }
 
 .checkin-page .exercise-entry-icon {
-  width: 40px;
-  height: 40px;
-  border-radius: 14px;
+  width: 36px;
+  height: 36px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -12056,8 +12131,8 @@ MT
 }
 
 .checkin-page .exercise-entry-icon svg {
-  width: 18px;
-  height: 18px;
+  width: 17px;
+  height: 17px;
   stroke-width: 2.1;
 }
 
@@ -12103,12 +12178,12 @@ MT
 .checkin-page .exercise-entry-info {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   min-width: 0;
 }
 
 .checkin-page .exercise-entry-name {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--text-primary);
 }
@@ -12122,7 +12197,7 @@ MT
 }
 
 .checkin-page .exercise-entry-stats {
-  font-size: 14px;
+  font-size: 13px;
   color: var(--text-secondary);
   text-align: left;
   font-weight: 600;
@@ -12570,20 +12645,36 @@ MT
   border: 1.5px solid var(--border-color);
   border-radius: var(--radius-md);
   background: var(--bg-primary);
-  overflow: hidden;
-  transition: border-color 0.2s;
+  overflow: visible;
+  box-sizing: border-box;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
 }
+/* 高亮在最外层（图标 + 输入 + 显示密码按钮整块） */
 .login-input-wrap:focus-within {
-  border-color: var(--primary-color, #3B82F6);
   background: #fff;
+}
+.login-input-wrap:focus-within:not(.error) {
+  border-color: var(--primary-color, #3B82F6);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.22);
 }
 .login-input-wrap.error {
   border-color: #EF4444;
+}
+.login-input-wrap.error:focus-within {
+  border-color: #EF4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2);
 }
 .login-input-icon {
   padding: 0 12px;
   color: var(--text-light);
   flex-shrink: 0;
+  transition: color 0.2s ease;
+}
+.login-input-wrap:focus-within:not(.error) .login-input-icon {
+  color: var(--primary-color, #3B82F6);
+}
+.login-input-wrap.error .login-input-icon {
+  color: #EF4444;
 }
 .login-input {
   flex: 1;
@@ -12595,9 +12686,9 @@ MT
   outline: none;
 }
 
+.login-input:focus,
 .login-input:focus-visible {
-  outline: 2px solid var(--primary-color, #3B82F6);
-  outline-offset: 2px;
+  outline: none;
 }
 .login-input::placeholder {
   color: var(--text-light);

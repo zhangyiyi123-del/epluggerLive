@@ -1,7 +1,7 @@
 /.cursor
 /.specify
 
-# Java / Maven
+# Java / Maven（勿用 /target/：那只忽略仓库根目录的 target，不会忽略 backend/target）
 target/
 *.class
 *.jar

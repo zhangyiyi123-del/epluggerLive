@@ -5,8 +5,7 @@ import {
   Heart,
   MessageCircle,
   Send,
-  X,
-  MoreHorizontal
+  X
 } from 'lucide-react'
 import type { Post, Comment } from '../types/community'
 import { MOCK_CURRENT_USER } from '../types/community'
@@ -211,9 +210,7 @@ export default function PostDetailPage() {
           <ArrowLeft size={22} />
         </button>
         <div className="detail-header-title">详情</div>
-        <button className="detail-more-btn">
-          <MoreHorizontal size={22} />
-        </button>
+        <div className="detail-header-spacer" aria-hidden style={{ width: 40, flexShrink: 0 }} />
       </div>
 
       {/* 帖子内容 */}

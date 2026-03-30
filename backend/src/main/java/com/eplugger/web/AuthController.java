@@ -38,7 +38,8 @@ public class AuthController {
         if (request.getPassword() == null || request.getPassword().isBlank()) {
             return ResponseEntity.badRequest().build();
         }
-        LoginResponse response = authService.loginByPassword(request.getPhone().trim(), request.getPassword());
+        String rawPassword = request.getPassword() != null ? request.getPassword().trim() : "";
+        LoginResponse response = authService.loginByPassword(request.getPhone().trim(), rawPassword);
         return ResponseEntity.ok(response);
     }
 

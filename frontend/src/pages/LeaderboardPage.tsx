@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Medal, Flame, Heart, ChevronRight, ChevronLeft, Star, Lock, ChevronDown } from 'lucide-react'
-import { MOCK_USER_POINTS, LEVEL_CONFIGS } from '../types/points'
+import { LEVEL_CONFIGS } from '../types/points'
 import type { UserPoints as UserPointsType } from '../types/points'
 import PointsCenter from '../components/points/PointsCenter'
 import LevelProgress from '../components/points/LevelProgress'
@@ -42,14 +42,43 @@ export default function LeaderboardPage() {
   const [showLevelBenefits, setShowLevelBenefits] = useState(false)
   const filterDropdownRef = useRef<HTMLDivElement>(null)
 
-  const [userPoints, setUserPoints] = useState<UserPointsType>(MOCK_USER_POINTS)
+  const [userPoints, setUserPoints] = useState<UserPointsType>({
+    userId: '',
+    availablePoints: 0,
+    totalEarnedPoints: 0,
+    totalUsedPoints: 0,
+    expiringPoints: 0,
+    expiringDate: undefined,
+    level: 1,
+    currentLevelPoints: 0,
+    nextLevelPoints: 200,
+    medals: [],
+  })
+  const [userPointsLoading, setUserPointsLoading] = useState(true)
   const [leaderboardData, setLeaderboardData] = useState<LeaderboardEntry[]>([])
   const [leaderboardLoading, setLeaderboardLoading] = useState(false)
 
   useEffect(() => {
-    getPointsMe().then((data) => {
-      if (data) setUserPoints(data)
-    })
+    setUserPointsLoading(true)
+    getPointsMe()
+      .then((data) => {
+        if (data) setUserPoints(data)
+        else
+          setUserPoints((prev) => ({
+            ...prev,
+            userId: '',
+            availablePoints: 0,
+            totalEarnedPoints: 0,
+            totalUsedPoints: 0,
+            expiringPoints: 0,
+            expiringDate: undefined,
+            level: 1,
+            currentLevelPoints: 0,
+            nextLevelPoints: 200,
+            medals: [],
+          }))
+      })
+      .finally(() => setUserPointsLoading(false))
   }, [])
 
   useEffect(() => {
@@ -76,7 +105,7 @@ export default function LeaderboardPage() {
 
   const currentData = leaderboardData
   const { title, unit, icon: Icon } = typeLabels[activeType]
-  const myRankIndex = currentData.findIndex((u) => u.userId === userPoints.userId)
+  const myRankIndex = userPoints.userId ? currentData.findIndex((u) => u.userId === userPoints.userId) : -1
   const myRank = myRankIndex >= 0 ? myRankIndex + 1 : null
   const myValue = myRankIndex >= 0 ? currentData[myRankIndex].value : userPoints.availablePoints
 
@@ -230,10 +259,16 @@ export default function LeaderboardPage() {
               <div className="leaderboard-my-rank-label">我的当前排名</div>
               <div className="leaderboard-my-rank-row">
                 <span className="leaderboard-my-rank-text">
-                  {leaderboardLoading ? '加载中' : myRank != null ? `第${myRank}名` : '未上榜'}
+                  {userPointsLoading || leaderboardLoading
+                    ? '加载中'
+                    : myRank != null
+                      ? `第${myRank}名`
+                      : '未上榜'}
                 </span>
                 <span className="leaderboard-my-rank-dot"> · </span>
-                <span className="leaderboard-my-rank-text">{myValue} {unit}</span>
+                <span className="leaderboard-my-rank-text">
+                  {userPointsLoading || leaderboardLoading ? '—' : `${myValue} ${unit}`}
+                </span>
               </div>
             </div>
             <button

@@ -179,7 +179,9 @@ public class PointsService {
                 .orElseGet(() -> {
                     UserPoints up = new UserPoints();
                     up.setUserId(userId);
-                    up.setUser(userRepository.getReferenceById(userId));
+                    // 注意：user 字段的 JoinColumn 为 insertable=false/updatable=false，
+                    // 在某些 Hibernate 场景下会触发 “null identifier (UserPoints)”。
+                    // 我们仅依赖 userId 作为主键字段写入 user_points。
                     return userPointsRepository.save(up);
                 });
     }

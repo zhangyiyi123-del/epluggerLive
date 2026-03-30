@@ -63,18 +63,79 @@ export default function PublishPage() {
       let contentImages: string[] = []
       if (imageFiles.length > 0) {
         const base = getApiBaseUrl()
-        for (let i = 0; i < imageFiles.length; i += 3) {
-          const chunk = imageFiles.slice(i, i + 3)
+        const token = localStorage.getItem('ep_token')
+
+        // 上传耗时通常来自图片体积（尤其是 PNG）。这里在前端把大图/PNG 适度压成 JPEG，
+        // 减少上传耗时与后端写文件耗时（每次最多 3 张上传，开销可控）。
+        const compressImageIfNeeded = async (file: File): Promise<File> => {
+          const shouldCompress = file.type === 'image/png' || file.size > 1.5 * 1024 * 1024
+          if (!shouldCompress) return file
+
+          try {
+            const bitmap = await createImageBitmap(file)
+            const maxWidth = 1600
+            const scale = Math.min(1, maxWidth / bitmap.width)
+            const width = Math.max(1, Math.round(bitmap.width * scale))
+            const height = Math.max(1, Math.round(bitmap.height * scale))
+
+            const canvas = document.createElement('canvas')
+            canvas.width = width
+            canvas.height = height
+            const ctx = canvas.getContext('2d')
+            if (!ctx) return file
+
+            ctx.drawImage(bitmap, 0, 0, width, height)
+
+            const blob = await new Promise<Blob | null>((resolve) =>
+              canvas.toBlob(
+                (b) => resolve(b),
+                'image/jpeg',
+                0.78
+              )
+            )
+
+            if (!blob) return file
+            return new File(
+              [blob],
+              file.name.replace(/\.\w+$/i, '.jpg'),
+              { type: 'image/jpeg', lastModified: file.lastModified }
+            )
+          } catch {
+            // 压缩失败就退回原图，保证功能可用
+            return file
+          }
+        }
+
+        const uploadChunk = async (chunk: File[]): Promise<string[]> => {
           const form = new FormData()
-          chunk.forEach((f) => form.append('files', f))
+          const compressed = await Promise.all(chunk.map(compressImageIfNeeded))
+          compressed.forEach((f) => form.append('files', f))
+
+          const headers: Record<string, string> = {}
+          // 避免 token 为空仍发送 Authorization: Bearer ''，减少不必要的预检
+          if (token) headers.Authorization = `Bearer ${token}`
+
           const res = await fetch(`${base}/api/checkin/upload`, {
             method: 'POST',
-            headers: { Authorization: `Bearer ${localStorage.getItem('ep_token') || ''}` },
+            headers,
             body: form,
           })
-          const data = (await res.json()) as { urls?: string[] }
-          if (res.ok && data.urls) contentImages = contentImages.concat(data.urls)
+
+          const data = (await res.json().catch(() => ({}))) as { urls?: string[]; error?: string; message?: string }
+          if (!res.ok) {
+            throw new Error(data?.message || data?.error || '图片上传失败')
+          }
+          return data.urls ?? []
         }
+
+        const chunks: File[][] = []
+        for (let i = 0; i < imageFiles.length; i += 3) {
+          chunks.push(imageFiles.slice(i, i + 3))
+        }
+
+        // 并行上传每一批（后端单次最多3张），避免串行等待导致“超级慢”
+        const uploaded = await Promise.all(chunks.map(uploadChunk))
+        contentImages = uploaded.flat()
       }
       await createPost({
         contentText: text.trim(),
@@ -87,8 +148,7 @@ export default function PublishPage() {
             : undefined,
       })
       setShowSuccess(true)
-      await new Promise((r) => setTimeout(r, 1500))
-      navigate('/community')
+      // 弹框展示给用户确认/分享；由按钮/关闭操作后返回圈子页
     } catch (e) {
       setSubmitError(e instanceof Error ? e.message : '发布失败')
     } finally {
@@ -102,14 +162,71 @@ export default function PublishPage() {
     <div className="publish-page">
       {showSuccess && (
         <div className="publish-success-overlay">
-          <div className="publish-success-animation">
-            <div className="success-circle">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                <polyline points="20 6 9 17 4 12" />
-              </svg>
+          <div className="publish-success-card" role="dialog" aria-modal="true">
+            <div className="publish-success-confetti" aria-hidden="true">
+              {[
+                // dist: 上冲距离（px），size: 粒子粗细（px）
+                ['#F59E0B', 210, 0.00, -22, 9],
+                ['#3B82F6', 230, 0.05, 18, 9],
+                ['#EC4899', 200, 0.02, -44, 8],
+                ['#22C55E', 225, 0.08, 56, 8],
+                ['#8B5CF6', 185, 0.01, -68, 8],
+                ['#F97316', 245, 0.07, 82, 9],
+                ['#EF4444', 215, 0.03, -98, 8],
+                ['#10B981', 175, 0.10, 112, 8],
+
+                // extra particles for density/brightness
+                ['#F59E0B', 190, 0.12, -10, 7],
+                ['#3B82F6', 205, 0.14, 30, 7],
+                ['#EC4899', 220, 0.16, -55, 7],
+                ['#22C55E', 180, 0.18, 60, 7],
+                ['#8B5CF6', 240, 0.20, -80, 7],
+                ['#F97316', 160, 0.22, 95, 7],
+                ['#EF4444', 235, 0.24, -110, 7],
+                ['#10B981', 170, 0.26, 125, 7],
+
+                ['#F59E0B', 225, 0.04, -35, 8],
+                ['#3B82F6', 205, 0.09, 45, 8],
+                ['#EC4899', 215, 0.11, -75, 8],
+                ['#22C55E', 190, 0.13, 80, 8],
+              ].map(([color, dist, delay, rotate, size], i) => (
+                <span
+                  key={i}
+                  className="publish-success-confetti-piece"
+                  style={{
+                    background: color as string,
+                    ['--r' as any]: `${rotate}deg`,
+                    ['--d' as any]: `${dist}px`,
+                    ['--sz' as any]: `${size}px`,
+                    animationDelay: `${delay}s`,
+                  }}
+                />
+              ))}
             </div>
-            <span>发布成功</span>
+
+            <div className="publish-success-check">
+              <div className="publish-success-check-circle" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
+              </div>
+            </div>
+
+            <div className="publish-success-title">发布成功</div>
+            <div className="publish-success-subtitle">你的动态已成功发布到圈子，快去看看吧</div>
           </div>
+
+          <button
+            className="publish-success-close-btn"
+            type="button"
+            aria-label="关闭"
+            onClick={() => {
+              setShowSuccess(false)
+              navigate('/community')
+            }}
+          >
+            <X size={16} />
+          </button>
         </div>
       )}
 

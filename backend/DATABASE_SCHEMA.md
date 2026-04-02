@@ -99,6 +99,25 @@ erDiagram
 - `UQ(phone)`
 - `IDX idx_user_sso_id (sso_id(100))`
 
+### 5.1a epWorkApp SSO — `epwork_sso_nonce`
+
+| 字段 | 类型 | 约束 | 说明 |
+|---|---|---|---|
+| `nonce` | VARCHAR(128) | PK | 外链 token 中的 nonce，插入成功即视为已消费 |
+| `consumed_at` | DATETIME(6) | NOT NULL | 消费时间 |
+
+### 5.1b epWorkApp SSO — `epwork_sso_exchange_code`
+
+| 字段 | 类型 | 约束 | 说明 |
+|---|---|---|---|
+| `code` | VARCHAR(64) | PK | 短时一次性交换码 |
+| `user_id` | BIGINT | FK → `user.id`, NOT NULL | 待签发 JWT 的用户 |
+| `created_at` | DATETIME(6) | NOT NULL | 创建时间 |
+| `expires_at` | DATETIME(6) | NOT NULL | 过期时间 |
+| `used` | TINYINT(1) | NOT NULL | 是否已兑换 |
+
+索引：`IDX idx_sso_exchange_expires (expires_at)`
+
 ---
 
 ### 5.2 运动类型（`sport_type`）

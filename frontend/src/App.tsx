@@ -18,6 +18,7 @@ import MyMessagesPage from './pages/MyMessagesPage'
 import PointsRecordsPage from './pages/PointsRecordsPage'
 import FeedbackPage from './pages/FeedbackPage'
 import LoginPage from './pages/LoginPage'
+import SsoCallbackPage from './pages/SsoCallbackPage'
 import './App.css'
 
 function AppContent({ isLoggedIn, onLogin, onLogout }: { isLoggedIn: boolean; onLogin: () => void; onLogout: () => void }) {
@@ -35,12 +36,18 @@ function AppContent({ isLoggedIn, onLogin, onLogout }: { isLoggedIn: boolean; on
     location.pathname === '/checkin/positive' ||
     location.pathname === '/points/records' ||
     location.pathname === '/profile/feedback' ||
-    location.pathname === '/login'
+    location.pathname === '/login' ||
+    location.pathname === '/sso/callback'
 
   const bottomNavVisible = isLoggedIn && !hideBottomNav && !suppressBottomNav
 
-  // 未登录时仅允许访问默认页（登录页），其余重定向到 /
-  if (!isLoggedIn && location.pathname !== '/' && location.pathname !== '/login') {
+  // 未登录时仅允许访问默认页（登录页）、SSO 回调，其余重定向到 /
+  if (
+    !isLoggedIn &&
+    location.pathname !== '/' &&
+    location.pathname !== '/login' &&
+    location.pathname !== '/sso/callback'
+  ) {
     return <Navigate to="/" replace />
   }
 
@@ -55,6 +62,7 @@ function AppContent({ isLoggedIn, onLogin, onLogout }: { isLoggedIn: boolean; on
             : <LoginPage onLogin={onLogin} />
         } />
         <Route path="/login" element={<Navigate to="/" replace />} />
+        <Route path="/sso/callback" element={<SsoCallbackPage onLogin={onLogin} />} />
         <Route path="/home" element={<HomePage />} />
         <Route path="/checkin" element={<CheckInPage />} />
         <Route path="/checkin/exercise-records" element={<ExerciseRecordsPage />} />

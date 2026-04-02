@@ -1,5 +1,6 @@
 import type { Comment } from '../../types/community'
 import { MessageCircle, Heart, MoreHorizontal, Reply } from 'lucide-react'
+import Avatar from '../common/Avatar'
 
 interface CommentCardProps {
   comment: Comment
@@ -35,9 +36,7 @@ export default function CommentCard({ comment, onLike, onReply, onReport }: Comm
       {/* 评论头部 */}
       <div className="comment-header">
         <div className="comment-author">
-          <div className="avatar-sm">
-            {comment.author.avatar || comment.author.name[0]}
-          </div>
+          <Avatar className="avatar-sm" name={comment.author.name} avatar={comment.author.avatar} />
           <div className="comment-author-info">
             <span className="comment-author-name">{comment.author.name}</span>
             {getAuthorDept() && (

@@ -1,12 +1,20 @@
 /**
  * API 基础地址与请求封装。
- * 通过 VITE_API_BASE_URL 配置；开发时设为空则走 Vite 代理到本地后端。
- * 未设置时默认 http://localhost:8080
+ * 优先使用 VITE_API_BASE_URL；未设置时默认跟随当前页面主机并使用 8080 端口。
+ * 例如页面在 http://172.16.0.162:5173 时，默认请求 http://172.16.0.162:8080。
  */
-const BASE_URL =
-  typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL !== undefined
-    ? import.meta.env.VITE_API_BASE_URL
-    : 'http://localhost:8080'
+function resolveBaseUrl(): string {
+  if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_BASE_URL) {
+    return import.meta.env.VITE_API_BASE_URL
+  }
+  if (typeof window !== 'undefined' && window.location?.hostname) {
+    const protocol = window.location.protocol || 'http:'
+    return `${protocol}//${window.location.hostname}:8080`
+  }
+  return 'http://localhost:8080'
+}
+
+const BASE_URL = resolveBaseUrl()
 
 const AUTH_TOKEN_KEY = 'ep_token'
 

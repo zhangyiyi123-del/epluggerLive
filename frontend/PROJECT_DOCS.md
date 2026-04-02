@@ -45,6 +45,7 @@ src/
 | `/` | 登录态重定向（渲染 `LoginPage` 或跳转 `home`） | ❌ | 未登录默认到登录页；已登录进入 `home` |
 | `/home` | HomePage | ✅ | 首页：今日进度、数据统计、最近记录、热门动态 |
 | `/login` | 重定向到 `/`（最终渲染 `LoginPage`） | ❌ | 登录入口（底部导航隐藏） |
+| `/sso/callback` | `SsoCallbackPage` | ❌ | epWorkApp SSO：后端 `GET /sso/login` 成功后 302 到此页 `?code=`，前端调用 `POST /api/auth/sso/exchange` 换 JWT 后进 `/home` |
 | `/checkin` | CheckInPage | ✅ | 打卡主页（运动打卡 + 正向打卡） |
 | `/checkin/exercise-records` | ExerciseRecordsPage | ❌ | 运动记录历史 |
 | `/checkin/positive` | PositiveCheckInPage | ❌ | 正向行为打卡 |
@@ -74,6 +75,13 @@ src/
 - **表单校验**：手机号格式、密码非空，错误提示
 - **底部协议**：用户协议 + 隐私政策链接
 - **登录态管理**：登录成功后通过 `authApi.saveLogin()` 写入 `localStorage('ep_token')`（JWT），并跳转到 `/home`
+
+**epWorkApp SSO（与「我的易普」对接）**
+
+- 后端落地：`GET /sso/login?token=...`（易普圈 `backend`，需在 epWorkApp 配置 `target-url` 与白名单）
+- 前端回调：`SSO_FRONTEND_CALLBACK_URL` 建议与上表一致，默认开发值为 `http://localhost:5173/sso/callback`（见后端 `application.yml` 中 `app.sso.frontend-callback-url`）
+- 前端 API：`authApi.exchangeSsoCode(code)` → `POST /api/auth/sso/exchange`，成功后用 `saveLogin` 写 token
+- 本地 Vite：`vite.config.ts` 已将 `/sso` 代理到 `localhost:8080`，便于以前端 origin 调试落地页（若 `target-url` 指向前端 dev server）
 
 ### 1. 首页 (HomePage)
 

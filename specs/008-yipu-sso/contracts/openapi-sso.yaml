@@ -1,0 +1,80 @@
+openapi: 3.0.3
+info:
+  title: EPlugger — epWorkApp SSO (consumer side)
+  version: "1.0.0"
+  description: |
+    易普圈作为「新系统」承接 epWorkApp 跳转 token，exchange 后签发既有 JWT。
+    GET /sso/login 为浏览器重定向流，非 application/json。
+
+servers:
+  - url: /
+    description: Relative to API / app origin
+
+paths:
+  /sso/login:
+    get:
+      summary: SSO landing (browser)
+      description: |
+        Query param `token` = epWorkApp 外链 JWT（指南定义之 base64url(payload).sig）。
+        成功：消费 nonce，创建 exchange code，302 到配置项 `app.sso.frontend-callback-url`（如 https://circle.example.com/sso/callback?code=...）。
+        失败：302 到前端错误页或返回 400 HTML（实现二选一，须在 quickstart 中写死约定）。
+      operationId: ssoLogin
+      parameters:
+        - name: token
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect to SPA callback or error page
+        "400":
+          description: Invalid token, expired, replay, or bad request
+
+  /api/auth/sso/exchange:
+    post:
+      summary: Exchange one-time code for app JWT
+      operationId: ssoExchange
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code:
+                  type: string
+                  description: One-time code from /sso/callback query
+      responses:
+        "200":
+          description: Same shape as password login success
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "400":
+          description: Missing or invalid code
+        "401":
+          description: Code expired or already used
+
+components:
+  schemas:
+    UserMeResponse:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        avatar: { type: string, nullable: true }
+        department: { type: string }
+        position: { type: string, nullable: true }
+    LoginResponse:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+          description: EPlugger JWT (Bearer), same as /api/auth/login
+        user:
+          $ref: "#/components/schemas/UserMeResponse"

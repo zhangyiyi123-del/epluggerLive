@@ -80,7 +80,17 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
       <div className="profile-header">
         <div className="profile-header-top">
           <div className="profile-header-left">
-            <div className="profile-avatar">{profile?.name?.slice(0, 1) || '我'}</div>
+            <div className="profile-avatar">
+              {profile?.avatar ? (
+                <img
+                  src={profile.avatar}
+                  alt={profile?.name ?? '头像'}
+                  style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                />
+              ) : (
+                profile?.name?.slice(0, 1) || '我'
+              )}
+            </div>
             <div className="profile-info">
               <div className="profile-name">{profile?.name ?? '加载中...'}</div>
               <div className="profile-dept">{[profile?.department, profile?.position].filter(Boolean).join(' · ') || '—'}</div>

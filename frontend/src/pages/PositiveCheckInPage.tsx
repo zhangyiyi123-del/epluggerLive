@@ -66,7 +66,7 @@ export default function PositiveCheckInPage() {
   const [sessionPointsHint, setSessionPointsHint] = useState<string | null>(null)
   const [sessionPointsHintOpen, setSessionPointsHintOpen] = useState(false)
   const nonWhitespaceDescriptionLength = description.replace(/\s+/g, '').length
-  const qualityQualified = nonWhitespaceDescriptionLength >= 100
+  const qualityQualified = nonWhitespaceDescriptionLength >= 100 && evidences.length > 0 && selectedColleagues.length >= 1
 
   const tags = DEFAULT_POSITIVE_TAGS
   const [colleagueList, setColleagueList] = useState<{ userId: string; name: string; avatar?: string }[]>([])

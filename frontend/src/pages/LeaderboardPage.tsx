@@ -124,12 +124,16 @@ export default function LeaderboardPage() {
     }
   }, [showPeriodDropdown])
 
-  const getRankClass = (rank: number) => {
+  const getRankClass = (rank: number, value: number) => {
+    if (value === 0) return 'rank-other'
     if (rank === 1) return 'rank-1'
     if (rank === 2) return 'rank-2'
     if (rank === 3) return 'rank-3'
     return 'rank-other'
   }
+
+  /** 当前榜指标为 0 时不展示数字名次，统一显示 "-" */
+  const formatRankBadge = (value: number, rank: number) => (value === 0 ? '-' : String(rank))
 
   // 积分商城页面（带顶部标题与返回，与积分中心一致）
   if (showFullMall) {
@@ -261,9 +265,11 @@ export default function LeaderboardPage() {
                 <span className="leaderboard-my-rank-text">
                   {userPointsLoading || leaderboardLoading
                     ? '加载中'
-                    : myRank != null
-                      ? `第${myRank}名`
-                      : '未上榜'}
+                    : myValue === 0
+                      ? '-'
+                      : myRank != null
+                        ? `第${myRank}名`
+                        : '未上榜'}
                 </span>
                 <span className="leaderboard-my-rank-dot"> · </span>
                 <span className="leaderboard-my-rank-text">
@@ -326,40 +332,76 @@ export default function LeaderboardPage() {
                 <div className="podium-column podium-2nd">
                   <div className="podium-user">
                     <div className="podium-avatar-wrap">
-                      <div className="podium-avatar">{currentData[1].initial}</div>
+                      <div className="podium-avatar">
+                        {currentData[1].avatar ? (
+                          <img
+                            src={currentData[1].avatar}
+                            alt={currentData[1].name}
+                            style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                          />
+                        ) : (
+                          currentData[1].initial
+                        )}
+                      </div>
                       <img src="/rank-frame-2.png" className="podium-frame" alt="" />
                     </div>
                     <div className="podium-name">{currentData[1].name}</div>
                     <div className="podium-value">{currentData[1].value}<span className="podium-unit">{unit}</span></div>
                   </div>
                   <div className="podium-step">
-                    <span className="podium-rank rank-2">2</span>
+                    <span className={`podium-rank rank-2${currentData[1].value === 0 ? ' podium-rank-dash' : ''}`}>
+                      {formatRankBadge(currentData[1].value, 2)}
+                    </span>
                   </div>
                 </div>
                 <div className="podium-column podium-1st">
                   <div className="podium-user">
                     <div className="podium-avatar-wrap">
-                      <div className="podium-avatar">{currentData[0].initial}</div>
+                      <div className="podium-avatar">
+                        {currentData[0].avatar ? (
+                          <img
+                            src={currentData[0].avatar}
+                            alt={currentData[0].name}
+                            style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                          />
+                        ) : (
+                          currentData[0].initial
+                        )}
+                      </div>
                       <img src="/rank-frame-1.png" className="podium-frame" alt="" />
                     </div>
                     <div className="podium-name">{currentData[0].name}</div>
                     <div className="podium-value">{currentData[0].value}<span className="podium-unit">{unit}</span></div>
                   </div>
                   <div className="podium-step">
-                    <span className="podium-rank rank-1">1</span>
+                    <span className={`podium-rank rank-1${currentData[0].value === 0 ? ' podium-rank-dash' : ''}`}>
+                      {formatRankBadge(currentData[0].value, 1)}
+                    </span>
                   </div>
                 </div>
                 <div className="podium-column podium-3rd">
                   <div className="podium-user">
                     <div className="podium-avatar-wrap">
-                      <div className="podium-avatar">{currentData[2].initial}</div>
+                      <div className="podium-avatar">
+                        {currentData[2].avatar ? (
+                          <img
+                            src={currentData[2].avatar}
+                            alt={currentData[2].name}
+                            style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                          />
+                        ) : (
+                          currentData[2].initial
+                        )}
+                      </div>
                       <img src="/rank-frame-3.png" className="podium-frame" alt="" />
                     </div>
                     <div className="podium-name">{currentData[2].name}</div>
                     <div className="podium-value">{currentData[2].value}<span className="podium-unit">{unit}</span></div>
                   </div>
                   <div className="podium-step">
-                    <span className="podium-rank rank-3">3</span>
+                    <span className={`podium-rank rank-3${currentData[2].value === 0 ? ' podium-rank-dash' : ''}`}>
+                      {formatRankBadge(currentData[2].value, 3)}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -374,10 +416,20 @@ export default function LeaderboardPage() {
                 const rank = index + 4
                 return (
                   <div key={user.userId} className="leaderboard-item-inner">
-                    <div className={`rank ${getRankClass(rank)}`}>
-                      {rank}
+                    <div className={`rank ${getRankClass(rank, user.value)}`}>
+                      {formatRankBadge(user.value, rank)}
                     </div>
-                    <div className="avatar leaderboard-list-avatar">{user.initial}</div>
+                    <div className="avatar leaderboard-list-avatar">
+                      {user.avatar ? (
+                        <img
+                          src={user.avatar}
+                          alt={user.name}
+                          style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                        />
+                      ) : (
+                        user.initial
+                      )}
+                    </div>
                     <div style={{ flex: 1 }}>
                       <div className="font-semibold">{user.name}</div>
                       {user.change !== undefined && user.change !== 0 && (

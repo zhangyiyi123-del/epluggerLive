@@ -9,6 +9,21 @@ export interface LoginResponse {
 /**
  * 密码登录。仅支持密码登录，短信登录暂未开放。
  */
+/**
+ * epWorkApp SSO：用落地页返回的 code 换取 token（需后端已配置 EPWORK_SSO_SECRET 等）。
+ */
+export async function exchangeSsoCode(code: string): Promise<LoginResponse> {
+  const result = await apiRequest<LoginResponse>('/api/auth/sso/exchange', {
+    method: 'POST',
+    body: JSON.stringify({ code }),
+    token: null,
+  })
+  if (!result.ok) {
+    throw new Error(result.error.message || 'SSO 交换失败')
+  }
+  return result.data
+}
+
 export async function login(phone: string, password: string): Promise<LoginResponse> {
   const result = await apiRequest<LoginResponse>('/api/auth/login', {
     method: 'POST',

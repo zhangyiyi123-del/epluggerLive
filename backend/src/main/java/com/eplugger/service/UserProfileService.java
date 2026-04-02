@@ -20,6 +20,7 @@ import java.util.stream.Collectors;
 
 /**
  * 个人中心：用户资料与统计（连续打卡天数、累计积分、勋章数）。
+ * 资料字段来自持久化的 {@link User}；epWorkApp SSO 在登录时更新同一用户行，此处无需单独缓存。
  */
 @Service
 public class UserProfileService {

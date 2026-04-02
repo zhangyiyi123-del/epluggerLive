@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
  */
 @Service
 public class LeaderboardService {
+    private static final String ACTIVE = "ACTIVE";
 
     private final UserPointsRepository userPointsRepository;
     private final PointsRecordRepository pointsRecordRepository;
@@ -71,20 +72,25 @@ public class LeaderboardService {
         }
 
         List<Object[]> rows = new ArrayList<>();
-        List<Long> allUserIds = userPointsRepository.findAllByOrderByTotalEarnedDesc().stream()
-                .map(UserPoints::getUserId).toList();
+        List<User> activeUsers = userRepository.findByEmploymentStatusOrderByNameAsc(ACTIVE);
+        List<Long> allUserIds = activeUsers.stream().map(User::getId).toList();
+        Map<Long, Integer> totalEarnedByUser = userPointsRepository.findAllByOrderByTotalEarnedDesc().stream()
+                .collect(Collectors.toMap(UserPoints::getUserId, UserPoints::getTotalEarned, (a, b) -> a));
 
         if ("points".equals(type)) {
             if (timeRange == null || "all".equals(timeRange)) {
-                for (UserPoints up : userPointsRepository.findAllByOrderByTotalEarnedDesc()) {
-                    rows.add(new Object[]{ up.getUserId(), up.getTotalEarned() });
-                }
+                allUserIds.stream()
+                        .sorted((a, b) -> Integer.compare(
+                                totalEarnedByUser.getOrDefault(b, 0),
+                                totalEarnedByUser.getOrDefault(a, 0)))
+                        .forEach(uid -> rows.add(new Object[]{ uid, totalEarnedByUser.getOrDefault(uid, 0) }));
             } else {
                 List<Object[]> earned = pointsRecordRepository.sumEarnedByUserBetween(start, end);
                 Map<Long, Integer> valueByUser = new LinkedHashMap<>();
                 for (Long uid : allUserIds) valueByUser.put(uid, 0);
                 for (Object[] r : earned) {
                     Long uid = (Long) r[0];
+                    if (!valueByUser.containsKey(uid)) continue;
                     int v = r[1] instanceof Number ? ((Number) r[1]).intValue() : 0;
                     valueByUser.put(uid, v);
                 }
@@ -100,6 +106,7 @@ public class LeaderboardService {
             }
             for (Object[] r : countRows) {
                 Long uid = (Long) r[0];
+                if (!countByUser.containsKey(uid)) continue;
                 int c = r[1] instanceof Number ? ((Number) r[1]).intValue() : 0;
                 countByUser.put(uid, c);
             }
@@ -114,6 +121,7 @@ public class LeaderboardService {
             }
             for (Object[] r : countRows) {
                 Long uid = (Long) r[0];
+                if (!countByUser.containsKey(uid)) continue;
                 int c = r[1] instanceof Number ? ((Number) r[1]).intValue() : 0;
                 countByUser.put(uid, c);
             }
@@ -133,6 +141,7 @@ public class LeaderboardService {
             LeaderboardEntryDto dto = new LeaderboardEntryDto();
             dto.setUserId(String.valueOf(uid));
             dto.setName(u != null ? u.getName() : "");
+            dto.setAvatar(u != null ? u.getAvatar() : null);
             dto.setInitial(u != null && u.getName() != null && !u.getName().isEmpty() ? u.getName().substring(0, 1) : "?");
             dto.setValue(value);
             result.add(dto);

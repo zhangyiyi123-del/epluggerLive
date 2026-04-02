@@ -22,18 +22,20 @@ FLUSH PRIVILEGES;
 
 ## 2. 配置数据库连接
 
-默认使用 **root** 连接 `localhost:3306/eplugger`，密码通过环境变量传入（不写进配置文件）。
+业务主库（JPA / Flyway / `user`）使用 **`app.business-datasource`**，默认 `localhost:3306/eplugger`；与 `SPRING_DATASOURCE_*` 无关，误设 `SPRING_DATASOURCE_URL` 也不会改主库。
 
-**root 有密码时**（推荐本地开发）：在 PowerShell 里先设密码再启动：
+**root 有密码时**（与 `application.yml` 默认不一致）：在 PowerShell 里可覆盖主库账号（任选）：
 
 ```powershell
-$env:SPRING_DATASOURCE_USERNAME="root"
-$env:SPRING_DATASOURCE_PASSWORD="你的root密码"
+$env:EPLUGGER_BUSINESS_DB_USERNAME="root"
+$env:EPLUGGER_BUSINESS_DB_PASSWORD="你的root密码"
 ```
 
-（用户名默认已是 root，可只设 `SPRING_DATASOURCE_PASSWORD`。）
+人员库（读 `BIZ_PERSON` + `wx_member` + `wx_department`）仍用 `EPWORK_PERSONNEL_DB_URL` 等，见 `application.yml` 中 `app.epwork-personnel-datasource` 与 `app.epwork-personnel-sync`。同步规则：`user.id` = `BIZ_PERSON.ID`，`user.sso_id` = `BIZ_PERSON.USER_ID`。
 
-**root 无密码**：无需设置，直接启动即可。
+epWorkApp SSO 外链 JWT 可选携带 **`bizPersonId`** 或 **`personId`**（与 `BIZ_PERSON.ID` 相同），便于首次登录与已同步账号合并；未携带时由服务分配新的 `user.id`。
+
+**root 无密码且与默认 `eplugger` 一致**：无需设置，直接启动即可。
 
 ## 3. 启动
 

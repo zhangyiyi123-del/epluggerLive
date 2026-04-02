@@ -1,0 +1,5 @@
+CREATE TABLE IF NOT EXISTS epwork_personnel_sync_cursor (
+    cursor_key VARCHAR(64) PRIMARY KEY,
+    last_update_time TIMESTAMP NULL,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);

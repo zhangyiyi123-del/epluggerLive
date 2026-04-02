@@ -25,6 +25,7 @@ export interface PagedResult<T> {
 export interface LeaderboardEntry {
   userId: string
   name: string
+  avatar?: string
   initial: string
   value: number
   change?: number

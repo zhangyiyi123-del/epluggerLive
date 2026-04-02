@@ -3,6 +3,7 @@ import type { MouseEvent } from 'react'
 import { Heart, MessageCircle, Star, ChevronDown, ChevronUp, Trash2, Play, ClipboardList } from 'lucide-react'
 import type { Post } from '../../types/community'
 import ImageLightbox from './ImageLightbox'
+import Avatar from '../common/Avatar'
 
 interface PostCardProps {
   post: Post
@@ -106,10 +107,10 @@ export default function PostCard({ post, currentUserId, onLike, onComment, onEdi
       {/* 头部：头像、昵称、部门时间、关注按钮 */}
       <div className="post-header">
         <div className="post-author" onClick={handleOpenDetail} role="button" tabIndex={0} onKeyDown={e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleOpenDetail() } }} aria-label="查看详情" style={{ flex: 1, cursor: 'pointer' }}>
-          <div className="avatar">{post.author.avatar || post.author.name[0]}</div>
+          <Avatar className="avatar" name={post.author.name} avatar={post.author.avatar} />
           <div className="post-author-info">
             <span className="author-name">{post.author.name}</span>
-            <span className="author-dept">{post.author.department} · {formatTime(post.createdAt)}</span>
+            <span className="author-dept">{post.author.position || post.author.department} · {formatTime(post.createdAt)}</span>
           </div>
         </div>
         <div className="post-header-actions">

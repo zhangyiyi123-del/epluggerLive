@@ -14,6 +14,11 @@ export default defineConfig({
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true
+      },
+      // 仅代理后端落地入口，避免把前端路由 /sso/callback 误转发到后端
+      '/sso/login': {
+        target: 'http://localhost:8080',
+        changeOrigin: true
       }
     }
   }

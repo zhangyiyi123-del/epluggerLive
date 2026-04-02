@@ -1,14 +1,13 @@
 # EPlugger 后端配置 — 与 quickstart.md 对齐
-# 本地运行前：MySQL 已启动，已建库 eplugger。下面用 root 连接（可按需改为 eplugger 用户）
+#
+# 双库说明（人员同步）：
+# - app.business-datasource：易普圈业务主库（本地 eplugger）。JPA/Flyway/user 均使用该 DataSource（见 BusinessDataSourceConfig）。
+#   不使用 spring.datasource，因此本机误设 SPRING_DATASOURCE_URL 也不会把主库指到人员库。
+# - app.epwork-personnel-datasource：我的易普库（远程 ep_work_test），仅用于读 BIZ_PERSON。
 
 spring:
   application:
     name: eplugger-backend
-  datasource:
-    url: jdbc:mysql://localhost:3306/eplugger?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
-    username: root
-    password: eplugger
-    driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
       ddl-auto: validate
@@ -24,6 +23,11 @@ spring:
 
 # JWT（阶段二）
 app:
+  business-datasource:
+    url: ${EPLUGGER_BUSINESS_DB_URL:jdbc:mysql://localhost:3306/eplugger?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
+    username: ${EPLUGGER_BUSINESS_DB_USERNAME:root}
+    password: ${EPLUGGER_BUSINESS_DB_PASSWORD:eplugger}
+    driver-class-name: ${EPLUGGER_BUSINESS_DB_DRIVER:com.mysql.cj.jdbc.Driver}
   jwt:
     # HMAC-SHA256 要求密钥至少 32 字节；未设 JWT_SECRET 时使用下述默认（仅开发）
     secret: ${JWT_SECRET:eplugger-dev-jwt-secret-at-least-32-chars}
@@ -34,6 +38,47 @@ app:
     dir: ${UPLOAD_DIR:./upload}
     max-per-request: 3
     max-file-size: 5MB
+  # epWorkApp 外链 JWT 验签密钥（与对端 external.jump.secret 一致；勿提交真实值）
+  epwork:
+    sso:
+      secret: ${EPWORK_SSO_SECRET:vLPBuYa7tTFeQTp2/VrelF8ZfYpmSYb3TvR99itbOGY=}
+  # 易普圈 SSO 落地后前端回调与可选安全策略
+  sso:
+    frontend-callback-url: ${SSO_FRONTEND_CALLBACK_URL:http://172.16.0.146:5173/sso/callback}
+    frontend-error-url: ${SSO_FRONTEND_ERROR_URL:}
+    # 非空时仅允许列表内 IP/CIDR 访问 /sso/**。本机用 http://localhost:8080 打开时，来源是 127.0.0.1（或 ::1），与网卡 IP（如 172.16.x.x）不同。
+    # 本地调试：保持 [] 关闭白名单；或写成 [127.0.0.1, "::1", 172.16.0.121] 同时允许本机与指定内网。
+    allowed-source-cidrs: []
+  # 从“我的易普”读 BIZ_PERSON + wx_member + wx_department（JOIN），写入易普圈主库 user 表
+  epwork-personnel-sync:
+    enabled: ${EPWORK_PERSONNEL_SYNC_ENABLED:true}
+    full-cron: ${EPWORK_PERSONNEL_SYNC_FULL_CRON:0 0 * * * *}
+    table: ${EPWORK_PERSONNEL_TABLE:BIZ_PERSON}
+    update-time-column: ${EPWORK_PERSONNEL_UPDATE_TIME_COLUMN:LAST_EDIT_DATE}
+    cursor-key: ${EPWORK_PERSONNEL_CURSOR_KEY:BIZ_PERSON}
+    person-table-alias: bp
+    person-id-column: ID
+    person-sso-id-column: USER_ID
+    person-name-column: NAME
+    person-user-id-column: user_id
+    person-department-column: DEPARTMENT
+    person-work-status-column: WORK_STATUS
+    wx-member-table: wx_member
+    wx-member-alias: wm
+    wx-member-user-id-column: user_id
+    wx-member-avatar-column: AVATAR
+    wx-member-position-column: POSITION
+    wx-member-mobile-column: MOBILE
+    wx-department-table: wx_department
+    wx-department-alias: wd
+    wx-department-id-column: DEPARTMENT_ID
+    wx-department-name-column: NAME
+  # 我的易普：只读数据源（BIZ_PERSON / wx_member / wx_department）
+  epwork-personnel-datasource:
+    url: ${EPWORK_PERSONNEL_DB_URL:jdbc:mysql://172.16.1.61:3306/ep_work_test?allowPublicKeyRetrieval=true&allowMultiQueries=true&useSSL=false&useUnicode=true&characterEncoding=UTF-8&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=GMT%2b8}
+    username: ${EPWORK_PERSONNEL_DB_USERNAME:root}
+    password: ${EPWORK_PERSONNEL_DB_PASSWORD:Eplugger231}
+    driver-class-name: ${EPWORK_PERSONNEL_DB_DRIVER:com.mysql.cj.jdbc.Driver}
 
 server:
   port: 8080

@@ -1,8 +1,10 @@
 package com.eplugger.web;
 
 import com.eplugger.service.AuthService;
+import com.eplugger.service.EpWorkSsoService;
 import com.eplugger.web.dto.LoginRequest;
 import com.eplugger.web.dto.LoginResponse;
+import com.eplugger.web.dto.SsoExchangeRequest;
 import com.eplugger.web.dto.UserMeResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -25,14 +27,28 @@ public class AuthController {
     private static final String BEARER = "Bearer ";
 
     private final AuthService authService;
+    private final EpWorkSsoService epWorkSsoService;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, EpWorkSsoService epWorkSsoService) {
         this.authService = authService;
+        this.epWorkSsoService = epWorkSsoService;
     }
 
     /**
      * 密码登录。body: phone, password
      */
+    /**
+     * epWorkApp SSO：用落地页下发的短时 code 换取圈内 JWT（与密码登录响应一致）。
+     */
+    @PostMapping("/sso/exchange")
+    public ResponseEntity<LoginResponse> ssoExchange(@Valid @RequestBody SsoExchangeRequest request) {
+        try {
+            return ResponseEntity.ok(epWorkSsoService.redeemExchangeCode(request.getCode()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(401).build();
+        }
+    }
+
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         if (request.getPassword() == null || request.getPassword().isBlank()) {

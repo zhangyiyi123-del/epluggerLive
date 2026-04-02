@@ -2,8 +2,6 @@ package com.eplugger.domain.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
@@ -12,7 +10,8 @@ import java.time.Instant;
 
 /**
  * 用户 JPA 实体：员工身份与基础信息。
- * 支持手机号+密码、手机号+验证码、SSO 关联。
+ * 主键 {@code id} 与人员库 {@code BIZ_PERSON.ID} 对齐（同步写入）；{@code ssoId} 对应 {@code BIZ_PERSON.USER_ID}。
+ * 非同步路径新建用户由 {@link com.eplugger.service.UserIdAllocationService} 分配 {@code id}。
  */
 @Entity
 @Table(
@@ -22,7 +21,6 @@ import java.time.Instant;
 public class User {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false, length = 20)
@@ -45,6 +43,12 @@ public class User {
 
     @Column(name = "sso_id", length = 255)
     private String ssoId;
+
+    @Column(name = "employment_status", nullable = false, length = 16)
+    private String employmentStatus = "ACTIVE";
+
+    @Column(name = "last_synced_at")
+    private Instant lastSyncedAt;
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt = Instant.now();
@@ -119,5 +123,21 @@ public class User {
 
     public void setCreatedAt(Instant createdAt) {
         this.createdAt = createdAt;
+    }
+
+    public String getEmploymentStatus() {
+        return employmentStatus;
+    }
+
+    public void setEmploymentStatus(String employmentStatus) {
+        this.employmentStatus = employmentStatus;
+    }
+
+    public Instant getLastSyncedAt() {
+        return lastSyncedAt;
+    }
+
+    public void setLastSyncedAt(Instant lastSyncedAt) {
+        this.lastSyncedAt = lastSyncedAt;
     }
 }

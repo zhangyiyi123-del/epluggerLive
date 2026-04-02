@@ -9,6 +9,8 @@ import {
 } from 'lucide-react'
 import type { Post, Comment } from '../types/community'
 import { MOCK_CURRENT_USER } from '../types/community'
+import Avatar from '../components/common/Avatar'
+import { getProfile, me } from '../api/auth'
 import {
   getPost,
   getComments,
@@ -40,6 +42,7 @@ export default function PostDetailPage() {
   const [likeAnimation, setLikeAnimation] = useState<string | null>(null)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
+  const [currentUser, setCurrentUser] = useState(MOCK_CURRENT_USER)
 
   useEffect(() => {
     if (!postId) return
@@ -78,6 +81,50 @@ export default function PostDetailPage() {
       }, 100)
     }
   }, [showCommentModal])
+
+  useEffect(() => {
+    // 先用登录落地缓存，避免首次渲染闪回“首字母”
+    try {
+      const raw = localStorage.getItem('currentUser')
+      if (raw) {
+        const cached = JSON.parse(raw) as Partial<typeof MOCK_CURRENT_USER>
+        setCurrentUser((prev) => ({
+          ...prev,
+          ...cached,
+          avatar: cached.avatar || prev.avatar,
+          name: cached.name || prev.name,
+        }))
+      }
+    } catch {
+      // ignore invalid storage
+    }
+
+    me().then((user) => {
+      if (user) {
+        setCurrentUser((prev) => ({
+          ...prev,
+          id: user.id,
+          name: user.name || prev.name,
+          avatar: user.avatar || prev.avatar,
+          department: user.department || prev.department,
+          position: user.position || prev.position,
+        }))
+      }
+    }).catch(() => {})
+
+    getProfile().then((profile) => {
+      if (profile) {
+        setCurrentUser((prev) => ({
+          ...prev,
+          id: profile.id,
+          name: profile.name || prev.name,
+          avatar: profile.avatar || prev.avatar,
+          department: profile.department || prev.department,
+          position: profile.position || prev.position,
+        }))
+      }
+    }).catch(() => {})
+  }, [])
 
   if (!post && !postLoadDone) {
     return (
@@ -217,9 +264,7 @@ export default function PostDetailPage() {
       <div className="detail-content">
         {/* 作者信息 */}
         <div className="detail-author">
-          <div className="detail-avatar">
-            {post.author.avatar || post.author.name[0]}
-          </div>
+          <Avatar className="detail-avatar" name={post.author.name} avatar={post.author.avatar} />
           <div className="detail-author-info">
             <div className="detail-author-name-row">
               <span className="detail-author-name">{post.author.name}</span>
@@ -230,7 +275,7 @@ export default function PostDetailPage() {
               )}
             </div>
             <div className="detail-author-meta">
-              {post.author.department} · {formatTime(post.createdAt)}
+              {post.author.position || post.author.department} · {formatTime(post.createdAt)}
             </div>
           </div>
         </div>
@@ -318,9 +363,7 @@ export default function PostDetailPage() {
         <div className="detail-comments-list">
           {comments.map(comment => (
             <div key={comment.id} className="detail-comment-item">
-              <div className="detail-comment-avatar">
-                {comment.author.avatar || comment.author.name[0]}
-              </div>
+              <Avatar className="detail-comment-avatar" name={comment.author.name} avatar={comment.author.avatar} />
               <div className="detail-comment-body">
                 <div className="detail-comment-header">
                   <span className="detail-comment-author">{comment.author.name}</span>
@@ -373,9 +416,7 @@ export default function PostDetailPage() {
 
       {/* 底部悬浮操作栏 - 只保留点赞，评论点击打开弹窗 */}
       <div className="detail-bottom-bar">
-        <div className="detail-bottom-avatar">
-          {MOCK_CURRENT_USER.avatar || MOCK_CURRENT_USER.name[0]}
-        </div>
+        <Avatar className="detail-bottom-avatar" name={currentUser.name} avatar={currentUser.avatar} />
         <button 
           className="detail-bottom-comment-btn"
           onClick={() => handleOpenCommentModal()}

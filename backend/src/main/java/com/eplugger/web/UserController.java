@@ -13,7 +13,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.ZoneId;
-import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,6 +22,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
+    private static final String ACTIVE = "ACTIVE";
 
     private final UserProfileService userProfileService;
     private final UserRepository userRepository;
@@ -66,9 +66,8 @@ public class UserController {
         Long currentUserId = currentUserId(authentication);
         if (currentUserId == null) return ResponseEntity.status(401).build();
 
-        List<UserDto> list = userRepository.findAll().stream()
+        List<UserDto> list = userRepository.findByEmploymentStatusOrderByNameAsc(ACTIVE).stream()
                 .filter(u -> !u.getId().equals(currentUserId))
-                .sorted(Comparator.comparing(u -> u.getName() != null ? u.getName() : ""))
                 .map(this::toUserDto)
                 .collect(Collectors.toList());
         return ResponseEntity.ok(list);

@@ -104,7 +104,8 @@ public class PositiveCheckInService {
         );
         long todayScoredCount = positiveRecordRepository.countScoredByUserBetween(userId, dayStart, dayEnd);
         String pointsHint = null;
-        int points = calculatePoints(nonWhitespaceDescriptionLength, colleagueCount);
+        int evidenceCount = countNonBlankEvidenceUrls(request.getEvidenceUrls());
+        int points = calculatePoints(nonWhitespaceDescriptionLength, evidenceCount, colleagueCount);
         if (duplicateOnDay) {
             points = 0;
             pointsHint = "当天重复提交不计分";
@@ -203,22 +204,32 @@ public class PositiveCheckInService {
     public PointsPreviewDto getPointsPreview(int descriptionLength, int evidenceCount, int colleagueCount) {
         PointsPreviewDto dto = new PointsPreviewDto();
         dto.setBasePoints(BASE_POINTS);
-        int quality = isQualityQualified(descriptionLength) ? QUALITY_BONUS : 0;
+        int quality = isQualityQualified(descriptionLength, evidenceCount, colleagueCount) ? QUALITY_BONUS : 0;
         dto.setQualityBonus(quality);
         dto.setEvidenceBonus(0);
-        dto.setColleagueBonus(colleagueCount * COLLEAGUE_POINTS_PER);
+        // 发起人不再因 @ 同事额外加分，@ 奖励发给参与同事。
+        dto.setColleagueBonus(0);
         dto.setTotalPoints(BASE_POINTS + quality);
         return dto;
     }
 
-    private int calculatePoints(int descriptionLength, int colleagueCount) {
+    private int calculatePoints(int descriptionLength, int evidenceCount, int colleagueCount) {
         // @同事不再给发起人加分；改为参与人各自奖励（见 grantParticipantPoints）。
-        int quality = isQualityQualified(descriptionLength) ? QUALITY_BONUS : 0;
+        int quality = isQualityQualified(descriptionLength, evidenceCount, colleagueCount) ? QUALITY_BONUS : 0;
         return Math.max(1, BASE_POINTS + quality);
     }
 
-    private boolean isQualityQualified(int descriptionLength) {
-        return descriptionLength >= QUALITY_DESC_MIN_LENGTH;
+    private boolean isQualityQualified(int descriptionLength, int evidenceCount, int colleagueCount) {
+        return descriptionLength >= QUALITY_DESC_MIN_LENGTH && evidenceCount > 0 && colleagueCount >= 1;
+    }
+
+    private int countNonBlankEvidenceUrls(List<String> evidenceUrls) {
+        if (evidenceUrls == null || evidenceUrls.isEmpty()) return 0;
+        int count = 0;
+        for (String url : evidenceUrls) {
+            if (url != null && !url.isBlank()) count++;
+        }
+        return count;
     }
 
     private void grantParticipantPoints(Long participantUserId, Long actorUserId, Long positiveRecordId) {

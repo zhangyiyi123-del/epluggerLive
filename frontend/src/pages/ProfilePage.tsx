@@ -113,6 +113,13 @@ export default function ProfilePage({ onLogout }: ProfilePageProps) {
             <span className="profile-stat-label">获得勋章</span>
           </div>
         </div>
+        <button
+          type="button"
+          className="profile-points-center-btn"
+          onClick={() => navigate('/leaderboard', { state: { openPointsCenter: true } })}
+        >
+          积分中心
+        </button>
       </div>
 
       {/* Content（与打卡、排行等页面一致，使用 .page 统一内边距） */}

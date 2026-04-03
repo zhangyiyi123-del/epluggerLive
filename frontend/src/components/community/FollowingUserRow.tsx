@@ -31,8 +31,8 @@ export default function FollowingUserRow({ users, loading, error, onRetry }: Fol
 
   if (users.length === 0) {
     return (
-      <div className="following-user-row__hint">
-        暂无关注，去圈子发现感兴趣的人吧
+      <div className="following-user-row__empty-illustration">
+        <img src="/生成关注页面配图-removebg-preview.png" alt="暂无关注" />
       </div>
     )
   }

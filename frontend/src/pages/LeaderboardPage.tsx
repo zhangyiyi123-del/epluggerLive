@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Medal, Flame, Heart, ChevronRight, ChevronLeft, Star, Lock, ChevronDown } from 'lucide-react'
+import { Medal, Flame, Heart, ChevronLeft, Star, Lock, ChevronDown } from 'lucide-react'
 import { LEVEL_CONFIGS } from '../types/points'
 import type { UserPoints as UserPointsType } from '../types/points'
 import PointsCenter from '../components/points/PointsCenter'
@@ -15,18 +15,18 @@ type LeaderboardType = 'points' | 'exercise' | 'positive'
 /** 时间范围：全部、本年、本月、本周、今日 */
 type LeaderboardPeriod = 'all' | 'year' | 'month' | 'week' | 'today'
 
-const typeLabels: Record<LeaderboardType, { title: string; unit: string; icon: any }> = {
-  points: { title: '积分榜', unit: '积分', icon: Medal },
-  exercise: { title: '运动榜', unit: '次', icon: Flame },
-  positive: { title: '正向榜', unit: '次', icon: Heart },
+const typeLabels: Record<LeaderboardType, { title: string; cardTitle: string; unit: string; icon: any }> = {
+  points: { title: '积分榜', cardTitle: '积分排行榜', unit: '积分', icon: Medal },
+  exercise: { title: '运动榜', cardTitle: '运动排行榜', unit: '次', icon: Flame },
+  positive: { title: '正向榜', cardTitle: '正向排行榜', unit: '次', icon: Heart },
 }
 
 const periodLabels: Record<LeaderboardPeriod, string> = {
   all: '全部',
-  year: '本年',
-  month: '本月',
-  week: '本周',
-  today: '今日',
+  year: '年榜',
+  month: '月榜',
+  week: '周榜',
+  today: '日榜',
 }
 
 export default function LeaderboardPage() {
@@ -209,7 +209,7 @@ export default function LeaderboardPage() {
     return (
       <div className="page page-points-center">
         <div className="publish-header">
-          <button type="button" className="publish-back-btn" onClick={() => setShowPointsCenter(false)}>
+          <button type="button" className="publish-back-btn" onClick={() => navigate('/profile')}>
             <ChevronLeft size={22} />
           </button>
           <div className="publish-header-title">积分中心</div>
@@ -232,199 +232,118 @@ export default function LeaderboardPage() {
 
   return (
     <div className="page page-leaderboard">
-      {/* tab 切换 */}
-      <div className="tab-switcher" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
-        <button 
-          className={`tab-btn ${activeType === 'points' ? 'active' : ''}`}
-          onClick={() => setActiveType('points')}
-        >
-          {typeLabels.points.title}
-        </button>
-        <button 
-          className={`tab-btn ${activeType === 'exercise' ? 'active' : ''}`}
-          onClick={() => setActiveType('exercise')}
-        >
-          {typeLabels.exercise.title}
-        </button>
-        <button 
-          className={`tab-btn ${activeType === 'positive' ? 'active' : ''}`}
-          onClick={() => setActiveType('positive')}
-        >
-          {typeLabels.positive.title}
-        </button>
-      </div>
-
-      {/* 排行榜 */}
-      <>
-        {/* Current User Rank */}
-        <div className="card leaderboard-my-rank-card">
-          <div className="flex justify-between items-center">
-            <div>
-              <div className="leaderboard-my-rank-label">我的当前排名</div>
-              <div className="leaderboard-my-rank-row">
-                <span className="leaderboard-my-rank-text">
-                  {userPointsLoading || leaderboardLoading
-                    ? '加载中'
-                    : myValue === 0
-                      ? '-'
-                      : myRank != null
-                        ? `第${myRank}名`
-                        : '未上榜'}
-                </span>
-                <span className="leaderboard-my-rank-dot"> · </span>
-                <span className="leaderboard-my-rank-text">
-                  {userPointsLoading || leaderboardLoading ? '—' : `${myValue} ${unit}`}
-                </span>
-              </div>
-            </div>
-            <button
-              type="button"
-              className="leaderboard-center-entry"
-              onClick={() => setShowPointsCenter(true)}
-            >
-              积分中心 <ChevronRight size={16} />
-            </button>
-          </div>
+      <div className="leaderboard-header-glass">
+        {/* tab 切换 */}
+        <div className="tab-switcher" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+          <button 
+            className={`tab-btn ${activeType === 'points' ? 'active' : ''}`}
+            onClick={() => setActiveType('points')}
+          >
+            {typeLabels.points.title}
+          </button>
+          <button 
+            className={`tab-btn ${activeType === 'exercise' ? 'active' : ''}`}
+            onClick={() => setActiveType('exercise')}
+          >
+            {typeLabels.exercise.title}
+          </button>
+          <button 
+            className={`tab-btn ${activeType === 'positive' ? 'active' : ''}`}
+            onClick={() => setActiveType('positive')}
+          >
+            {typeLabels.positive.title}
+          </button>
         </div>
+
+        {/* 排行榜 */}
+        <>
+          {/* Current User Rank */}
+          <div className="leaderboard-my-rank-card">
+            <div className="leaderboard-my-rank-content">
+              {(() => {
+                const myEntry = myRankIndex >= 0 ? currentData[myRankIndex] : null
+                return (
+                  <>
+                    <div className="leaderboard-my-rank-name">
+                      Hi，{myEntry?.name ?? (userPointsLoading ? '加载中' : '未上榜')}
+                    </div>
+                    <div className="leaderboard-my-rank-row">
+                      <div className="leaderboard-my-rank-avatar">
+                        {myEntry?.avatar ? (
+                          <img src={myEntry.avatar} alt="头像" style={{ width: '100%', height: '100%', borderRadius: '2px', objectFit: 'cover' }} />
+                        ) : (
+                          myEntry?.initial ?? '?'
+                        )}
+                      </div>
+                      <div className="leaderboard-my-rank-info">
+                        <div className="leaderboard-my-rank-rank">
+                          排名：<span className={`rank ${getRankClass(myRank ?? 0, myValue)}`}>
+                            {userPointsLoading || leaderboardLoading
+                              ? '-'
+                              : myValue === 0
+                                ? '-'
+                                : myRank != null
+                                  ? `NO.${myRank}`
+                                  : '-'}
+                          </span>
+                        </div>
+                        <div className="leaderboard-my-rank-score">
+                          {userPointsLoading || leaderboardLoading
+                            ? '-'
+                            : myValue}
+                          <span className="leaderboard-my-rank-unit">{userPointsLoading || leaderboardLoading ? '' : unit}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                )
+              })()}
+            </div>
+          </div>
 
           {/* Leaderboard List */}
           <div className="section">
-            <div className="section-header-with-filter">
-              <h3 className="section-title">
-                <Icon size={18} />
-                {title}
-              </h3>
-              <div className="leaderboard-filter-wrapper" ref={filterDropdownRef}>
+            <div className="leaderboard-period-tabs">
+              {(['all', 'year', 'month', 'week', 'today'] as LeaderboardPeriod[]).map(period => (
                 <button
+                  key={period}
                   type="button"
-                  className="leaderboard-filter-btn"
-                  onClick={() => setShowPeriodDropdown(!showPeriodDropdown)}
+                  className={`leaderboard-period-tab ${activePeriod === period ? 'active' : ''}`}
+                  onClick={() => setActivePeriod(period)}
                 >
-                  <span className="leaderboard-filter-label">{periodLabels[activePeriod]}</span>
-                  <ChevronDown 
-                    size={14} 
-                    className={`leaderboard-filter-chevron ${showPeriodDropdown ? 'open' : ''}`}
-                  />
+                  {periodLabels[period]}
                 </button>
-                {showPeriodDropdown && (
-                  <div className="leaderboard-period-dropdown">
-                    {(['all', 'year', 'month', 'week', 'today'] as LeaderboardPeriod[]).map(period => (
-                      <button
-                        key={period}
-                        type="button"
-                        className={`leaderboard-period-option ${activePeriod === period ? 'active' : ''}`}
-                        onClick={() => {
-                          setActivePeriod(period)
-                          setShowPeriodDropdown(false)
-                        }}
-                      >
-                        {periodLabels[period]}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              ))}
             </div>
 
-            {/* 前三名：柱状领奖台阶梯展示（2nd | 1st | 3rd） */}
-            {!leaderboardLoading && currentData.length >= 3 && (
-              <div className="leaderboard-podium">
-                <div className="podium-column podium-2nd">
-                  <div className="podium-user">
-                    <div className="podium-avatar-wrap">
-                      <div className="podium-avatar">
-                        {currentData[1].avatar ? (
-                          <img
-                            src={currentData[1].avatar}
-                            alt={currentData[1].name}
-                            style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
-                          />
-                        ) : (
-                          currentData[1].initial
-                        )}
-                      </div>
-                      <img src="/rank-frame-2.png" className="podium-frame" alt="" />
-                    </div>
-                    <div className="podium-name">{currentData[1].name}</div>
-                    <div className="podium-value">{currentData[1].value}<span className="podium-unit">{unit}</span></div>
-                  </div>
-                  <div className="podium-step">
-                    <span className={`podium-rank rank-2${currentData[1].value === 0 ? ' podium-rank-dash' : ''}`}>
-                      {formatRankBadge(currentData[1].value, 2)}
-                    </span>
-                  </div>
-                </div>
-                <div className="podium-column podium-1st">
-                  <div className="podium-user">
-                    <div className="podium-avatar-wrap">
-                      <div className="podium-avatar">
-                        {currentData[0].avatar ? (
-                          <img
-                            src={currentData[0].avatar}
-                            alt={currentData[0].name}
-                            style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
-                          />
-                        ) : (
-                          currentData[0].initial
-                        )}
-                      </div>
-                      <img src="/rank-frame-1.png" className="podium-frame" alt="" />
-                    </div>
-                    <div className="podium-name">{currentData[0].name}</div>
-                    <div className="podium-value">{currentData[0].value}<span className="podium-unit">{unit}</span></div>
-                  </div>
-                  <div className="podium-step">
-                    <span className={`podium-rank rank-1${currentData[0].value === 0 ? ' podium-rank-dash' : ''}`}>
-                      {formatRankBadge(currentData[0].value, 1)}
-                    </span>
-                  </div>
-                </div>
-                <div className="podium-column podium-3rd">
-                  <div className="podium-user">
-                    <div className="podium-avatar-wrap">
-                      <div className="podium-avatar">
-                        {currentData[2].avatar ? (
-                          <img
-                            src={currentData[2].avatar}
-                            alt={currentData[2].name}
-                            style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
-                          />
-                        ) : (
-                          currentData[2].initial
-                        )}
-                      </div>
-                      <img src="/rank-frame-3.png" className="podium-frame" alt="" />
-                    </div>
-                    <div className="podium-name">{currentData[2].name}</div>
-                    <div className="podium-value">{currentData[2].value}<span className="podium-unit">{unit}</span></div>
-                  </div>
-                  <div className="podium-step">
-                    <span className={`podium-rank rank-3${currentData[2].value === 0 ? ' podium-rank-dash' : ''}`}>
-                      {formatRankBadge(currentData[2].value, 3)}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* 第4名及以后：同一张卡片内的列表 */}
+            {/* 第1名及以后：同一张卡片内的列表 */}
             <div className="leaderboard-list-card">
               {leaderboardLoading ? (
                 <div className="my-posts-empty"><p>加载中...</p></div>
               ) : (
-              currentData.slice(3).map((user, index) => {
-                const rank = index + 4
+              currentData.slice(0).map((user, index) => {
+                const rank = index + 1
                 return (
                   <div key={user.userId} className="leaderboard-item-inner">
-                    <div className={`rank ${getRankClass(rank, user.value)}`}>
-                      {formatRankBadge(user.value, rank)}
+                    <div className="rank-badge-wrapper">
+                      {rank === 1 ? (
+                        <img src="/第一名.png" alt="第一名" className="rank-badge-img" />
+                      ) : rank === 2 ? (
+                        <img src="/第二名.png" alt="第二名" className="rank-badge-img" />
+                      ) : rank === 3 ? (
+                        <img src="/第三名.png" alt="第三名" className="rank-badge-img" />
+                      ) : (
+                        <div className={`rank ${getRankClass(rank, user.value)}`}>
+                          {formatRankBadge(user.value, rank)}
+                        </div>
+                      )}
                     </div>
                     <div className="avatar leaderboard-list-avatar">
                       {user.avatar ? (
                         <img
                           src={user.avatar}
                           alt={user.name}
-                          style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                          style={{ width: '100%', height: '100%', borderRadius: '0', objectFit: 'cover' }}
                         />
                       ) : (
                         user.initial
@@ -449,6 +368,7 @@ export default function LeaderboardPage() {
             </div>
           </div>
         </>
+      </div>
     </div>
   )
 }

@@ -538,9 +538,8 @@ export default function CommunityPage() {
           )}
 
           {!loadError && posts.length === 0 && !searchKeyword && activeFilter !== 'following' && (
-            <div className="empty-feed">
-              <p>暂无动态</p>
-              <p className="empty-hint">快来发布第一条动态吧~</p>
+            <div className="community-empty-feed">
+              <img src="/暂无动态.png" alt="暂无动态" />
             </div>
           )}
         </div>

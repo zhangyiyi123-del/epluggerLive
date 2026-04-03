@@ -118,9 +118,8 @@ export default function MyMessagesPage({ onBack }: MyMessagesPageProps) {
             <button type="button" className="btn btn-secondary btn-sm" onClick={loadNotices}>重试</button>
           </div>
         ) : notices.length === 0 ? (
-          <div className="my-posts-empty">
-            <p>暂无消息</p>
-            <span>有互动时会在这里通知你</span>
+          <div className="my-messages-empty">
+            <img src="/暂无互动消息.png" alt="暂无消息" />
           </div>
         ) : (
           <ul className="notice-list">

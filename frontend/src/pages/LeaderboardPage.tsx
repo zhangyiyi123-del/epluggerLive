@@ -270,7 +270,7 @@ export default function LeaderboardPage() {
                     <div className="leaderboard-my-rank-row">
                       <div className="leaderboard-my-rank-avatar">
                         {myEntry?.avatar ? (
-                          <img src={myEntry.avatar} alt="头像" style={{ width: '100%', height: '100%', borderRadius: '2px', objectFit: 'cover' }} />
+                          <img src={myEntry.avatar} alt="头像" className="leaderboard-my-rank-avatar-img" />
                         ) : (
                           myEntry?.initial ?? '?'
                         )}

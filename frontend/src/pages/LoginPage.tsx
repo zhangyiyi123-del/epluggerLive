@@ -112,15 +112,17 @@ export default function LoginPage({ onLogin }: LoginPageProps) {
           </button>
         </form>
 
-        {/* 企业 SSO */}
-        <div className="login-divider">
-          <span>其他登录方式</span>
+        {/* 企业 SSO（前端暂时隐藏，恢复显示时去掉外层 style） */}
+        <div className="login-enterprise-sso" style={{ display: 'none' }} aria-hidden="true">
+          <div className="login-divider">
+            <span>其他登录方式</span>
+          </div>
+          <button type="button" className="login-sso-btn">
+            <div className="login-sso-icon">企</div>
+            企业统一认证登录（SSO）
+            <ChevronRight size={16} className="login-sso-arrow" />
+          </button>
         </div>
-        <button className="login-sso-btn">
-          <div className="login-sso-icon">企</div>
-          企业统一认证登录（SSO）
-          <ChevronRight size={16} className="login-sso-arrow" />
-        </button>
       </div>
 
       {/* 底部协议 */}

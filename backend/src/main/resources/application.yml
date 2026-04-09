@@ -10,7 +10,7 @@ spring:
     name: eplugger-backend
   jpa:
     hibernate:
-      ddl-auto: validate-
+      ddl-auto: validate
     database-platform: org.hibernate.dialect.MySQLDialect
     show-sql: false
   flyway:

@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -21,6 +22,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.security.SecureRandom;
 
 /**
  * 人员同步：BIZ_PERSON LEFT JOIN wx_member、wx_department，字段映射与产品表一致。
@@ -46,24 +48,32 @@ public class EpWorkPersonnelSyncService {
     private static final String A_MOBILE = "epl_mobile";
     private static final String A_DEPARTMENT = "epl_department";
 
+    private static final String PASS_UPPER_CASE = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    private static final String PASS_LOWER_CASE = "abcdefghijklmnopqrstuvwxyz";
+    private static final String PASS_DIGITS = "0123456789";
+    private static final String PASS_SPECIAL_CHARS = "!@#$%^&*";
+    
     private final UserRepository userRepository;
     private final EpworkPersonnelSyncCursorRepository cursorRepository;
     private final EpWorkPersonnelSyncProperties properties;
     private final JdbcTemplate jdbcTemplate;
     private final UserIdAllocationService userIdAllocationService;
+    private final PasswordEncoder passwordEncoder;
 
     public EpWorkPersonnelSyncService(
             UserRepository userRepository,
             EpworkPersonnelSyncCursorRepository cursorRepository,
             EpWorkPersonnelSyncProperties properties,
             @Qualifier("epWorkPersonnelJdbcTemplate") JdbcTemplate jdbcTemplate,
-            UserIdAllocationService userIdAllocationService
+            UserIdAllocationService userIdAllocationService,
+            PasswordEncoder passwordEncoder
     ) {
         this.userRepository = userRepository;
         this.cursorRepository = cursorRepository;
         this.properties = properties;
         this.jdbcTemplate = jdbcTemplate;
         this.userIdAllocationService = userIdAllocationService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Scheduled(cron = "${app.epwork-personnel-sync.full-cron:0 0 * * * *}")
@@ -148,6 +158,9 @@ public class EpWorkPersonnelSyncService {
                 user.setPhone(mobile.trim());
             }
             user.setEmploymentStatus(employmentStatus);
+            // 生成随机密码并加密
+            String randomPassword = generateRandomPassword();
+            user.setPasswordHash(passwordEncoder.encode(randomPassword));
             user.setLastSyncedAt(now);
             userRepository.save(user);
         }
@@ -318,6 +331,40 @@ public class EpWorkPersonnelSyncService {
             }
         }
         throw new IllegalStateException("cannot allocate unique placeholder phone");
+    }
+
+    /**
+     * 生成随机密码（8-12位，包含大小写字母、数字和特殊字符）
+     */
+    private String generateRandomPassword() {
+        String allChars = PASS_UPPER_CASE + PASS_LOWER_CASE + PASS_DIGITS + PASS_SPECIAL_CHARS;
+        
+        SecureRandom random = new SecureRandom();
+        int length = 8 + random.nextInt(5); // 8-12位随机长度
+        
+        StringBuilder password = new StringBuilder(length);
+        
+        // 确保至少包含每种字符类型各一个
+        password.append(PASS_UPPER_CASE.charAt(random.nextInt(PASS_UPPER_CASE.length())));
+        password.append(PASS_LOWER_CASE.charAt(random.nextInt(PASS_LOWER_CASE.length())));
+        password.append(PASS_DIGITS.charAt(random.nextInt(PASS_DIGITS.length())));
+        password.append(PASS_SPECIAL_CHARS.charAt(random.nextInt(PASS_SPECIAL_CHARS.length())));
+        
+        // 填充剩余字符
+        for (int i = 4; i < length; i++) {
+            password.append(allChars.charAt(random.nextInt(allChars.length())));
+        }
+        
+        // 打乱密码字符顺序
+        char[] passwordArray = password.toString().toCharArray();
+        for (int i = passwordArray.length - 1; i > 0; i--) {
+            int j = random.nextInt(i + 1);
+            char temp = passwordArray[i];
+            passwordArray[i] = passwordArray[j];
+            passwordArray[j] = temp;
+        }
+        
+        return new String(passwordArray);
     }
 
     private Instant readUpdateTime(Map<String, Object> row, String alias) {

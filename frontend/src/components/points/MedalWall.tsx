@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Lock, Calendar, Star } from 'lucide-react'
-import type { Medal, UserPoints } from '../../types/points'
+import type { Medal, UserPoints, MedalType } from '../../types/points'
 import { MEDAL_CONFIGS } from '../../types/points'
 
 interface MedalWallProps {
@@ -13,8 +13,8 @@ export default function MedalWall({ userPoints }: MedalWallProps) {
   const [newAwardQueue, setNewAwardQueue] = useState<Medal[]>([])
 
   const medalMap = new Map(userPoints.medals.map(m => [m.type, m]))
-  const getMedal = (type: string) => medalMap.get(type)
-  const isObtained = (type: string) => Boolean(getMedal(type)?.obtainedAt)
+  const getMedal = (type: MedalType) => medalMap.get(type)
+  const isObtained = (type: MedalType) => Boolean(getMedal(type)?.obtainedAt)
 
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('zh-CN', {

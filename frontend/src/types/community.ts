@@ -162,6 +162,7 @@ export const MOCK_POSTS: Post[] = [
     isPinned: false,
     canEdit: false,
     canDelete: true,
+    isAuthorFollowed: false,
     createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
   },
   {
@@ -183,6 +184,7 @@ export const MOCK_POSTS: Post[] = [
     isPinned: false,
     canEdit: false,
     canDelete: true,
+    isAuthorFollowed: false,
     createdAt: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString()
   },
   {
@@ -204,6 +206,7 @@ export const MOCK_POSTS: Post[] = [
     isPinned: false,
     canEdit: false,
     canDelete: true,
+    isAuthorFollowed: false,
     createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()
   },
   // 文本超过三行 + 图片示例
@@ -233,6 +236,7 @@ export const MOCK_POSTS: Post[] = [
     isPinned: false,
     canEdit: false,
     canDelete: true,
+    isAuthorFollowed: false,
     createdAt: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString()
   },
   // 仅图片为主的示例
@@ -261,6 +265,7 @@ export const MOCK_POSTS: Post[] = [
     isPinned: false,
     canEdit: false,
     canDelete: true,
+    isAuthorFollowed: false,
     createdAt: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
   }
 ]

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { Medal, Flame, Heart, ChevronLeft, Star, Lock, ChevronDown } from 'lucide-react'
+import { Medal, Flame, Heart, ChevronLeft, Star, Lock } from 'lucide-react'
 import { LEVEL_CONFIGS } from '../types/points'
 import type { UserPoints as UserPointsType } from '../types/points'
 import PointsCenter from '../components/points/PointsCenter'
@@ -104,7 +104,7 @@ export default function LeaderboardPage() {
   }, [activeType, activePeriod])
 
   const currentData = leaderboardData
-  const { title, unit, icon: Icon } = typeLabels[activeType]
+  const { unit } = typeLabels[activeType]
   const myRankIndex = userPoints.userId ? currentData.findIndex((u) => u.userId === userPoints.userId) : -1
   const myRank = myRankIndex >= 0 ? myRankIndex + 1 : null
   const myValue = myRankIndex >= 0 ? currentData[myRankIndex].value : userPoints.availablePoints

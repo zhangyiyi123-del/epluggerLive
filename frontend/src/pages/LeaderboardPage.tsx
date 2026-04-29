@@ -327,11 +327,11 @@ export default function LeaderboardPage() {
                   <div key={user.userId} className="leaderboard-item-inner">
                     <div className="rank-badge-wrapper">
                       {rank === 1 ? (
-                        <img src="/第一名.png" alt="第一名" className="rank-badge-img" />
+                        <img src="/rank-gold.png" alt="第一名" className="rank-badge-img" />
                       ) : rank === 2 ? (
-                        <img src="/第二名.png" alt="第二名" className="rank-badge-img" />
+                        <img src="/rank-silver.png" alt="第二名" className="rank-badge-img" />
                       ) : rank === 3 ? (
-                        <img src="/第三名.png" alt="第三名" className="rank-badge-img" />
+                        <img src="/rank-bronze.png" alt="第三名" className="rank-badge-img" />
                       ) : (
                         <div className={`rank ${getRankClass(rank, user.value)}`}>
                           {formatRankBadge(user.value, rank)}

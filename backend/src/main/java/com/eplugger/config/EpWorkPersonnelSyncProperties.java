@@ -24,14 +24,14 @@ public class EpWorkPersonnelSyncProperties {
     private String personDepartmentColumn = "DEPARTMENT";
     private String personWorkStatusColumn = "WORK_STATUS";
 
-    private String wxMemberTable = "wx_member";
+    private String wxMemberTable = "WX_MEMBER";
     private String wxMemberAlias = "wm";
-    private String wxMemberUserIdColumn = "user_id";
+    private String wxMemberUserIdColumn = "USER_ID";
     private String wxMemberAvatarColumn = "AVATAR";
     private String wxMemberPositionColumn = "POSITION";
     private String wxMemberMobileColumn = "MOBILE";
 
-    private String wxDepartmentTable = "wx_department";
+    private String wxDepartmentTable = "WX_DEPARTMENT";
     private String wxDepartmentAlias = "wd";
     private String wxDepartmentIdColumn = "DEPARTMENT_ID";
     private String wxDepartmentNameColumn = "NAME";

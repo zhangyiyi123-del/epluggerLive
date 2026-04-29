@@ -8120,7 +8120,7 @@ body {
 /* 排行榜「我的当前排名」卡片：背景图设计 */
 .leaderboard-my-rank-card {
   margin: 20px 16px 16px 16px;
-  background-image: url('/排行榜.webp');
+  background-image: url('/leaderboard-bg.webp');
   background-size: auto 100%;
   background-position: right center;
   background-repeat: no-repeat;

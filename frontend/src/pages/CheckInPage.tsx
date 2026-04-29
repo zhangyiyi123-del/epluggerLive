@@ -342,7 +342,7 @@ const getPositiveIcon = (categoryId: string) => {
           <div className="success-page-main">
             <div className="success-card" role="status" aria-live="polite" aria-atomic="true">
               <img
-                src="/下载.png"
+                src="/success-mascot.png"
                 alt=""
                 className="success-mascot"
                 width={200}
@@ -354,7 +354,7 @@ const getPositiveIcon = (categoryId: string) => {
                 <div className="success-title-with-stamp">
                   <h1 className="success-title">恭喜！打卡成功</h1>
                   <img
-                    src="/今日已完成.png"
+                    src="/completed-today.png"
                     alt=""
                     className="success-done-stamp"
                     decoding="async"

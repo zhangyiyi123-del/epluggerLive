@@ -119,7 +119,7 @@ export default function MyMessagesPage({ onBack }: MyMessagesPageProps) {
           </div>
         ) : notices.length === 0 ? (
           <div className="my-messages-empty">
-            <img src="/暂无互动消息.png" alt="暂无消息" />
+            <img src="/no-messages.png" alt="暂无消息" />
           </div>
         ) : (
           <ul className="notice-list">
